@@ -19,15 +19,14 @@ function saveSoundSettings() {
     localStorage.setItem('js_rng_sound', JSON.stringify(soundSettings));
 }
 
-// 🔊 깃허브 배포 시 폴더 에러가 안 나도록 루트 경로(파일명만)로 수정완료!
 const audioFiles = {
     lobbyBgm: new Audio('lobby_bgm.mp3'),
     mainBgm: new Audio('main_bgm.mp3'),
     click: new Audio('click.mp3'),
     dropLegend: new Audio('drop_legend.mp3'),
     dropMythic: new Audio('drop_mythic.mp3'),
-    divineAll: new Audio('divine_full.mp3'),
-    jsAll: new Audio('js_full.mp3')
+    divine_all: new Audio('divine_all.mp3'),
+    js_all: new Audio('js_all.mp3')
 };
 
 audioFiles.lobbyBgm.loop = true;
@@ -152,26 +151,22 @@ document.body.addEventListener('click', (e) => {
     }
 });
 
-// 🌟 6인방 조합 + 철저한 확률 기준 정렬 데이터
+// 오라 데이터
 const AURA_DATA = [
-    // [COMMON] 1 ~ 9
     { id: "com_drum", name: "동네북 김가은", grade: "COMMON", in: 2, color: "#696969" },
     { id: "com_normal", name: "평범한 김티비", grade: "COMMON", in: 4, color: "#808080" },
     { id: "com_passerby", name: "지나가는 김민채", grade: "COMMON", in: 8, color: "#a9a9a9" },
 
-    // [UNCOMMON] 10 ~ 29
     { id: "unc_stretching", name: "스트레칭하는 김티비", grade: "UNCOMMON", in: 10, color: "#2ecc71" },
     { id: "unc_running", name: "뛰어가는 김민채", grade: "UNCOMMON", in: 12, color: "#90ee90" },
     { id: "unc_angry", name: "조금 화난 김건우", grade: "UNCOMMON", in: 16, color: "#3cb371" },
     { id: "unc_tired", name: "피곤한 박지성", grade: "UNCOMMON", in: 22, color: "#32cd32" },
     { id: "com_darkminchae", name: "깜민채", grade: "UNCOMMON", in: 25, color: "#2f4f4f" },
 
-    // [RARE] 30 ~ 99
     { id: "rare_soldier", name: "예비군 공병은", grade: "RARE", in: 30, color: "#6495ed" },
     { id: "rare_train", name: "폭주기관차 김민채", grade: "RARE", in: 50, color: "#1e90ff" },
     { id: "rare_algo", name: "알고리즘 김티비", grade: "RARE", in: 85, color: "#4169e1" },
 
-    // [EPIC] 100 ~ 999
     { id: "ep_baksisung", name: "밪지성", grade: "EPIC", in: 100, color: "#27ae60" },
     { id: "epic_lucky", name: "운수 좋은 김티비", grade: "EPIC", in: 120, color: "#da70d6" },
     { id: "unc_hospital", name: "박지성지병원", grade: "EPIC", in: 250, color: "#2e8b57" },
@@ -182,7 +177,6 @@ const AURA_DATA = [
     { id: "epic_emperor", name: "황제 박지성", grade: "EPIC", in: 800, color: "#8a2be2" },
     { id: "ep_mc_byungeun", name: "MC병은", grade: "EPIC", in: 888, color: "#8e44ad" },
 
-    // [LEGEND] 1,000 ~ 9,999
     { id: "legend_speed", name: "광속의 김민채", grade: "LEGEND", in: 1200, colorClass: "aura-legend-5", rawColor: "#dc143c" },
     { id: "epic_kimmodi", name: "기모띠비", grade: "LEGEND", in: 2222, colorClass: "aura-legend-4", rawColor: "#9370db" },
     { id: "legend_wizard", name: "대마법사 공병은", grade: "LEGEND", in: 3500, colorClass: "aura-legend-3", rawColor: "#ff0000" },
@@ -190,7 +184,6 @@ const AURA_DATA = [
     { id: "legend_knight", name: "빛의 기사 김가은", grade: "LEGEND", in: 8000, colorClass: "aura-legend-1", rawColor: "#ff4500" },
     { id: "com_steel_gaen", name: "동네북 김가은 : 강철맷집", grade: "LEGEND", in: 8888, colorClass: "aura-legend-2", rawColor: "#f1c40f" },
 
-    // [MYTHIC] 10,000 ~ 999,999
     { id: "gemini_basic", name: "김민제미나이", grade: "MYTHIC", in: 10101, colorClass: "aura-mythic-1", rawColor: "#00ffff" },
     { id: "epic_monkey", name: "건숭이", grade: "MYTHIC", in: 13131, colorClass: "aura-mythic-6", rawColor: "#ba55d3" },
     { id: "mythic_empress", name: "절대여제 김가은", grade: "MYTHIC", in: 15000, colorClass: "aura-mythic-5", rawColor: "#ff69b4" },
@@ -201,7 +194,6 @@ const AURA_DATA = [
     { id: "mythic_heart", name: "두 개의 심장 박지성", grade: "MYTHIC", in: 100000, colorClass: "aura-mythic-1", rawColor: "#00ffff" },
     { id: "kim_crazy_kim_77", name: "기모띠비 : 앙기모띠", grade: "MYTHIC", in: 777777, colorClass: "aura-mythic-6", rawColor: "#ba55d3" },
 
-    // [DIVINE] 1,000,000 ~ 5,000,000
     { id: "gemini_pro", name: "김민제미나이 : 프로", grade: "DIVINE", in: 1010101, colorClass: "aura-divine-2", rawColor: "#9b59b6" },
     { id: "div_absolute_gaen", name: "절대여제 김가은 : 범접불가", grade: "DIVINE", in: 1515151, colorClass: "aura-divine-2", rawColor: "#9b59b6" },
     { id: "var_virtual", name: "100만 유튜버 김티비 : 버츄얼 모드", grade: "DIVINE", in: 2545454, colorClass: "aura-divine-5", rawColor: "#2ecc71" },
@@ -210,7 +202,6 @@ const AURA_DATA = [
     { id: "var_simon", name: "MC병은 : 사이먼 도미닉", grade: "DIVINE", in: 4898989, colorClass: "aura-divine-2", rawColor: "#9b59b6" },
     { id: "divine_dim", name: "차원 지배자 공병은", grade: "DIVINE", in: 5000000, colorClass: "aura-divine-1", rawColor: "#00c6ff" },
 
-    // [JS] 6,000,000 이상~
     { id: "variant_haebeoji", name: "두개의 심장 박지성 : 해버지", grade: "JS", in: 6666666, colorClass: "aura-js-4", rawColor: "#ff8c00" },
     { id: "legend_gonjiam", name: "곤지암병은", grade: "JS", in: 9999999, colorClass: "aura-js-3", rawColor: "#ff1493" },
     { id: "js_collector", name: "전설의 공병수집가 공병은", grade: "JS", in: 10000000, colorClass: "aura-js-2", rawColor: "#ffaa00" },
@@ -243,10 +234,12 @@ const CRAFT_ITEMS = [
 
 CRAFT_ITEMS.sort((a, b) => (b.luckBonus + b.speedBonus) - (a.luckBonus + a.speedBonus));
 
-let totalChance = 0;
-for (let i = 0; i < AURA_DATA.length; i++) { AURA_DATA[i].chance = 100 / AURA_DATA[i].in; AURA_DATA[i].jcValue = Math.max(1, Math.floor(AURA_DATA[i].in / 5)); totalChance += AURA_DATA[i].chance; }
+for (let i = 0; i < AURA_DATA.length; i++) { 
+    AURA_DATA[i].chance = 100 / AURA_DATA[i].in; 
+    AURA_DATA[i].jcValue = Math.max(1, Math.floor(AURA_DATA[i].in / 5)); 
+}
 
-let gameState = { rolls: 0, luck: 1, jc: 0, inventory: {}, itemInventory: {}, autoDelete: {}, activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0, luckMultBonus: 0, luckMultUses: 0 }, gear: null, craftedGears: [], usedCodes: [] };
+let gameState = { rolls: 0, luck: 1, jc: 0, inventory: {}, itemInventory: {}, autoDelete: {}, activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0 }, activeMultBuffs: [], gear: null, craftedGears: [], usedCodes: [] };
 let isRolling = false; let isAutoRolling = false; let disableSave = false; let backupGameState = null; let nextRollOverride = null;
 
 const ui = {
@@ -348,6 +341,18 @@ ui.submitCodeBtn.addEventListener('click', () => {
         ui.codeInput.value = '';
         ui.settingsHubModal.classList.add('hidden');
         alert("🎉 [쿠폰 성공!] 행운의 물약 3 (5개), 속도의 물약 3 (5개), 한계의 물약 (1개)이 지급되었습니다!");
+    } else if (codeVal === "SORRYMAN") {
+        if (gameState.usedCodes.includes("SORRYMAN")) {
+            alert("❌ 이미 사용한 쿠폰입니다! (계정당 1회 제한)");
+            return;
+        }
+        gameState.usedCodes.push("SORRYMAN");
+        gameState.itemInventory["limit_potion"] = (gameState.itemInventory["limit_potion"] || 0) + 1;
+        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 1;
+        saveGame();
+        ui.codeInput.value = '';
+        ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [쿠폰 성공!] 한계의 물약 (1개), 극복의 물약 (1개)이 지급되었습니다!");
     } else {
         alert("❌ 존재하지 않거나 잘못된 코드입니다.");
     }
@@ -365,8 +370,8 @@ function applySoundSettingsToUI() {
 
 ui.volMaster.addEventListener('input', (e) => { soundSettings.master = e.target.value / 100; ui.volMasterVal.innerText = e.target.value; updateBgmVolume(); saveSoundSettings(); });
 ui.volBgm.addEventListener('input', (e) => { soundSettings.bgm = e.target.value / 100; ui.volBgmVal.innerText = e.target.value; updateBgmVolume(); saveSoundSettings(); });
-ui.volCutscene.addEventListener('input', (e) => { soundSettings.cutscene = e.target.value / 100; ui.volCutsceneVal.innerText = e.target.value; saveSoundSettings(); });
-ui.volClick.addEventListener('input', (e) => { soundSettings.click = e.target.value / 100; ui.volClickVal.innerText = e.target.value; saveSoundSettings(); });
+ui.volCutscene.addEventListener('input', (e) => { soundSettings.cutscene = e.target.value / 100; ui.volCutsceneVal.innerText = e.target.value; updateBgmVolume(); saveSoundSettings(); });
+ui.volClick.addEventListener('input', (e) => { soundSettings.click = e.target.value / 100; ui.volClickVal.innerText = e.target.value; updateBgmVolume(); saveSoundSettings(); });
 
 ui.soundToggleBtn.addEventListener('click', () => {
     soundSettings.enabled = !soundSettings.enabled;
@@ -382,8 +387,12 @@ function loadGame() {
         gameState = { ...gameState, ...JSON.parse(savedData) }; 
         if(!gameState.craftedGears) gameState.craftedGears = []; 
         if(!gameState.usedCodes) gameState.usedCodes = [];
-        if(gameState.activeBuffs.luckMultBonus === undefined) gameState.activeBuffs.luckMultBonus = 0;
-        if(gameState.activeBuffs.luckMultUses === undefined) gameState.activeBuffs.luckMultUses = 0;
+        if(!gameState.activeMultBuffs) gameState.activeMultBuffs = [];
+        if(gameState.activeBuffs.luckMultBonus !== undefined && gameState.activeBuffs.luckMultUses > 0) {
+            gameState.activeMultBuffs.push({ name: "한계의 물약", bonus: gameState.activeBuffs.luckMultBonus, uses: gameState.activeBuffs.luckMultUses });
+            gameState.activeBuffs.luckMultBonus = 0;
+            gameState.activeBuffs.luckMultUses = 0;
+        }
     }
     updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI();
 }
@@ -414,6 +423,11 @@ window.exitDevMode = function() {
     updateStatsUI(); updateInventory(); updateCraftUI(); ui.devModal.classList.add('hidden'); alert("🚪 개발자 모드를 종료하고 본계정 데이터로 복구했습니다!");
 }
 
+function getTotalMultBonus() {
+    if (!gameState.activeMultBuffs || gameState.activeMultBuffs.length === 0) return 0;
+    return gameState.activeMultBuffs.reduce((sum, buff) => sum + buff.bonus, 0);
+}
+
 function updateStatsUI() { 
     ui.rollCount.innerText = gameState.rolls; 
     ui.jcCount.innerText = gameState.jc.toLocaleString(); 
@@ -422,7 +436,7 @@ function updateStatsUI() {
     if(gameState.gear) { const equipped = CRAFT_ITEMS.find(g => g.id === gameState.gear); if(equipped) { gearLuck = equipped.luckBonus; gearSpeed = equipped.speedBonus; } }
     
     let baseTotalLuck = gameState.luck + gearLuck + (gameState.activeBuffs.luckBonus || 0);
-    let multBonus = (gameState.activeBuffs.luckMultUses > 0) ? (gameState.activeBuffs.luckMultBonus || 0) : 0;
+    let multBonus = getTotalMultBonus();
     let finalLuck = baseTotalLuck + multBonus;
 
     let currentSpeed = (1 + gearSpeed + (gameState.activeBuffs.speedBonus || 0)).toFixed(2);
@@ -431,6 +445,7 @@ function updateStatsUI() {
     if(ui.speedMultiplier) ui.speedMultiplier.innerText = currentSpeed;
 }
 
+// 🌟 UI에 물약 이름과 개별 남은 횟수를 각각 명확하게 구별하여 표시
 setInterval(() => {
     const now = Date.now(); let updated = false;
     if (gameState.activeBuffs.luckExpireTime && now > gameState.activeBuffs.luckExpireTime) { gameState.activeBuffs.luckBonus = 0; gameState.activeBuffs.luckExpireTime = 0; updated = true; }
@@ -439,7 +454,13 @@ setInterval(() => {
     let buffTextArr = [];
     if (gameState.activeBuffs.luckExpireTime && now < gameState.activeBuffs.luckExpireTime) { let leftSec = Math.ceil((gameState.activeBuffs.luckExpireTime - now) / 1000); buffTextArr.push(`🧪 행운물약 (${leftSec}초)`); }
     if (gameState.activeBuffs.speedExpireTime && now < gameState.activeBuffs.speedExpireTime) { let leftSec = Math.ceil((gameState.activeBuffs.speedExpireTime - now) / 1000); buffTextArr.push(`🧪 속도물약 (${leftSec}초)`); }
-    if (gameState.activeBuffs.luckMultUses > 0) { buffTextArr.push(`⚡ 특수배수 행운 (+${gameState.activeBuffs.luckMultBonus.toLocaleString()} | 남은횟수: ${gameState.activeBuffs.luckMultUses}회)`); }
+    
+    if (gameState.activeMultBuffs && gameState.activeMultBuffs.length > 0) {
+        let totalBonus = getTotalMultBonus();
+        let listStr = gameState.activeMultBuffs.map(b => `${b.name} ${b.uses}회`).join(" / ");
+        buffTextArr.push(`⚡ 특수배수 (+${totalBonus.toLocaleString()}배) [${listStr}]`);
+    }
+
     if(gameState.gear) { const equipped = CRAFT_ITEMS.find(g => g.id === gameState.gear); if(equipped) buffTextArr.push(`🔨 [${equipped.name}] 장착중`); }
     
     ui.activeBuffs.innerText = buffTextArr.join(" | "); 
@@ -452,13 +473,6 @@ function startRoll() {
     if (isRolling) return; isRolling = true;
     ui.btn.disabled = true; ui.btnText.innerText = "굴리는 중..."; ui.btn.classList.remove('cooldown-active'); 
     gameState.rolls++; 
-
-    if (gameState.activeBuffs.luckMultUses > 0) {
-        gameState.activeBuffs.luckMultUses--;
-        if (gameState.activeBuffs.luckMultUses === 0) {
-            gameState.activeBuffs.luckMultBonus = 0;
-        }
-    }
 
     updateStatsUI(); saveGame();
     let gearSpeed = gameState.gear ? (CRAFT_ITEMS.find(g => g.id === gameState.gear)?.speedBonus || 0) : 0;
@@ -494,7 +508,7 @@ async function playStarCutscene(rolled) {
     
     if (currentBgm) currentBgm.pause();
 
-    const integratedSoundKey = (rolled.grade === "JS") ? 'jsAll' : 'divineAll';
+    const integratedSoundKey = (rolled.grade === "JS") ? 'js_all' : 'divine_all';
     playIntegratedSound(integratedSoundKey); 
 
     await sleep(9500);
@@ -508,14 +522,45 @@ async function playStarCutscene(rolled) {
 
 async function finishRoll() {
     let rolled = AURA_DATA[0]; 
-    if (nextRollOverride) { rolled = AURA_DATA.find(a => a.id === nextRollOverride) || rolled; nextRollOverride = null; } else {
+    if (nextRollOverride) { 
+        rolled = AURA_DATA.find(a => a.id === nextRollOverride) || rolled; 
+        nextRollOverride = null; 
+    } else {
         let gearLuck = gameState.gear ? (CRAFT_ITEMS.find(g => g.id === gameState.gear)?.luckBonus || 0) : 0;
         let baseTotalLuck = gameState.luck + gearLuck + (gameState.activeBuffs.luckBonus || 0);
-        let multBonus = (gameState.activeBuffs.luckMultUses > 0) ? (gameState.activeBuffs.luckMultBonus || 0) : 0;
+        let multBonus = getTotalMultBonus();
         const totalLuck = baseTotalLuck + multBonus;
 
-        const rand = (Math.random() * 100) / totalLuck; let cumulative = 0; 
-        for (let aura of AURA_DATA) { cumulative += aura.chance; if (rand <= cumulative) { rolled = aura; break; } }
+        // 🌟 [핵심 수정] 배수보다 낮은 희귀도(확률이 높은) 칭호들은 완전 출현 제외 필터링!
+        let pool = AURA_DATA;
+        if (multBonus > 0) {
+            let filtered = AURA_DATA.filter(a => a.in >= totalLuck);
+            if (filtered.length > 0) {
+                pool = filtered;
+            }
+        }
+
+        let found = false;
+        for (let i = pool.length - 1; i >= 0; i--) {
+            const aura = pool[i];
+            let rawChance = totalLuck / aura.in;
+            if (rawChance >= 1.0 || Math.random() < Math.min(1.0, rawChance)) {
+                rolled = aura;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            rolled = pool[0];
+        }
+    }
+
+    // 🌟 켜져 있는 모든 배수 물약의 남은 횟수 1 차감
+    if (gameState.activeMultBuffs && gameState.activeMultBuffs.length > 0) {
+        for (let i = 0; i < gameState.activeMultBuffs.length; i++) {
+            gameState.activeMultBuffs[i].uses--;
+        }
+        gameState.activeMultBuffs = gameState.activeMultBuffs.filter(b => b.uses > 0);
     }
 
     if (rolled.grade === "DIVINE" || rolled.grade === "JS") { 
@@ -606,7 +651,40 @@ function updateCraftUI() {
     }
 }
 
-window.buyItem = function(itemId) { const item = SHOP_ITEMS.find(i => i.id === itemId); if (!item || gameState.jc < item.price) { alert("❌ JC가 부족합니다!"); return; } gameState.jc -= item.price; if (!gameState.itemInventory[itemId]) gameState.itemInventory[itemId] = 1; else gameState.itemInventory[itemId]++; saveGame(); updateStatsUI(); buildShopUI(); alert(`🎉 '${item.name}' 구매 완료!`); }
+// 🌟 [상점 일괄/대량 구매 기능 지원]
+window.buyItem = function(itemId) {
+    const item = SHOP_ITEMS.find(i => i.id === itemId);
+    if (!item) return;
+
+    if (gameState.jc < item.price) {
+        alert("❌ JC가 부족합니다!");
+        return;
+    }
+
+    const maxAffordable = Math.floor(gameState.jc / item.price);
+    const inputStr = prompt(`🛒 [${item.name}] 대량 구매\n구매할 수량을 입력하세요. (최대 ${maxAffordable}개 가능)\n단가: ${item.price.toLocaleString()} JC`, "1");
+    
+    if (inputStr === null) return; // 취소 누름
+    const buyAmount = parseInt(inputStr);
+
+    if (isNaN(buyAmount) || buyAmount <= 0) {
+        alert("❌ 올바른 수량을 입력해주세요!");
+        return;
+    }
+
+    const totalPrice = buyAmount * item.price;
+    if (gameState.jc < totalPrice) {
+        alert(`❌ JC가 부족합니다! (필요: ${totalPrice.toLocaleString()} JC)`);
+        return;
+    }
+
+    gameState.jc -= totalPrice;
+    if (!gameState.itemInventory[itemId]) gameState.itemInventory[itemId] = buyAmount;
+    else gameState.itemInventory[itemId] += buyAmount;
+
+    saveGame(); updateStatsUI(); buildShopUI();
+    alert(`🎉 '${item.name}' ${buyAmount}개 구매 완료! (-${totalPrice.toLocaleString()} JC)`);
+}
 
 window.useItem = function(itemId) { 
     const item = SHOP_ITEMS.find(i => i.id === itemId); 
@@ -633,11 +711,11 @@ window.useItem = function(itemId) {
             gameState.activeBuffs.speedExpireTime = now + addDurationMs; 
         }
     } else if (item.type === "luck_mult") {
-        gameState.activeBuffs.luckMultBonus = (gameState.activeBuffs.luckMultBonus || 0) + item.value;
-        gameState.activeBuffs.luckMultUses = (gameState.activeBuffs.luckMultUses || 0) + item.maxUses;
+        if(!gameState.activeMultBuffs) gameState.activeMultBuffs = [];
+        gameState.activeMultBuffs.push({ name: item.name, bonus: item.value, uses: item.maxUses });
     }
 
-    saveGame(); updateStatsUI(); updateItemInventory(); alert(`✨ '${item.name}' 사용 완료! (효과 적용됨)`); 
+    saveGame(); updateStatsUI(); updateItemInventory(); alert(`✨ '${item.name}' 사용 완료!`); 
 }
 
 function updateItemInventory() { 
