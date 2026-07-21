@@ -1,0 +1,126 @@
+body { background-color: #121212; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 0; overflow-x: hidden; min-height: 100vh; }
+
+#lobby-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: radial-gradient(circle, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
+.lobby-title { font-size: 50px; font-weight: 900; margin-bottom: 10px; background: linear-gradient(90deg, #ff0055, #ffaa00); -webkit-background-clip: text; color: transparent; text-shadow: 0 0 20px rgba(255, 0, 85, 0.4); }
+.lobby-subtitle { font-size: 16px; color: #ccc; margin-bottom: 40px; }
+#game-start-btn { background: #2980b9; color: white; border: none; padding: 15px 50px; font-size: 20px; font-weight: bold; border-radius: 30px; cursor: pointer; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+#game-start-btn:hover { background: #3498db; transform: translateY(-3px) scale(1.05); }
+
+#main-game { position: relative; padding: 15px; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+
+.top-header { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 600px; padding: 0 10px; box-sizing: border-box; }
+#top-left-stats { text-align: left; color: #bbb; font-weight: bold; font-size: 13px; line-height: 1.4; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 8px; border: 1px solid #333; margin: 0; }
+.jc-text { color: #f1c40f; font-size: 14px; margin: 2px 0 0 0; }
+.main-title { font-size: 24px; margin: 0; flex-grow: 1; text-align: center; }
+.secret-btn { background: transparent; border: 1px solid #444; color: #666; border-radius: 5px; padding: 6px; cursor: pointer; font-size: 16px; margin: 0; }
+.secret-btn:hover { background: #333; color: white; }
+
+#aura-display { margin: auto 0; min-height: 140px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5; position: relative; width: 100%; }
+.result-grade { font-size: 20px; font-weight: bold; margin-bottom: 5px; opacity: 0.9; }
+.result-name { font-size: 38px; font-weight: bold; margin: 5px 0; word-break: keep-all; }
+.result-chance { font-size: 16px; margin-top: 8px; opacity: 0.8; }
+
+.roll-controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; width: 100%; }
+#roll-btn { position: relative; overflow: hidden; background-color: #ff3b3b; color: white; border: none; padding: 15px 40px; font-size: 20px; font-weight: bold; border-radius: 10px; cursor: pointer; user-select: none; z-index: 5; }
+#roll-btn:active { transform: scale(0.95); }
+#roll-btn:disabled { background-color: #555; cursor: not-allowed; transform: none; }
+#btn-text { position: relative; z-index: 2; }
+#cooldown-bar { position: absolute; bottom: 0; left: 0; height: 10px; width: 100%; background-color: rgba(0, 0, 0, 0.4); transform-origin: left; transform: scaleX(0); z-index: 1; }
+.cooldown-active #cooldown-bar { animation-name: cooldown-shrink; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes cooldown-shrink { 0% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+#auto-roll-btn { background-color: #444; color: white; border: none; padding: 15px 20px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.3s; z-index: 5; position: relative; }
+#auto-roll-btn.active { background-color: #2ecc71; }
+
+#multiplier-container { display: flex; gap: 10px; justify-content: center; margin-bottom: 5px; }
+.multiplier-box { background: rgba(255, 255, 255, 0.08); padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; color: #fff; border: 1px solid rgba(255, 255, 255, 0.15); }
+
+.main-menu { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 15px; margin-bottom: 5px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); z-index: 5; position: relative; box-sizing: border-box; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 600px; width: 90%; }
+.main-menu-btn { background: linear-gradient(145deg, #2c3e50, #34495e); color: #fff; border: 1px solid #455a64; padding: 10px 15px; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3); flex-grow: 1; text-align: center; }
+.main-menu-btn:hover { transform: translateY(-2px); filter: brightness(1.2); box-shadow: 0 6px 12px rgba(0,0,0,0.5); border-color: #7f8c8d; }
+
+.hidden { display: none !important; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; }
+.modal-content { background-color: #222; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; max-height: 80vh; overflow-y: auto; text-align: left; }
+.modal-content.large { max-width: 600px; }
+.close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #aaa; }
+.close-btn:hover { color: white; }
+
+#inventory-grid, #item-inven-grid, #shop-grid, #index-grid, #craft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
+.inventory-tile, .item-tile, .shop-tile, .index-item { background-color: #333; padding: 12px 8px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; border: 2px solid #555; text-align: center; position: relative; min-height: 120px; }
+.tile-grade { font-size: 11px; font-weight: bold; opacity: 0.8; margin-bottom: 2px; }
+.tile-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; word-break: keep-all; }
+.tile-desc { font-size: 11px; color: #bbb; margin-bottom: 6px; }
+.tile-count { font-size: 12px; color: #ccc; margin-bottom: 6px; }
+.index-chance { font-size: 10px; color: #aaa; margin-top: 4px; }
+
+input[type="range"] { -webkit-appearance: none; width: 100%; background: #555; height: 6px; border-radius: 3px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #f1c40f; cursor: pointer; }
+input[type="number"] { background: #222; color: white; border: 1px solid #555; border-radius: 4px; padding: 3px; text-align: center; outline: none; }
+
+.action-btn { background-color: #e74c3c; color: white; border: none; padding: 6px; font-size: 12px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; margin-top: auto; }
+.action-btn.buy { background-color: #f1c40f; color: black; }
+.action-btn.use { background-color: #2ecc71; color: white; }
+.action-btn:hover { opacity: 0.85; }
+.unknown { color: #555 !important; border-color: #444 !important; }
+
+#craft-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+.craft-item { background-color: #333; padding: 15px; border-radius: 8px; border: 2px solid #aaa; display: flex; flex-direction: column; text-align: left; }
+.craft-title { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+.craft-desc { font-size: 12px; color: #2ecc71; margin-bottom: 10px; font-weight: bold; }
+.craft-req-list { font-size: 12px; color: #ccc; margin-bottom: 10px; }
+.craft-req-item { margin-bottom: 3px; }
+.craft-req-item.met { color: #2ecc71; }
+.craft-req-item.unmet { color: #e74c3c; }
+
+.auto-delete-row { display: flex; justify-content: space-between; align-items: center; background-color: #333; padding: 10px 15px; margin-bottom: 5px; border-radius: 5px; }
+.auto-delete-row input[type="checkbox"] { transform: scale(1.5); cursor: pointer; }
+
+.rolling-text { animation: fast-flash 0.1s infinite; }
+@keyframes fast-flash { 0% { opacity: 1; transform: translateY(0); } 50% { opacity: 0.5; transform: translateY(-2px); } 100% { opacity: 1; transform: translateY(0); } }
+.result-pop { animation: pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes pop-in { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+
+/* 🌟 고유한 칭호별 개별 색상 및 그라데이션 (JS 등급) */
+.aura-js-1 { background: linear-gradient(90deg, #ff0055, #aa00ff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 0, 85, 0.5); }
+.aura-js-2 { background: linear-gradient(90deg, #ffaa00, #ff4500); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 170, 0, 0.5); }
+.aura-js-3 { background: linear-gradient(90deg, #ff1493, #00ffff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 20, 147, 0.5); }
+.aura-js-4 { background: linear-gradient(90deg, #ff8c00, #f1c40f); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 140, 0, 0.5); }
+
+/* 🌟 고유한 칭호별 개별 색상 및 그라데이션 (Divine 등급) */
+.aura-divine-1 { background: linear-gradient(90deg, #00c6ff, #0072ff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 15px rgba(0, 198, 255, 0.6); }
+.aura-divine-2 { background: linear-gradient(90deg, #9b59b6, #ff69b4); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 15px rgba(155, 89, 182, 0.6); }
+.aura-divine-3 { background: linear-gradient(90deg, #3498db, #8e44ad); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 15px rgba(52, 152, 219, 0.6); }
+.aura-divine-4 { background: linear-gradient(90deg, #bdc3c7, #34495e); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 15px rgba(189, 195, 199, 0.6); }
+.aura-divine-5 { background: linear-gradient(90deg, #2ecc71, #1abc9c); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 15px rgba(46, 204, 113, 0.6); }
+
+/* 🌟 고유한 칭호별 개별 색상 및 그라데이션 (Mythic 등급) */
+.aura-mythic-1 { background: linear-gradient(90deg, #00ffff, #2980b9); -webkit-background-clip: text; color: transparent !important; font-weight: bold; text-shadow: 0 0 10px #00ffff; }
+.aura-mythic-2 { background: linear-gradient(90deg, #e74c3c, #e67e22); -webkit-background-clip: text; color: transparent !important; font-weight: bold; text-shadow: 0 0 10px #e74c3c; }
+.aura-mythic-3 { background: linear-gradient(90deg, #00bcd4, #3f51b5); -webkit-background-clip: text; color: transparent !important; font-weight: bold; text-shadow: 0 0 10px #00bcd4; }
+.aura-mythic-4 { background: linear-gradient(90deg, #cd853f, #d35400); -webkit-background-clip: text; color: transparent !important; font-weight: bold; text-shadow: 0 0 10px #cd853f; }
+.aura-mythic-5 { background: linear-gradient(90deg, #ff69b4, #8a2be2); -webkit-background-clip: text; color: transparent !important; font-weight: bold; text-shadow: 0 0 10px #ff69b4; }
+.aura-mythic-6 { background: linear-gradient(90deg, #ba55d3, #9b59b6); -webkit-background-clip: text; color: transparent !important; font-weight: bold; text-shadow: 0 0 10px #ba55d3; }
+
+/* 🌟 고유한 칭호별 개별 색상 및 그라데이션 (Legend 등급) */
+.aura-legend-1 { background: linear-gradient(90deg, #ff4500, #f1c40f); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-legend-2 { background: linear-gradient(90deg, #f1c40f, #2ecc71); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-legend-3 { background: linear-gradient(90deg, #ff0000, #c0392b); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-legend-4 { background: linear-gradient(90deg, #9370db, #da70d6); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-legend-5 { background: linear-gradient(90deg, #dc143c, #ff8c00); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+
+@keyframes shine-anim { to { background-position: 200% center; } }
+
+.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; opacity: 1; transition: opacity 0.5s ease-out; }
+#border-glow-overlay { transition: box-shadow 0.2s ease-out, opacity 0.5s ease-out; }
+.screen-shake { animation: shake 0.3s infinite; }
+@keyframes shake { 0% { transform: translate(2px, 1px) rotate(0deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+
+#star-cutscene-overlay { background-color: black; z-index: 9999; display: flex; justify-content: center; align-items: center; pointer-events: all; }
+#cutscene-star-container { position: relative; display: flex; justify-content: center; align-items: center; opacity: 0; }
+.star-beam { position: absolute; background-color: currentColor; box-shadow: 0 0 20px currentColor, 0 0 40px currentColor; border-radius: 50%; }
+.star-beam.vertical { width: 4px; height: 180px; }
+.star-beam.horizontal { width: 180px; height: 4px; }
+.spin-zoom-accel { animation: spinZoomAccel 3.2s cubic-bezier(0.8, 0, 0.2, 1) forwards; }
+@keyframes spinZoomAccel { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 15% { transform: scale(0.3) rotate(45deg); opacity: 1; } 60% { transform: scale(0.6) rotate(360deg); opacity: 1; } 100% { transform: scale(35) rotate(2160deg); opacity: 1; } }
+.flash-white { animation: flashWhite 0.4s ease-out forwards; }
+@keyframes flashWhite { 0% { background-color: black; } 50% { background-color: white; } 100% { background-color: transparent; } }

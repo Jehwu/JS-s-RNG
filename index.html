@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS's RNG</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="border-glow-overlay" class="overlay hidden"></div>
+    <div id="star-cutscene-overlay" class="overlay hidden">
+        <div id="cutscene-star-container">
+            <div class="star-beam vertical"></div>
+            <div class="star-beam horizontal"></div>
+        </div>
+    </div>
+
+    <div id="lobby-screen">
+        <h1 class="lobby-title">JS's RNG</h1>
+        <p class="lobby-subtitle">극악의 확률을 뚫고 최고의 칭호를 획득하라!</p>
+        <button id="game-start-btn">게임 시작</button>
+    </div>
+
+    <div id="main-game" class="hidden">
+        
+        <div class="top-header">
+            <div id="top-left-stats">
+                <p>총 롤 수: <span id="roll-count">0</span></p>
+                <p class="jc-text">💰 <span id="jc-count">0</span> JC</p>
+            </div>
+            <h1 class="main-title">JS's RNG</h1>
+            <button id="dev-btn" class="secret-btn">🛠️</button>
+        </div>
+
+        <div id="aura-display">버튼을 눌러 운을 시험해보세요!</div>
+        
+        <div class="roll-controls">
+            <button id="roll-btn">
+                <span id="btn-text">ROLL (굴리기)</span>
+                <div id="cooldown-bar"></div>
+            </button>
+            <button id="auto-roll-btn">오토: OFF</button>
+        </div>
+        
+        <div id="multiplier-container">
+            <div class="multiplier-box">🍀 행운: x<span id="luck-multiplier">1.00</span></div>
+            <div class="multiplier-box">⚡ 속도: x<span id="speed-multiplier">1.00</span></div>
+        </div>
+        <div id="active-buffs" style="margin-bottom: 20px; font-size: 13px; color: #f1c40f; min-height: 20px;"></div>
+        
+        <div class="main-menu">
+            <button class="main-menu-btn" id="inventory-btn">🎒 인벤토리</button>
+            <button class="main-menu-btn" id="craft-btn">🔨 장비 제작소</button>
+            <button class="main-menu-btn" id="item-inven-btn">🧪 내 물약함</button>
+            <button class="main-menu-btn" id="shop-btn">🛒 JC 상점</button>
+            <button class="main-menu-btn" id="index-btn">📖 칭호 도감</button>
+            <button class="main-menu-btn" id="auto-delete-btn">⚙️ 판매 설정</button>
+        </div>
+    </div>
+
+    <div id="dev-modal" class="modal hidden" style="z-index: 10000;">
+        <div class="modal-content">
+            <span id="close-dev" class="close-btn">✖</span>
+            <h2 style="color: #ff4757;">[개발자 모드 활성화됨]</h2>
+            <p style="font-size: 12px; color: #aaa;">현재 진행 상황은 저장되지 않습니다.</p>
+            <button class="action-btn" style="background:#2ed573; margin-bottom:5px;" onclick="cheatJC()">💰 1,000,000 JC 획득</button>
+            <button class="action-btn" style="background:#ffa502; margin-bottom:5px;" onclick="cheatLuck()">🍀 영구 행운 10,000배</button>
+            <button class="action-btn" style="background:#3742fa; margin-bottom:15px;" onclick="cheatItems()">🎒 모든 칭호 50개씩 획득</button>
+            <hr style="border-color: #555; margin-bottom: 15px;">
+            <p style="font-size: 12px; color: #aaa; margin-bottom: 5px;">🎯 다음 뽑기 강제 지정</p>
+            <select id="dev-aura-select" style="width: 100%; padding: 8px; margin-bottom: 10px; background-color: #333; color: white; border-radius: 5px; border: 1px solid #555;"></select>
+            <button class="action-btn" style="background:#e84118; margin-bottom:15px;" onclick="setNextRoll()">🎯 강제 지정하기</button>
+            <hr style="border-color: #555; margin-bottom: 15px;">
+            <button class="action-btn" style="background:#555; width:100%; font-size:14px; padding:10px;" onclick="exitDevMode()">🚪 개발자 모드 종료 (데이터 복구)</button>
+        </div>
+    </div>
+
+    <div id="sell-modal" class="modal hidden" style="z-index: 20000;">
+        <div class="modal-content">
+            <span id="close-sell" class="close-btn">✖</span>
+            <h2>칭호 판매</h2>
+            <p id="sell-item-name" style="font-weight:bold; margin-bottom: 15px; font-size: 16px;"></p>
+            <div class="mass-sell-container" style="background: #333; padding: 15px; border-radius: 8px;">
+                <div class="slider-row" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <input type="range" min="1" max="1" value="1" id="sell-slider" style="flex-grow: 1;">
+                    <input type="number" min="1" max="1" value="1" id="sell-input" style="width: 60px; font-size: 14px; padding: 5px;">
+                </div>
+                <p style="text-align: right; color: #ccc; font-size: 14px;">총 획득 JC: <span id="sell-total-jc" style="color: #f1c40f; font-weight: bold; font-size: 16px;">0</span></p>
+                <button class="action-btn" id="confirm-sell-btn" style="margin-top: 15px; font-size: 14px; padding: 10px;">판매 확정</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="craft-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-craft" class="close-btn">✖</span><h2>장비 제작소</h2><div id="craft-grid"></div></div></div>
+    <div id="inventory-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-inventory" class="close-btn">✖</span><h2>내 인벤토리</h2><div id="inventory-grid"></div></div></div>
+    <div id="item-inven-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-item-inven" class="close-btn">✖</span><h2>보유 물약함</h2><div id="item-inven-grid"></div></div></div>
+    <div id="shop-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-shop" class="close-btn">✖</span><h2>JC 상점</h2><div id="shop-grid"></div></div></div>
+    <div id="index-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-index" class="close-btn">✖</span><h2>칭호 도감 (확률 포함)</h2><div id="index-grid"></div></div></div>
+    <div id="auto-delete-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content"><span id="close-auto-delete" class="close-btn">✖</span><h2>자동 판매 설정</h2><div id="auto-delete-options"></div></div></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
