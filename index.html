@@ -29,7 +29,11 @@
                 <p class="jc-text">💰 <span id="jc-count">0</span> JC</p>
             </div>
             <h1 class="main-title">JS's RNG</h1>
-            <button id="dev-btn" class="secret-btn">🛠️</button>
+            <div style="display: flex; gap: 5px;">
+                <button id="grade-table-btn" class="secret-btn" title="등급표">📊</button>
+                <button id="sound-settings-btn" class="secret-btn" title="사운드 설정">🔊</button>
+                <button id="dev-btn" class="secret-btn" title="개발자 모드">🛠️</button>
+            </div>
         </div>
 
         <div id="aura-display">버튼을 눌러 운을 시험해보세요!</div>
@@ -46,7 +50,7 @@
             <div class="multiplier-box">🍀 행운: x<span id="luck-multiplier">1.00</span></div>
             <div class="multiplier-box">⚡ 속도: x<span id="speed-multiplier">1.00</span></div>
         </div>
-        <div id="active-buffs" style="margin-bottom: 20px; font-size: 13px; color: #f1c40f; min-height: 20px;"></div>
+        <div id="active-buffs" style="margin-bottom: 10px; font-size: 13px; color: #f1c40f; min-height: 18px;"></div>
         
         <div class="main-menu">
             <button class="main-menu-btn" id="inventory-btn">🎒 인벤토리</button>
@@ -54,7 +58,76 @@
             <button class="main-menu-btn" id="item-inven-btn">🧪 내 물약함</button>
             <button class="main-menu-btn" id="shop-btn">🛒 JC 상점</button>
             <button class="main-menu-btn" id="index-btn">📖 칭호 도감</button>
-            <button class="main-menu-btn" id="auto-delete-btn">⚙️ 판매 설정</button>
+            <button class="main-menu-btn" id="settings-hub-btn" style="background: linear-gradient(135deg, #2980b9, #16a085);">⚙️ 설정 (코드/자동판매/백업)</button>
+        </div>
+    </div>
+
+    <div id="settings-hub-modal" class="modal hidden" style="z-index: 10000;">
+        <div class="modal-content large">
+            <span id="close-settings-hub" class="close-btn">✖</span>
+            <h2>⚙️ 게임 설정 및 관리</h2>
+            
+            <div class="settings-section" style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+                <h3 style="margin-top: 0; font-size: 15px; color: #e67e22;">🎁 쿠폰 입력</h3>
+                <input type="text" id="code-input" placeholder="코드를 입력하세요" style="width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: white; border-radius: 6px; font-size: 14px; margin-bottom: 10px; text-align: center; text-transform: uppercase; box-sizing: border-box;">
+                <button class="action-btn" id="submit-code-btn" style="background: #27ae60; padding: 10px;">코드 사용하기</button>
+            </div>
+
+            <div class="settings-section" style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+                <h3 style="margin-top: 0; font-size: 15px; color: #3498db;">⚙️ 자동 판매 설정</h3>
+                <div id="auto-delete-options"></div>
+            </div>
+
+            <div class="settings-section" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+                <h3 style="margin-top: 0; font-size: 15px; color: #9b59b6;">💾 기기 간 데이터 연동 (백업/불러오기)</h3>
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">컴퓨터와 폰 사이에서 데이터를 옮길 때 사용하세요!</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button class="action-btn" id="export-save-btn" style="background: #2980b9;">세이브 코드 복사 (내보내기)</button>
+                </div>
+                <textarea id="save-code-textarea" placeholder="여기에 세이브 코드를 붙여넣으세요" style="width: 100%; height: 60px; background: #222; border: 1px solid #444; color: white; border-radius: 6px; font-size: 12px; padding: 8px; margin-bottom: 10px; box-sizing: border-box; resize: none;"></textarea>
+                <button class="action-btn" id="import-save-btn" style="background: #d35400;">세이브 코드 적용 (불러오기)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="grade-table-modal" class="modal hidden" style="z-index: 10000;">
+        <div class="modal-content">
+            <span id="close-grade-table" class="close-btn">✖</span>
+            <h2>📊 등급별 확률표</h2>
+            <div id="grade-table-content" style="margin-top: 15px;">
+                <div class="grade-row"><span style="color:#808080; font-weight:bold;">[COMMON]</span> 1 in 1 ~ 9</div>
+                <div class="grade-row"><span style="color:#3cb371; font-weight:bold;">[UNCOMMON]</span> 1 in 10 ~ 29</div>
+                <div class="grade-row"><span style="color:#1e90ff; font-weight:bold;">[RARE]</span> 1 in 30 ~ 99</div>
+                <div class="grade-row"><span style="color:#9b59b6; font-weight:bold;">[EPIC]</span> 1 in 100 ~ 999</div>
+                <div class="grade-row"><span style="color:#f1c40f; font-weight:bold;">[LEGEND]</span> 1 in 1,000 ~ 9,999</div>
+                <div class="grade-row"><span style="color:#ff69b4; font-weight:bold;">[MYTHIC]</span> 1 in 10,000 ~ 999,999</div>
+                <div class="grade-row"><span style="color:#00c6ff; font-weight:bold;">[DIVINE]</span> 1 in 1,000,000 ~ 5,000,000</div>
+                <div class="grade-row"><span style="color:#ff0055; font-weight:bold;">[JS]</span> 1 in 6,000,000 이상~</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sound-modal" class="modal hidden" style="z-index: 10000;">
+        <div class="modal-content large">
+            <span id="close-sound" class="close-btn">✖</span>
+            <h2>🔊 사운드 및 볼륨 설정</h2>
+            <div style="margin: 15px 0;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px;">마스터 볼륨: <span id="vol-master-val">100</span>%</label>
+                <input type="range" id="vol-master" min="0" max="100" value="100">
+            </div>
+            <div style="margin: 15px 0;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px;">🎵 배경음악(BGM) 볼륨: <span id="vol-bgm-val">70</span>%</label>
+                <input type="range" id="vol-bgm" min="0" max="100" value="70">
+            </div>
+            <div style="margin: 15px 0;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px;">✨ 컷신 및 획득음 볼륨: <span id="vol-cutscene-val">100</span>%</label>
+                <input type="range" id="vol-cutscene" min="0" max="100" value="100">
+            </div>
+            <div style="margin: 15px 0;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px;">🖱️ 클릭 효과음 볼륨: <span id="vol-click-val">100</span>%</label>
+                <input type="range" id="vol-click" min="0" max="100" value="100">
+            </div>
+            <button class="action-btn" id="sound-toggle-btn" style="background: #27ae60; padding: 10px; font-size: 14px; margin-top: 10px;">사운드 전체 켜기/끄기</button>
         </div>
     </div>
 
@@ -96,7 +169,6 @@
     <div id="item-inven-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-item-inven" class="close-btn">✖</span><h2>보유 물약함</h2><div id="item-inven-grid"></div></div></div>
     <div id="shop-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-shop" class="close-btn">✖</span><h2>JC 상점</h2><div id="shop-grid"></div></div></div>
     <div id="index-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-index" class="close-btn">✖</span><h2>칭호 도감 (확률 포함)</h2><div id="index-grid"></div></div></div>
-    <div id="auto-delete-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content"><span id="close-auto-delete" class="close-btn">✖</span><h2>자동 판매 설정</h2><div id="auto-delete-options"></div></div></div>
 
     <script src="script.js"></script>
 </body>
