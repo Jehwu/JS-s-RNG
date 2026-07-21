@@ -19,14 +19,15 @@ function saveSoundSettings() {
     localStorage.setItem('js_rng_sound', JSON.stringify(soundSettings));
 }
 
+// 🔊 깃허브 배포 시 폴더 에러가 안 나도록 루트 경로(파일명만)로 수정완료!
 const audioFiles = {
-    lobbyBgm: new Audio('sounds/lobby_bgm.mp3'),
-    mainBgm: new Audio('sounds/main_bgm.mp3'),
-    click: new Audio('sounds/click.mp3'),
-    dropLegend: new Audio('sounds/drop_legend.mp3'),
-    dropMythic: new Audio('sounds/drop_mythic.mp3'),
-    divineAll: new Audio('sounds/divine_full.mp3'),
-    jsAll: new Audio('sounds/js_full.mp3')
+    lobbyBgm: new Audio('lobby_bgm.mp3'),
+    mainBgm: new Audio('main_bgm.mp3'),
+    click: new Audio('click.mp3'),
+    dropLegend: new Audio('drop_legend.mp3'),
+    dropMythic: new Audio('drop_mythic.mp3'),
+    divineAll: new Audio('divine_full.mp3'),
+    jsAll: new Audio('js_full.mp3')
 };
 
 audioFiles.lobbyBgm.loop = true;
@@ -151,7 +152,7 @@ document.body.addEventListener('click', (e) => {
     }
 });
 
-// 🌟 박지성, 김민채, 공병은, 김티비, 김가은, 김건우 6명의 이름 조합 + 오직 확률(숫자)에 따른 정확한 등급 배치
+// 🌟 6인방 조합 + 철저한 확률 기준 정렬 데이터
 const AURA_DATA = [
     // [COMMON] 1 ~ 9
     { id: "com_drum", name: "동네북 김가은", grade: "COMMON", in: 2, color: "#696969" },
@@ -216,7 +217,6 @@ const AURA_DATA = [
     { id: "js_creator", name: "우주의 창조자 JS", grade: "JS", in: 50000000, colorClass: "aura-js-1", rawColor: "#ff0055" }
 ];
 
-// 확률이 높은 것(in이 작은 것)이 위로 오도록 오름차순 정렬
 AURA_DATA.sort((a, b) => a.in - b.in);
 
 const GRADES = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGEND", "MYTHIC", "DIVINE", "JS"];
