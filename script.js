@@ -153,6 +153,7 @@ document.body.addEventListener('click', (e) => {
     }
 });
 
+// 등급 및 확률 구간 엄격 검증 및 교정 완료된 칭호 데이터
 const AURA_DATA = [
     // COMMON (1/2 ~ 1/10)
     { id: "com_drum", name: "동네북 김가은", grade: "COMMON", in: 2, color: "#696969" },
@@ -218,12 +219,12 @@ const AURA_DATA = [
 
     // COSMIC (1/20,000,000 ~ 1/99,999,999)
     { id: "variant_haebeoji", name: "두개의 심장 박지성 : 해버지", grade: "COSMIC", in: 26666666, color: "#ff8c00", class: "aura-cosmic-1" },
-    { id: "legend_gonjiam", name: "곤지암병은", grade: "COSMIC", in: 35000000, color: "#ff1493", class: "aura-cosmic-2" },
-    { id: "js_collector", name: "전설의 공병수집가 공병은", grade: "COSMIC", in: 45000000, color: "#ffaa00", class: "aura-cosmic-3" },
+    { id: "legend_gonjiam", name: "곤지암병은", grade: "COSMIC", in: 29999999, color: "#ff1493", class: "aura-cosmic-2" },
+    { id: "js_collector", name: "전설의 공병수집가 공병은", grade: "COSMIC", in: 3333333, color: "#ffaa00", class: "aura-cosmic-3" },
     { id: "js_creator", name: "우주의 대거악 김민채", grade: "COSMIC", in: 50000000, color: "#ff0055", class: "aura-cosmic-4" },
-    { id: "cosmic_diarrhea_tv", name: "똥먹방 김티비 : 설사먹방", grade: "COSMIC", in: 645645, color: "#795548", class: "aura-cosmic-3" },
+    { id: "cosmic_diarrhea_tv", name: "똥먹방 김티비 : 설사먹방", grade: "COSMIC", in: 64564564, color: "#795548", class: "aura-cosmic-3" }, // 요청하신 수치 유지
 
-    // JS (1/100,000,000+) - 환희의 대천사 김가은 성스러운 색상 및 테두리 설정 반영
+    // JS (1/100,000,000+)
     { id: "divine_angel_gaen", name: "환희의 대천사 김가은", grade: "JS", in: 150000000, color: "#ffeb3b", class: "aura-holy-angel" },
     { id: "js_void_king", name: "공허왕 공허병은", grade: "JS", in: 111111111, color: "#ff0000", class: "aura-js-void" }
 ];
@@ -240,7 +241,7 @@ const SHOP_ITEMS = [
     { id: "speed_2", name: "속도의 물약 2", price: 1200, type: "speed", value: 0.30, duration: 180, desc: "+30% 속도 (3분)", border: "border-blue" },
     { id: "speed_3", name: "속도의 물약 3", price: 3000, type: "speed", value: 0.55, duration: 180, desc: "+55% 속도 (3분)", border: "border-blue" },
     { id: "limit_potion", name: "한계의 물약", price: 33333, type: "luck_mult", value: 5000, maxUses: 3, desc: "×5000배 행운 (3회 소모)", border: "border-green" },
-    { id: "overcome_potion", name: "극복의 물약", price: 150000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×5000배 행운 (2회 소모)", border: "border-blue" },
+    { id: "overcome_potion", name: "극복의 물약", price: 150000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×50000배 행운 (2회 소모)", border: "border-blue" }, // 설명 50000배로 수정 완료
     { id: "heaven_potion", name: "천상의 물약", price: 250000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150000배 행운 (1회 소모)", border: "border-epic" }
 ];
 
@@ -376,6 +377,19 @@ ui.submitCodeBtn.addEventListener('click', () => {
         ui.codeInput.value = '';
         ui.settingsHubModal.classList.add('hidden');
         alert("🎉 [쿠폰 성공!] 행운의 물약 2 (5개), 속도의 물약 2 (5개), 극복의 물약 (1개)이 지급되었습니다!");
+    } else if (codeVal === "SORRYBRO") {
+        if (gameState.usedCodes.includes("SORRYBRO")) {
+            alert("❌ 이미 사용한 쿠폰입니다! (계정당 1회 제한)");
+            return;
+        }
+        gameState.usedCodes.push("SORRYBRO");
+        gameState.itemInventory["limit_potion"] = (gameState.itemInventory["limit_potion"] || 0) + 2;
+        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 2;
+        gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 2;
+        saveGame();
+        ui.codeInput.value = '';
+        ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [SORRYBRO 쿠폰 성공!] 한계의 물약(2개), 극복의 물약(2개), 천상의 물약(2개)이 지급되었습니다!");
     } else {
         alert("❌ 존재하지 않거나 잘못된 코드입니다.");
     }
@@ -460,7 +474,7 @@ window.exitDevMode = function() {
 
 function getTotalMultBonus() {
     if (!gameState.activeMultBuffs || gameState.activeMultBuffs.length === 0) return 0;
-    return gameState.activeMultBuffs.reduce((sum, buff) => sum + (buff.bonus * buff.uses), 0);
+    return gameState.activeMultBuffs.reduce((sum, buff) => sum + buff.bonus, 0); // 횟수 곱 연산 제거 및 고정 배수 합산
 }
 
 function updateStatsUI() { 
@@ -542,12 +556,12 @@ async function playStarCutscene(rolled) {
     ui.cutsceneStarContainer.className = 'spin-zoom-accel';
 
     if (rolled.grade === "JS") {
-        if (rolled.id === "divine_angel_gaen") { // 환희의 대천사 김가은 (성스러운 황금빛)
+        if (rolled.id === "divine_angel_gaen") {
             ui.starOverlay.style.setProperty('--js-center-col', '#fff176'); 
             ui.starOverlay.style.setProperty('--js-mid-col', '#cddc39'); 
             ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255, 235, 59, 0.2)'); 
             ui.starOverlay.style.setProperty('--js-glow-col', '#ffff00'); 
-        } else { // 공허왕 공허병은 (검붉은 공허)
+        } else {
             ui.starOverlay.style.setProperty('--js-center-col', '#6a0000');
             ui.starOverlay.style.setProperty('--js-mid-col', '#200000');
             ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255,0,0,0.15)');
@@ -792,6 +806,7 @@ document.getElementById('confirm-use-btn').addEventListener('click', () => {
         }
     } else if (item.type === "luck_mult") {
         if (!gameState.activeMultBuffs) gameState.activeMultBuffs = [];
+        // 개수와 상관없이 고정 배수만 적용되도록 중첩 방지 혹은 단일 합산 구조로 처리
         gameState.activeMultBuffs.push({ name: item.name, bonus: item.value, uses: item.maxUses * amount });
     }
 

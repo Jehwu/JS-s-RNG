@@ -69,7 +69,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .border-divine { border-color: #00c6ff !important; }
 .border-cosmic { border-color: #aa00ff !important; }
 
-/* 기본 JS 테두리 (공허왕 등) */
 .border-js { 
     border-color: #ff0055 !important; 
     box-shadow: 0 0 10px rgba(255,0,85,0.7), inset 0 0 8px rgba(255,0,85,0.4); 
@@ -80,7 +79,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     100% { box-shadow: 0 0 25px rgba(255,0,85,1), inset 0 0 20px rgba(255,0,85,0.8); border-color: #ff3377; }
 }
 
-/* 성스러운 황금빛 네온 테두리 (환희의 대천사 김가은 전용) */
 .border-holy-gold {
     border-color: #fff176 !important;
     box-shadow: 0 0 12px rgba(255, 235, 59, 0.8), inset 0 0 10px rgba(255, 215, 0, 0.5);
@@ -126,7 +124,6 @@ input[type="number"] { background: #222; color: white; border: 1px solid #555; b
 
 .aura-js-void { background: linear-gradient(90deg, #2b00ff, #0a0a0a, #8a0000); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 3s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 25px rgba(43, 0, 255, 0.8), 0 0 15px rgba(138, 0, 0, 0.8); }
 
-/* 환희의 대천사 김가은 전용 성스러운 텍스트 애니메이션 */
 .aura-holy-angel { background: linear-gradient(90deg, #fff176, #ffeb3b, #ffa000); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 235, 59, 0.8); }
 
 .aura-divine-1 { background: linear-gradient(90deg, #00c6ff, #0072ff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 15px rgba(0, 198, 255, 0.6); }
