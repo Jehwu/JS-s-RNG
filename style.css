@@ -39,14 +39,16 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .main-menu-btn:hover { transform: translateY(-2px); filter: brightness(1.2); box-shadow: 0 6px 12px rgba(0,0,0,0.5); border-color: #7f8c8d; }
 
 .hidden { display: none !important; }
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .modal-content { background-color: #222; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; max-height: 80vh; overflow-y: auto; text-align: left; }
 .modal-content.large { max-width: 600px; }
 .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #aaa; }
 .close-btn:hover { color: white; }
 
 .grade-row { display: flex; justify-content: space-between; background-color: #333; padding: 10px; margin-bottom: 5px; border-radius: 5px; border-left: 4px solid #555; }
-.grade-row:nth-child(5) { border-left-color: #f1c40f; } .grade-row:nth-child(6) { border-left-color: #ff69b4; } .grade-row:nth-child(7) { border-left-color: #00c6ff; } .grade-row:nth-child(8) { border-left-color: #ff0055; }
+.grade-row:nth-child(5) { border-left-color: #f1c40f; } .grade-row:nth-child(6) { border-left-color: #ff69b4; } .grade-row:nth-child(7) { border-left-color: #00c6ff; } 
+.grade-row:nth-child(8) { border-left-color: #aa00ff; } 
+.grade-row:nth-child(9) { border-left-color: #ff0055; } 
 
 #inventory-grid, #item-inven-grid, #shop-grid, #index-grid, #craft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
 .inventory-tile, .item-tile, .shop-tile, .index-item { background-color: #333; padding: 12px 8px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; border: 2px solid #555; text-align: center; position: relative; min-height: 120px; }
@@ -65,7 +67,29 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .border-legend { border-color: #f1c40f !important; }
 .border-mythic { border-color: #ff69b4 !important; }
 .border-divine { border-color: #00c6ff !important; }
-.border-js { border-color: #ff0055 !important; }
+.border-cosmic { border-color: #aa00ff !important; }
+
+/* 기본 JS 테두리 (공허왕 등) */
+.border-js { 
+    border-color: #ff0055 !important; 
+    box-shadow: 0 0 10px rgba(255,0,85,0.7), inset 0 0 8px rgba(255,0,85,0.4); 
+    animation: js-glow-border 1.5s infinite alternate; 
+}
+@keyframes js-glow-border {
+    0% { box-shadow: 0 0 10px rgba(255,0,85,0.7), inset 0 0 8px rgba(255,0,85,0.4); border-color: #ff0055; }
+    100% { box-shadow: 0 0 25px rgba(255,0,85,1), inset 0 0 20px rgba(255,0,85,0.8); border-color: #ff3377; }
+}
+
+/* 성스러운 황금빛 네온 테두리 (환희의 대천사 김가은 전용) */
+.border-holy-gold {
+    border-color: #fff176 !important;
+    box-shadow: 0 0 12px rgba(255, 235, 59, 0.8), inset 0 0 10px rgba(255, 215, 0, 0.5);
+    animation: holy-gold-glow 1.5s infinite alternate;
+}
+@keyframes holy-gold-glow {
+    0% { box-shadow: 0 0 10px rgba(255, 235, 59, 0.7), inset 0 0 8px rgba(255, 215, 0, 0.4); border-color: #ffee58; }
+    100% { box-shadow: 0 0 25px rgba(255, 215, 0, 1), inset 0 0 20px rgba(255, 235, 59, 0.8); border-color: #fff176; }
+}
 
 input[type="range"] { -webkit-appearance: none; width: 100%; background: #555; height: 6px; border-radius: 3px; outline: none; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #f1c40f; cursor: pointer; }
@@ -75,6 +99,7 @@ input[type="number"] { background: #222; color: white; border: 1px solid #555; b
 .action-btn.buy { background-color: #f1c40f; color: black; }
 .action-btn.use { background-color: #2ecc71; color: white; }
 .action-btn:hover { opacity: 0.85; }
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .unknown { color: #555 !important; border-color: #444 !important; }
 
 #craft-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
@@ -94,10 +119,15 @@ input[type="number"] { background: #222; color: white; border: 1px solid #555; b
 .result-pop { animation: pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 @keyframes pop-in { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
 
-.aura-js-1 { background: linear-gradient(90deg, #ff0055, #aa00ff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 0, 85, 0.5); }
-.aura-js-2 { background: linear-gradient(90deg, #ffaa00, #ff4500); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 170, 0, 0.5); }
-.aura-js-3 { background: linear-gradient(90deg, #ff1493, #00ffff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 20, 147, 0.5); }
-.aura-js-4 { background: linear-gradient(90deg, #ff8c00, #f1c40f); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 140, 0, 0.5); }
+.aura-cosmic-1 { background: linear-gradient(90deg, #ff0055, #aa00ff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 0, 85, 0.5); }
+.aura-cosmic-2 { background: linear-gradient(90deg, #ffaa00, #ff4500); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 170, 0, 0.5); }
+.aura-cosmic-3 { background: linear-gradient(90deg, #ff1493, #00ffff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 20, 147, 0.5); }
+.aura-cosmic-4 { background: linear-gradient(90deg, #ff8c00, #f1c40f); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 140, 0, 0.5); }
+
+.aura-js-void { background: linear-gradient(90deg, #2b00ff, #0a0a0a, #8a0000); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 3s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 25px rgba(43, 0, 255, 0.8), 0 0 15px rgba(138, 0, 0, 0.8); }
+
+/* 환희의 대천사 김가은 전용 성스러운 텍스트 애니메이션 */
+.aura-holy-angel { background: linear-gradient(90deg, #fff176, #ffeb3b, #ffa000); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 235, 59, 0.8); }
 
 .aura-divine-1 { background: linear-gradient(90deg, #00c6ff, #0072ff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 15px rgba(0, 198, 255, 0.6); }
 .aura-divine-2 { background: linear-gradient(90deg, #9b59b6, #ff69b4); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 15px rgba(155, 89, 182, 0.6); }
@@ -125,8 +155,61 @@ input[type="number"] { background: #222; color: white; border: 1px solid #555; b
 .screen-shake { animation: shake 0.3s infinite; }
 @keyframes shake { 0% { transform: translate(2px, 1px) rotate(0deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
 
-#star-cutscene-overlay { background-color: black; z-index: 9999; display: flex; justify-content: center; align-items: center; pointer-events: all; }
-#cutscene-star-container { position: relative; display: flex; justify-content: center; align-items: center; opacity: 0; width: 60px; height: 60px; }
+#star-cutscene-overlay { 
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    width: 100vw !important; height: 100vh !important;
+    background-color: black; 
+    z-index: 99999 !important; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    pointer-events: all; 
+}
+#cutscene-star-container { position: relative; display: flex; justify-content: center; align-items: center; opacity: 0; width: 60px; height: 60px; mix-blend-mode: screen; z-index: 1; }
+#glitch-text-container { mix-blend-mode: normal; z-index: 2; }
+
+.cutscene-bg-cosmic { 
+    position: absolute !important; inset: 0 !important;
+    width: 100% !important; height: 100% !important;
+    background: radial-gradient(circle at 50% 50%, #2b1055 0%, #0f051d 50%, #030008 100%) !important;
+    overflow: hidden;
+}
+.cutscene-bg-cosmic::before, .cutscene-bg-cosmic::after {
+    content: ''; position: absolute; inset: -150%;
+    background: transparent url('data:image/svg+xml;utf8,<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="1.8" fill="white" opacity="0.9"/><circle cx="150" cy="80" r="1.2" fill="%2300ffff" opacity="0.8"/><circle cx="300" cy="250" r="2.5" fill="%23ff77ff" opacity="0.9"/><circle cx="80" cy="320" r="1.5" fill="white" opacity="0.6"/></svg>') repeat;
+    animation: cosmic-warp 6s linear infinite; opacity: 0.9;
+}
+.cutscene-bg-cosmic::after {
+    animation-delay: 3s;
+    animation-direction: reverse;
+    opacity: 0.6;
+}
+@keyframes cosmic-warp {
+    0% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(2.2) rotate(15deg); }
+    100% { transform: scale(3.5) rotate(30deg); }
+}
+
+.cutscene-bg-js { 
+    position: absolute !important; inset: 0 !important;
+    width: 100% !important; height: 100% !important;
+    background: radial-gradient(circle at center, var(--js-center-col, #6a0000) 0%, var(--js-mid-col, #200000) 40%, #000000 100%) !important;
+    animation: majestic-pulse-upgraded 3s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+    overflow: hidden;
+}
+.cutscene-bg-js::before {
+    content: ''; position: absolute; inset: -50%;
+    background: repeating-conic-gradient(from 0deg, transparent 0deg, var(--js-ray-col, rgba(255,0,0,0.15)) 15deg, transparent 30deg);
+    animation: js-bg-spin 20s linear infinite;
+}
+@keyframes js-bg-spin {
+    100% { transform: rotate(360deg); }
+}
+@keyframes majestic-pulse-upgraded {
+    0%, 100% { box-shadow: inset 0 0 100px #000; filter: brightness(1); }
+    50% { box-shadow: inset 0 0 250px var(--js-glow-col, #ff0000); filter: brightness(1.3); }
+}
 
 .star-beam { position: absolute; border-radius: 50%; background: currentColor; box-shadow: 0 0 30px currentColor, 0 0 60px currentColor; }
 .star-beam.vertical { width: 12px; height: 350px; transform: translateY(-50%); top: 50%; }

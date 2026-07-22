@@ -8,36 +8,38 @@
 </head>
 <body>
     <div id="border-glow-overlay" class="overlay hidden"></div>
+
     <div id="star-cutscene-overlay" class="overlay hidden">
         <div id="cutscene-star-container">
             <div class="star-beam vertical"></div>
             <div class="star-beam horizontal"></div>
         </div>
+        <div id="glitch-text-container" class="hidden" style="position: absolute; z-index: 10; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div id="cutscene-title" class="glitch-title" style="font-size: 50px; font-weight: 900; color: transparent; text-shadow: none;"></div>
+            <div id="cutscene-sub" class="glitch-sub" style="font-size: 18px; color: transparent; letter-spacing: 5px; margin-top: 10px;"></div>
+        </div>
     </div>
 
     <div id="lobby-screen">
         <h1 class="lobby-title">JS's RNG</h1>
-        <p class="lobby-subtitle">극악의 확률을 뚫고 최고의 칭호를 획득하라!</p>
-        <button id="game-start-btn">게임 시작</button>
+        <p class="lobby-subtitle">극상의 도파민을 느껴라!</p>
+        <button id="game-start-btn">GAME START</button>
     </div>
 
     <div id="main-game" class="hidden">
-        
         <div class="top-header">
             <div id="top-left-stats">
-                <p>총 롤 수: <span id="roll-count">0</span></p>
-                <p class="jc-text">💰 <span id="jc-count">0</span> JC</p>
+                <div>롤 횟수: <span id="roll-count">0</span>회</div>
+                <div class="jc-text">JC 포인트: <span id="jc-count">0</span> JC</div>
             </div>
-            <h1 class="main-title">JS's RNG</h1>
-            <div style="display: flex; gap: 5px;">
-                <button id="grade-table-btn" class="secret-btn" title="등급표">📊</button>
-                <button id="sound-settings-btn" class="secret-btn" title="사운드 설정">🔊</button>
-                <button id="dev-btn" class="secret-btn" title="개발자 모드">🛠️</button>
-            </div>
+            <h2 class="main-title">JS's RNG</h2>
+            <button id="settings-hub-btn" class="secret-btn">⚙️</button>
         </div>
 
-        <div id="aura-display">버튼을 눌러 운을 시험해보세요!</div>
-        
+        <div id="aura-display">
+            <div id="welcome-text" style="font-size: 24px; color: #aaa; font-weight: bold;">주사위를 굴려보세요!</div>
+        </div>
+
         <div class="roll-controls">
             <button id="roll-btn">
                 <span id="btn-text">ROLL (굴리기)</span>
@@ -45,130 +47,210 @@
             </button>
             <button id="auto-roll-btn">오토: OFF</button>
         </div>
-        
+
         <div id="multiplier-container">
-            <div class="multiplier-box">🍀 행운: x<span id="luck-multiplier">1.00</span></div>
-            <div class="multiplier-box">⚡ 속도: x<span id="speed-multiplier">1.00</span></div>
+            <div class="multiplier-box">행운: <span id="luck-multiplier">1</span>배</div>
+            <div class="multiplier-box">속도: <span id="speed-multiplier">1.00</span>x</div>
         </div>
-        <div id="active-buffs" style="margin-bottom: 10px; font-size: 13px; color: #f1c40f; min-height: 18px;"></div>
-        
+        <div id="active-buffs" style="font-size: 12px; color: #f1c40f; min-height: 20px; margin-top: 4px;"></div>
+
         <div class="main-menu">
-            <button class="main-menu-btn" id="inventory-btn">🎒 인벤토리</button>
-            <button class="main-menu-btn" id="craft-btn">🔨 장비 제작소</button>
-            <button class="main-menu-btn" id="item-inven-btn">🧪 내 물약함</button>
-            <button class="main-menu-btn" id="shop-btn">🛒 JC 상점</button>
-            <button class="main-menu-btn" id="index-btn">📖 칭호 도감</button>
-            <button class="main-menu-btn" id="settings-hub-btn" style="background: linear-gradient(135deg, #2980b9, #16a085);">⚙️ 설정 (코드/자동판매/백업)</button>
+            <button id="inventory-btn" class="main-menu-btn">🎒 인벤토리</button>
+            <button id="item-inven-btn" class="main-menu-btn">🧪 물약함</button>
+            <button id="shop-btn" class="main-menu-btn">🛒 JC 상점</button>
+            <button id="craft-btn" class="main-menu-btn">🔨 제작소</button>
+            <button id="index-btn" class="main-menu-btn">📖 도감 (사전)</button>
+            <button id="grade-table-btn" class="main-menu-btn">📊 등급표</button>
+            
+            <button id="main-dev-btn" class="main-menu-btn hidden" style="background: linear-gradient(145deg, #c0392b, #962d22); border-color: #e74c3c; width: 100%;">🛠️ 개발자 패널</button>
         </div>
     </div>
 
-    <div id="settings-hub-modal" class="modal hidden" style="z-index: 10000;">
+    <div id="inventory-modal" class="modal hidden">
         <div class="modal-content large">
-            <span id="close-settings-hub" class="close-btn">✖</span>
-            <h2>⚙️ 게임 설정 및 관리</h2>
+            <span id="close-inventory" class="close-btn">&times;</span>
+            <h2>🎒 보유 칭호 인벤토리</h2>
+            <div id="inventory-grid"></div>
+        </div>
+    </div>
+
+    <div id="item-inven-modal" class="modal hidden">
+        <div class="modal-content large">
+            <span id="close-item-inven" class="close-btn">&times;</span>
+            <h2>🧪 소비 아이템 보관함</h2>
+            <div id="item-inven-grid"></div>
+        </div>
+    </div>
+
+    <div id="shop-modal" class="modal hidden">
+        <div class="modal-content large">
+            <span id="close-shop" class="close-btn">&times;</span>
+            <h2>🛒 JC 아이템 상점</h2>
+            <div id="shop-grid"></div>
+        </div>
+    </div>
+
+    <div id="index-modal" class="modal hidden">
+        <div class="modal-content large">
+            <span id="close-index" class="close-btn">&times;</span>
+            <h2>📖 칭호 도감 (사전)</h2>
+            <div id="index-grid"></div>
+        </div>
+    </div>
+
+    <div id="craft-modal" class="modal hidden">
+        <div class="modal-content large">
+            <span id="close-craft" class="close-btn">&times;</span>
+            <h2>🔨 아이템 제작소</h2>
+            <div id="craft-grid"></div>
+        </div>
+    </div>
+
+    <div id="grade-table-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-grade-table" class="close-btn">&times;</span>
+            <h2>📊 등급 및 확률 안내</h2>
+            <div style="margin-top: 15px;">
+                <div class="grade-row" style="color:#808080;"><span>[COMMON]</span><span>1 in 2 ~ 10</span></div>
+                <div class="grade-row" style="color:#3cb371;"><span>[UNCOMMON]</span><span>1 in 11 ~ 25</span></div>
+                <div class="grade-row" style="color:#1e90ff;"><span>[RARE]</span><span>1 in 26 ~ 99</span></div>
+                <div class="grade-row" style="color:#9b59b6;"><span>[EPIC]</span><span>1 in 100 ~ 499</span></div>
+                <div class="grade-row" style="color:#f1c40f;"><span>[LEGEND]</span><span>1 in 500 ~ 9,999</span></div>
+                <div class="grade-row" style="color:#ff69b4;"><span>[MYTHIC]</span><span>1 in 10,000 ~ 999,999</span></div>
+                <div class="grade-row" style="color:#00c6ff;"><span>[DIVINE]</span><span>1 in 1,000,000 ~ 19,999,999</span></div>
+                <div class="grade-row" style="color:#aa00ff; font-weight:bold;"><span>[COSMIC]</span><span>1 in 20,000,000 ~ 99,999,999</span></div>
+                <div class="grade-row" style="color:#ff0055; font-weight:bold; text-shadow: 0 0 10px rgba(255,0,85,0.5);"><span>[JS]</span><span>1 in 100,000,000+</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sell-modal" class="modal hidden">
+        <div class="modal-content" style="text-align: center;">
+            <h2>💰 칭호 판매</h2>
+            <p id="sell-item-name" style="margin: 10px 0; font-weight: bold;"></p>
+            <div style="display: flex; gap: 10px; align-items: center; margin: 15px 0;">
+                <input type="range" id="sell-slider" min="1" value="1">
+                <input type="number" id="sell-input" min="1" value="1" style="width: 60px;">
+            </div>
+            <p>획득 JC: <span id="sell-total-jc" style="color:#f1c40f; font-weight:bold;">0</span> JC</p>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button id="confirm-sell-btn" class="action-btn">판매 확정</button>
+                <button id="close-sell" class="action-btn" style="background:#555;">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="buy-modal" class="modal hidden">
+        <div class="modal-content" style="text-align: center;">
+            <h2>🛒 아이템 구매</h2>
+            <p id="buy-item-name" style="margin: 10px 0; font-weight: bold;"></p>
+            <div style="display: flex; gap: 10px; align-items: center; margin: 15px 0;">
+                <input type="range" id="buy-slider" min="1" value="1">
+                <input type="number" id="buy-input" min="0" value="0" style="width: 60px;">
+            </div>
+            <p>필요 JC: <span id="buy-total-jc" style="color:#f1c40f; font-weight:bold;">0</span> JC</p>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button id="confirm-buy-btn" class="action-btn buy">구매 확정</button>
+                <button id="close-buy" class="action-btn" style="background:#555;">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="use-potion-modal" class="modal hidden">
+        <div class="modal-content" style="text-align: center;">
+            <h2>🧪 물약 사용</h2>
+            <p id="use-potion-name" style="margin: 10px 0; font-weight: bold;"></p>
+            <div style="display: flex; gap: 10px; align-items: center; margin: 15px 0;">
+                <input type="range" id="use-slider" min="1" value="1">
+                <input type="number" id="use-input" min="1" value="1" style="width: 60px;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button id="confirm-use-btn" class="action-btn use">사용 확정</button>
+                <button id="close-use" class="action-btn" style="background:#555;">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-hub-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-settings-hub" class="close-btn">&times;</span>
+            <h2>⚙️ 설정 및 세이브 데이터</h2>
             
-            <div class="settings-section" style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
-                <h3 style="margin-top: 0; font-size: 15px; color: #e67e22;">🎁 쿠폰 입력</h3>
-                <input type="text" id="code-input" placeholder="코드를 입력하세요" style="width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: white; border-radius: 6px; font-size: 14px; margin-bottom: 10px; text-align: center; text-transform: uppercase; box-sizing: border-box;">
-                <button class="action-btn" id="submit-code-btn" style="background: #27ae60; padding: 10px;">코드 사용하기</button>
+            <div style="margin-bottom: 15px;">
+                <h3>🔊 사운드 설정</h3>
+                <button id="sound-settings-btn" class="action-btn" style="background:#2980b9; margin-top:5px;">사운드 볼륨 설정 열기</button>
             </div>
 
-            <div class="settings-section" style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
-                <h3 style="margin-top: 0; font-size: 15px; color: #3498db;">⚙️ 자동 판매 설정</h3>
+            <div style="margin-bottom: 15px;">
+                <h3>🎁 쿠폰 입력</h3>
+                <input type="text" id="code-input" placeholder="쿠폰 코드 입력" style="width: 100%; padding: 8px; box-sizing: border-box; margin: 5px 0;">
+                <button id="submit-code-btn" class="action-btn buy">사용하기</button>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h3>🗑️ 자동 판매 (오토 딜리트)</h3>
                 <div id="auto-delete-options"></div>
             </div>
 
-            <div class="settings-section" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
-                <h3 style="margin-top: 0; font-size: 15px; color: #9b59b6;">💾 기기 간 데이터 연동 (백업/불러오기)</h3>
-                <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">컴퓨터와 폰 사이에서 데이터를 옮길 때 사용하세요!</p>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <button class="action-btn" id="export-save-btn" style="background: #2980b9;">세이브 코드 복사 (내보내기)</button>
+            <div style="margin-bottom: 15px;">
+                <h3>💾 데이터 내보내기 / 불러오기</h3>
+                <textarea id="save-code-textarea" style="width: 100%; height: 50px; background:#111; color:#fff; border:1px solid #444; border-radius:5px; resize:none; font-size:11px;" placeholder="세이브 코드가 여기에 표시되거나 입력하세요."></textarea>
+                <div style="display: flex; gap: 5px; margin-top: 5px;">
+                    <button id="export-save-btn" class="action-btn" style="background:#27ae60;">코드 복사</button>
+                    <button id="import-save-btn" class="action-btn" style="background:#2980b9;">불러오기</button>
                 </div>
-                <textarea id="save-code-textarea" placeholder="여기에 세이브 코드를 붙여넣으세요" style="width: 100%; height: 60px; background: #222; border: 1px solid #444; color: white; border-radius: 6px; font-size: 12px; padding: 8px; margin-bottom: 10px; box-sizing: border-box; resize: none;"></textarea>
-                <button class="action-btn" id="import-save-btn" style="background: #d35400;">세이브 코드 적용 (불러오기)</button>
+            </div>
+
+            <div>
+                <button id="dev-btn" class="action-btn" style="background:#444;">🛠️ 개발자 로그인</button>
             </div>
         </div>
     </div>
 
-    <div id="grade-table-modal" class="modal hidden" style="z-index: 10000;">
+    <div id="sound-modal" class="modal hidden">
         <div class="modal-content">
-            <span id="close-grade-table" class="close-btn">✖</span>
-            <h2>📊 등급별 확률표</h2>
-            <div id="grade-table-content" style="margin-top: 15px;">
-                <div class="grade-row"><span style="color:#808080; font-weight:bold;">[COMMON]</span> 1 in 1 ~ 9</div>
-                <div class="grade-row"><span style="color:#3cb371; font-weight:bold;">[UNCOMMON]</span> 1 in 10 ~ 29</div>
-                <div class="grade-row"><span style="color:#1e90ff; font-weight:bold;">[RARE]</span> 1 in 30 ~ 99</div>
-                <div class="grade-row"><span style="color:#9b59b6; font-weight:bold;">[EPIC]</span> 1 in 100 ~ 999</div>
-                <div class="grade-row"><span style="color:#f1c40f; font-weight:bold;">[LEGEND]</span> 1 in 1,000 ~ 9,999</div>
-                <div class="grade-row"><span style="color:#ff69b4; font-weight:bold;">[MYTHIC]</span> 1 in 10,000 ~ 999,999</div>
-                <div class="grade-row"><span style="color:#00c6ff; font-weight:bold;">[DIVINE]</span> 1 in 1,000,000 ~ 5,000,000</div>
-                <div class="grade-row"><span style="color:#ff0055; font-weight:bold;">[JS]</span> 1 in 6,000,000 이상~</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="sound-modal" class="modal hidden" style="z-index: 10000;">
-        <div class="modal-content large">
-            <span id="close-sound" class="close-btn">✖</span>
-            <h2>🔊 사운드 및 볼륨 설정</h2>
-            <div style="margin: 15px 0;">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px;">마스터 볼륨: <span id="vol-master-val">100</span>%</label>
+            <span id="close-sound" class="close-btn">&times;</span>
+            <h2>🔊 사운드 볼륨 설정</h2>
+            <button id="sound-toggle-btn" class="action-btn" style="margin: 10px 0 20px 0;">사운드 전체 ON/OFF</button>
+            <div style="margin-bottom: 12px; text-align: left;">
+                <label style="font-size: 13px;">전체 볼륨: <span id="vol-master-val">100</span>%</label>
                 <input type="range" id="vol-master" min="0" max="100" value="100">
             </div>
-            <div style="margin: 15px 0;">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px;">🎵 배경음악(BGM) 볼륨: <span id="vol-bgm-val">70</span>%</label>
+            <div style="margin-bottom: 12px; text-align: left;">
+                <label style="font-size: 13px;">BGM 볼륨: <span id="vol-bgm-val">70</span>%</label>
                 <input type="range" id="vol-bgm" min="0" max="100" value="70">
             </div>
-            <div style="margin: 15px 0;">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px;">✨ 컷신 및 획득음 볼륨: <span id="vol-cutscene-val">100</span>%</label>
+            <div style="margin-bottom: 12px; text-align: left;">
+                <label style="font-size: 13px;">컷신 볼륨: <span id="vol-cutscene-val">100</span>%</label>
                 <input type="range" id="vol-cutscene" min="0" max="100" value="100">
             </div>
-            <div style="margin: 15px 0;">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px;">🖱️ 클릭 효과음 볼륨: <span id="vol-click-val">100</span>%</label>
+            <div style="margin-bottom: 12px; text-align: left;">
+                <label style="font-size: 13px;">버튼 등 효과음: <span id="vol-click-val">100</span>%</label>
                 <input type="range" id="vol-click" min="0" max="100" value="100">
             </div>
-            <button class="action-btn" id="sound-toggle-btn" style="background: #27ae60; padding: 10px; font-size: 14px; margin-top: 10px;">사운드 전체 켜기/끄기</button>
-        </div>
-    </div>
-
-    <div id="dev-modal" class="modal hidden" style="z-index: 10000;">
-        <div class="modal-content">
-            <span id="close-dev" class="close-btn">✖</span>
-            <h2 style="color: #ff4757;">[개발자 모드 활성화됨]</h2>
-            <p style="font-size: 12px; color: #aaa;">현재 진행 상황은 저장되지 않습니다.</p>
-            <button class="action-btn" style="background:#2ed573; margin-bottom:5px;" onclick="cheatJC()">💰 1,000,000 JC 획득</button>
-            <button class="action-btn" style="background:#ffa502; margin-bottom:5px;" onclick="cheatLuck()">🍀 영구 행운 10,000배</button>
-            <button class="action-btn" style="background:#3742fa; margin-bottom:15px;" onclick="cheatItems()">🎒 모든 칭호 50개씩 획득</button>
-            <hr style="border-color: #555; margin-bottom: 15px;">
-            <p style="font-size: 12px; color: #aaa; margin-bottom: 5px;">🎯 다음 뽑기 강제 지정</p>
-            <select id="dev-aura-select" style="width: 100%; padding: 8px; margin-bottom: 10px; background-color: #333; color: white; border-radius: 5px; border: 1px solid #555;"></select>
-            <button class="action-btn" style="background:#e84118; margin-bottom:15px;" onclick="setNextRoll()">🎯 강제 지정하기</button>
-            <hr style="border-color: #555; margin-bottom: 15px;">
-            <button class="action-btn" style="background:#555; width:100%; font-size:14px; padding:10px;" onclick="exitDevMode()">🚪 개발자 모드 종료 (데이터 복구)</button>
-        </div>
-    </div>
-
-    <div id="sell-modal" class="modal hidden" style="z-index: 20000;">
-        <div class="modal-content">
-            <span id="close-sell" class="close-btn">✖</span>
-            <h2>칭호 판매</h2>
-            <p id="sell-item-name" style="font-weight:bold; margin-bottom: 15px; font-size: 16px;"></p>
-            <div class="mass-sell-container" style="background: #333; padding: 15px; border-radius: 8px;">
-                <div class="slider-row" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                    <input type="range" min="1" max="1" value="1" id="sell-slider" style="flex-grow: 1;">
-                    <input type="number" min="1" max="1" value="1" id="sell-input" style="width: 60px; font-size: 14px; padding: 5px;">
-                </div>
-                <p style="text-align: right; color: #ccc; font-size: 14px;">총 획득 JC: <span id="sell-total-jc" style="color: #f1c40f; font-weight: bold; font-size: 16px;">0</span></p>
-                <button class="action-btn" id="confirm-sell-btn" style="margin-top: 15px; font-size: 14px; padding: 10px;">판매 확정</button>
+            <div style="margin-bottom: 10px; text-align: left;">
+                <label style="font-size: 13px; color:#f1c40f; font-weight:bold;">롤(굴리기) 틱틱 소리: <span id="vol-roll-val">100</span>%</label>
+                <input type="range" id="vol-roll" min="0" max="100" value="100">
             </div>
         </div>
     </div>
 
-    <div id="craft-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-craft" class="close-btn">✖</span><h2>장비 제작소</h2><div id="craft-grid"></div></div></div>
-    <div id="inventory-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-inventory" class="close-btn">✖</span><h2>내 인벤토리</h2><div id="inventory-grid"></div></div></div>
-    <div id="item-inven-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-item-inven" class="close-btn">✖</span><h2>보유 물약함</h2><div id="item-inven-grid"></div></div></div>
-    <div id="shop-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-shop" class="close-btn">✖</span><h2>JC 상점</h2><div id="shop-grid"></div></div></div>
-    <div id="index-modal" class="modal hidden" style="z-index: 10000;"><div class="modal-content large"><span id="close-index" class="close-btn">✖</span><h2>칭호 도감 (확률 포함)</h2><div id="index-grid"></div></div></div>
+    <div id="dev-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-dev" class="close-btn">&times;</span>
+            <h2>🛠️ 개발자 패널 (저장 안 됨)</h2>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">
+                <button onclick="cheatJC()" class="action-btn buy">+100만 JC</button>
+                <button onclick="cheatLuck()" class="action-btn use">행운 1만배</button>
+                <button onclick="cheatItems()" class="action-btn" style="background:#8e44ad;">칭호 50개씩 지급</button>
+                <hr style="border-color:#444; margin: 10px 0;">
+                <label style="font-size:12px;">🎯 다음 롤 고정 선택:</label>
+                <select id="dev-aura-select" style="width:100%; padding:8px; background:#111; color:#fff; border:1px solid #555; border-radius:5px;"></select>
+                <button onclick="setNextRoll()" class="action-btn" style="background:#2980b9;">다음 롤 고정하기</button>
+                <button onclick="exitDevMode()" class="action-btn" style="background:#c0392b; margin-top:15px;">개발자 모드 종료 및 복구</button>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
