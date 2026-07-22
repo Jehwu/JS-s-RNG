@@ -89,7 +89,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     100% { box-shadow: 0 0 25px rgba(255, 215, 0, 1), inset 0 0 20px rgba(255, 235, 59, 0.8); border-color: #fff176; }
 }
 
-/* 번개의 좌 박지성 전용 번개샥 테두리 네온 */
 .border-lightning {
     border-color: #00ffff !important;
     box-shadow: 0 0 15px rgba(0, 255, 255, 0.9), inset 0 0 10px rgba(120, 85, 255, 0.6);
@@ -138,7 +137,6 @@ input[type="number"] { background: #222; color: white; border: 1px solid #555; b
 
 .aura-holy-angel { background: linear-gradient(90deg, #fff176, #ffeb3b, #ffa000); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 235, 59, 0.8); }
 
-/* 번개의 좌 박지성 전용 번개빛 텍스트 */
 .aura-lightning { background: linear-gradient(90deg, #00ffff, #7c4dff, #ffffff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 1.5s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 25px rgba(0, 255, 255, 0.8); }
 
 .aura-divine-1 { background: linear-gradient(90deg, #00c6ff, #0072ff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 900; background-size: 200% auto; text-shadow: 0 0 15px rgba(0, 198, 255, 0.6); }
