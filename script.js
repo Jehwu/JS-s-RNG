@@ -633,11 +633,10 @@ async function playStarCutscene(rolled) {
             clearTimeout(cutsceneTimer);
             
             if (wasSkipped) {
-                // 스킵 버튼을 누른 경우: 기존 컷씬 노래는 꺼지고 9.5초부터 시작하는 새로운 사운드 재생
+                // 스킵 버튼을 누른 경우에만 기존 노래를 끄고 9.5초부터 시작하는 새로운 사운드 재생
                 playSkipSoundAt95(soundKey);
             } else {
-                // 자연 종료된 경우: 기존 컷씬 노래 종료
-                stopIntegratedSound();
+                // 컷씬을 끝까지 다 본 경우: 기존 노래를 강제로 끄지 않고 자연스럽게 계속 재생되도록 둠
             }
 
             ui.skipCutsceneBtn.removeEventListener('click', skipHandler);
