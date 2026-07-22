@@ -10,6 +10,7 @@
     <div id="border-glow-overlay" class="overlay hidden"></div>
 
     <div id="star-cutscene-overlay" class="overlay hidden">
+        <button id="skip-cutscene-btn">⏭️ 컷씬 스킵</button>
         <div id="cutscene-star-container">
             <div class="star-beam vertical"></div>
             <div class="star-beam horizontal"></div>
@@ -221,7 +222,7 @@
                 <input type="range" id="vol-bgm" min="0" max="100" value="70">
             </div>
             <div style="margin-bottom: 12px; text-align: left;">
-                <label style="font-size: 13px;">컷신 볼륨: <span id="vol-cutscene-val">100</span>%</label>
+                <label style="font-size: 13px; color:#f1c40f; font-weight:bold;">컷신/획득음 볼륨: <span id="vol-cutscene-val">100</span>%</label>
                 <input type="range" id="vol-cutscene" min="0" max="100" value="100">
             </div>
             <div style="margin-bottom: 12px; text-align: left;">
@@ -229,7 +230,7 @@
                 <input type="range" id="vol-click" min="0" max="100" value="100">
             </div>
             <div style="margin-bottom: 10px; text-align: left;">
-                <label style="font-size: 13px; color:#f1c40f; font-weight:bold;">롤(굴리기) 틱틱 소리: <span id="vol-roll-val">100</span>%</label>
+                <label style="font-size: 13px;">롤(굴리기) 틱틱 소리: <span id="vol-roll-val">100</span>%</label>
                 <input type="range" id="vol-roll" min="0" max="100" value="100">
             </div>
         </div>

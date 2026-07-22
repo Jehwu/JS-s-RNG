@@ -4,8 +4,8 @@ let soundSettings = {
     enabled: true, 
     master: 1.0, 
     bgm: 0.7, 
-    cutscene: 1.0, 
-    drop: 1.0, 
+    cutscene: 0.5, 
+    drop: 0.5, 
     click: 1.0,
     roll: 1.0 
 };
@@ -100,7 +100,7 @@ function playRollTickSound() {
 }
 
 function playNormalDropSound() {
-    playSynthesizedTone(600, 'sine', 0.2 * soundSettings.drop, 0.02, 0.4);
+    playSynthesizedTone(600, 'sine', 0.2 * soundSettings.cutscene, 0.02, 0.4);
 }
 
 function playUIClick() {
@@ -121,20 +121,49 @@ function playDropSound(grade) {
 
     if (soundKey && audioFiles[soundKey]) {
         const clone = audioFiles[soundKey].cloneNode();
-        clone.volume = soundSettings.master * soundSettings.drop;
+        clone.volume = soundSettings.master * soundSettings.cutscene;
         clone.play().catch(e => {});
     } else if (grade !== "DIVINE" && grade !== "COSMIC" && grade !== "JS") {
         playNormalDropSound();
     }
 }
 
+let activeCutsceneAudio = null;
+let skipAudioPlayer = null;
+
 function playIntegratedSound(soundName) {
     if (!soundSettings.enabled) return;
     const snd = audioFiles[soundName];
     if (snd) {
-        const clone = snd.cloneNode();
-        clone.volume = soundSettings.master * soundSettings.cutscene;
-        clone.play().catch(e => {});
+        activeCutsceneAudio = snd.cloneNode();
+        activeCutsceneAudio.volume = soundSettings.master * soundSettings.cutscene;
+        activeCutsceneAudio.currentTime = 0; // 평소에는 처음(0초)부터 정상 재생
+        activeCutsceneAudio.play().catch(e => {});
+    }
+}
+
+function playSkipSoundAt95(soundName) {
+    if (!soundSettings.enabled) return;
+    stopIntegratedSound(); // 기존 컷씬 노래 끄기
+    const snd = audioFiles[soundName];
+    if (snd) {
+        skipAudioPlayer = snd.cloneNode();
+        skipAudioPlayer.volume = soundSettings.master * soundSettings.cutscene;
+        skipAudioPlayer.currentTime = 9.5; // 스킵 시 새로운 사운드를 9.5초부터 재생
+        skipAudioPlayer.play().catch(e => {});
+    }
+}
+
+function stopIntegratedSound() {
+    if (activeCutsceneAudio) {
+        activeCutsceneAudio.pause();
+        activeCutsceneAudio.currentTime = 0;
+        activeCutsceneAudio = null;
+    }
+    if (skipAudioPlayer) {
+        skipAudioPlayer.pause();
+        skipAudioPlayer.currentTime = 0;
+        skipAudioPlayer = null;
     }
 }
 
@@ -147,41 +176,31 @@ document.body.addEventListener('click', () => {
 
 document.body.addEventListener('click', (e) => {
     if (e.target.tagName.toLowerCase() === 'button' || e.target.closest('button')) {
-        if (e.target.id !== 'roll-btn' && e.target.id !== 'btn-text') {
+        if (e.target.id !== 'roll-btn' && e.target.id !== 'btn-text' && e.target.id !== 'skip-cutscene-btn') {
             playUIClick();
         }
     }
 });
 
-// 등급 및 확률 구간 엄격 검증 및 교정 완료된 칭호 데이터
 const AURA_DATA = [
-    // COMMON (1/2 ~ 1/10)
     { id: "com_drum", name: "동네북 김가은", grade: "COMMON", in: 2, color: "#696969" },
     { id: "com_normal", name: "평범한 김티비", grade: "COMMON", in: 4, color: "#808080" },
     { id: "com_passerby", name: "지나가는 김민채", grade: "COMMON", in: 7, color: "#a9a9a9" },
     { id: "unc_stretching", name: "스트레칭하는 김티비", grade: "COMMON", in: 10, color: "#2ecc71" },
-
-    // UNCOMMON (1/11 ~ 1/25)
     { id: "unc_running", name: "뛰어가는 김민채", grade: "UNCOMMON", in: 12, color: "#90ee90" },
     { id: "unc_angry", name: "조금 화난 김건우", grade: "UNCOMMON", in: 16, color: "#3cb371" },
     { id: "unc_tired", name: "피곤한 박지성", grade: "UNCOMMON", in: 20, color: "#32cd32" },
     { id: "com_darkminchae", name: "깜민채", grade: "UNCOMMON", in: 25, color: "#2f4f4f" },
-
-    // RARE (1/26 ~ 1/99)
     { id: "rare_soldier", name: "예비군 공병은", grade: "RARE", in: 28, color: "#6495ed" },
     { id: "com_yellow_butt", name: "노랭덩이", grade: "RARE", in: 33, color: "#d4ac0d" },
     { id: "rare_train", name: "폭주기관차 김민채", grade: "RARE", in: 45, color: "#1e90ff" },
     { id: "rare_gunwoo_tribe", name: "김건우족을보았다", grade: "RARE", in: 56, color: "#3498db" },
     { id: "rare_algo", name: "알고리즘 김티비", grade: "RARE", in: 85, color: "#4169e1" },
-
-    // EPIC (1/100 ~ 1/499)
     { id: "ep_baksisung", name: "밪지성", grade: "EPIC", in: 100, color: "#27ae60" },
     { id: "epic_lucky", name: "운수 좋은 김티비", grade: "EPIC", in: 150, color: "#da70d6" },
     { id: "unc_hospital", name: "박지성지병원", grade: "EPIC", in: 250, color: "#2e8b57" },
     { id: "epic_destroy", name: "파괴신 김건우", grade: "EPIC", in: 350, color: "#9932cc" },
     { id: "ep_psychopath_gunwoo", name: "싸이코패스 김건우", grade: "EPIC", in: 444, color: "#b03a2e" },
-
-    // LEGEND (1/500 ~ 1/9,999)
     { id: "rare_gaedoor", name: "김가은두르", grade: "LEGEND", in: 500, color: "#4682b4" },
     { id: "ep_poop_tv", name: "똥먹방 김티비", grade: "LEGEND", in: 645, color: "#8d6e63" },
     { id: "ep_gaen_sujeo", name: "김가은수저", grade: "LEGEND", in: 737, color: "#f39c12" },
@@ -194,8 +213,6 @@ const AURA_DATA = [
     { id: "var_gebsin", name: "김가은두르 : 게브신", grade: "LEGEND", in: 7878, color: "#f1c40f", class: "aura-legend-4" },
     { id: "legend_knight", name: "빛의 기사 김가은", grade: "LEGEND", in: 8000, color: "#ff4500", class: "aura-legend-5" },
     { id: "com_steel_gaen", name: "동네북 김가은 : 강철맷집", grade: "LEGEND", in: 8888, color: "#ff6347", class: "aura-legend-1" },
-
-    // MYTHIC (1/10,000 ~ 1/999,999)
     { id: "gemini_basic", name: "김민제미나이", grade: "MYTHIC", in: 10101, color: "#00ffff", class: "aura-mythic-1" },
     { id: "epic_monkey", name: "건숭이", grade: "MYTHIC", in: 13131, color: "#ba55d3", class: "aura-mythic-2" },
     { id: "mythic_empress", name: "절대여제 김가은", grade: "MYTHIC", in: 15000, color: "#ff69b4", class: "aura-mythic-3" },
@@ -206,8 +223,6 @@ const AURA_DATA = [
     { id: "mythic_heart", name: "두 개의 심장 박지성", grade: "MYTHIC", in: 100000, color: "#00fa9a", class: "aura-mythic-1" },
     { id: "cosmic_black_butt", name: "노랭덩이 : 흑덩이", grade: "MYTHIC", in: 89898, color: "#212121", class: "aura-cosmic-2" },
     { id: "kim_crazy_kim_77", name: "기모띠비 : 앙기모띠", grade: "MYTHIC", in: 777777, color: "#ff1493", class: "aura-mythic-3" },
-
-    // DIVINE (1/1,000,000 ~ 1/19,999,999)
     { id: "gemini_pro", name: "김민제미나이 : 프로", grade: "DIVINE", in: 1010101, color: "#9b59b6", class: "aura-divine-1" },
     { id: "div_absolute_gaen", name: "절대여제 김가은 : 범접불가", grade: "DIVINE", in: 1515151, color: "#a55fea", class: "aura-divine-2" },
     { id: "var_virtual", name: "100만 유튜버 김티비 : 버츄얼 모드", grade: "DIVINE", in: 2545454, color: "#2ecc71", class: "aura-divine-3" },
@@ -216,17 +231,14 @@ const AURA_DATA = [
     { id: "divine_god", name: "초월자 김건우", grade: "DIVINE", in: 5000000, color: "#3498db", class: "aura-divine-5" },
     { id: "var_simon", name: "MC병은 : 사이먼 도미닉", grade: "DIVINE", in: 8898989, color: "#8e44ad", class: "aura-divine-1" },
     { id: "divine_dim", name: "차원 지배자 공병은", grade: "DIVINE", in: 12000000, color: "#00c6ff", class: "aura-divine-2" },
-
-    // COSMIC (1/20,000,000 ~ 1/99,999,999)
     { id: "variant_haebeoji", name: "두개의 심장 박지성 : 해버지", grade: "COSMIC", in: 26666666, color: "#ff8c00", class: "aura-cosmic-1" },
     { id: "legend_gonjiam", name: "곤지암병은", grade: "COSMIC", in: 29999999, color: "#ff1493", class: "aura-cosmic-2" },
     { id: "js_collector", name: "전설의 공병수집가 공병은", grade: "COSMIC", in: 36363636, color: "#ffaa00", class: "aura-cosmic-3" },
     { id: "js_creator", name: "우주의 대거악 김민채", grade: "COSMIC", in: 50000000, color: "#ff0055", class: "aura-cosmic-4" },
-    { id: "cosmic_diarrhea_tv", name: "똥먹방 김티비 : 설사먹방", grade: "COSMIC", in: 64564564, color: "#795548", class: "aura-cosmic-3" }, // 요청하신 수치 유지
-
-    // JS (1/100,000,000+)
+    { id: "cosmic_diarrhea_tv", name: "똥먹방 김티비 : 설사먹방", grade: "COSMIC", in: 64564564, color: "#795548", class: "aura-cosmic-3" },
     { id: "divine_angel_gaen", name: "환희의 대천사 김가은", grade: "JS", in: 150000000, color: "#ffeb3b", class: "aura-holy-angel" },
-    { id: "js_void_king", name: "공허왕 공허병은", grade: "JS", in: 111111111, color: "#ff0000", class: "aura-js-void" }
+    { id: "js_void_king", name: "공허왕 공허병은", grade: "JS", in: 111111111, color: "#ff0000", class: "aura-js-void" },
+    { id: "js_lightning_jisung", name: "번개의 좌 박지성", grade: "JS", in: 300000000, color: "#00ffff", class: "aura-lightning" }
 ];
 
 AURA_DATA.sort((a, b) => a.in - b.in);
@@ -240,9 +252,9 @@ const SHOP_ITEMS = [
     { id: "speed_1", name: "속도의 물약 1", price: 500, type: "speed", value: 0.15, duration: 180, desc: "+15% 속도 (3분)", border: "border-blue" },
     { id: "speed_2", name: "속도의 물약 2", price: 1200, type: "speed", value: 0.30, duration: 180, desc: "+30% 속도 (3분)", border: "border-blue" },
     { id: "speed_3", name: "속도의 물약 3", price: 3000, type: "speed", value: 0.55, duration: 180, desc: "+55% 속도 (3분)", border: "border-blue" },
-    { id: "limit_potion", name: "한계의 물약", price: 33333, type: "luck_mult", value: 5000, maxUses: 3, desc: "×5000배 행운 (3회 소모)", border: "border-green" },
-    { id: "overcome_potion", name: "극복의 물약", price: 150000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×50000배 행운 (2회 소모)", border: "border-blue" }, // 설명 50000배로 수정 완료
-    { id: "heaven_potion", name: "천상의 물약", price: 250000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150000배 행운 (1회 소모)", border: "border-epic" }
+    { id: "limit_potion", name: "한계의 물약", price: 43333, type: "luck_mult", value: 5000, maxUses: 3, desc: "×5000배 행운 (3회 소모)", border: "border-green" },
+    { id: "overcome_potion", name: "극복의 물약", price: 195000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×50000배 행운 (2회 소모)", border: "border-blue" },
+    { id: "heaven_potion", name: "천상의 물약", price: 300000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150000배 행운 (1회 소모)", border: "border-epic" }
 ];
 
 const CRAFT_ITEMS = [
@@ -262,7 +274,10 @@ for (let i = 0; i < AURA_DATA.length; i++) {
     if (["MYTHIC", "DIVINE", "COSMIC", "JS"].includes(AURA_DATA[i].grade)) {
         baseJc = Math.floor(baseJc * 0.5); 
     }
-    AURA_DATA[i].jcValue = baseJc;
+    if (["DIVINE", "COSMIC", "JS"].includes(AURA_DATA[i].grade)) {
+        baseJc = Math.floor(baseJc * 0.6);
+    }
+    AURA_DATA[i].jcValue = Math.max(1, baseJc);
 }
 
 let gameState = { 
@@ -287,7 +302,7 @@ const ui = {
     craftBtn: document.getElementById('craft-btn'), craftModal: document.getElementById('craft-modal'), closeCraft: document.getElementById('close-craft'), craftGrid: document.getElementById('craft-grid'),
     submitCodeBtn: document.getElementById('submit-code-btn'), codeInput: document.getElementById('code-input'),
     exportSaveBtn: document.getElementById('export-save-btn'), importSaveBtn: document.getElementById('import-save-btn'), saveCodeTextarea: document.getElementById('save-code-textarea'),
-    glowOverlay: document.getElementById('border-glow-overlay'), starOverlay: document.getElementById('star-cutscene-overlay'), cutsceneStarContainer: document.getElementById('cutscene-star-container'),
+    glowOverlay: document.getElementById('border-glow-overlay'), starOverlay: document.getElementById('star-cutscene-overlay'), skipCutsceneBtn: document.getElementById('skip-cutscene-btn'), cutsceneStarContainer: document.getElementById('cutscene-star-container'),
     glitchTextContainer: document.getElementById('glitch-text-container'),
     sellModal: document.getElementById('sell-modal'), closeSell: document.getElementById('close-sell'),
     buyModal: document.getElementById('buy-modal'), closeBuy: document.getElementById('close-buy'),
@@ -364,7 +379,19 @@ ui.submitCodeBtn.addEventListener('click', () => {
     const codeVal = ui.codeInput.value.trim().toUpperCase();
     if (!gameState.usedCodes) gameState.usedCodes = [];
 
-    if (codeVal === "NEWUPDATE") {
+    if (codeVal === "HELPME!") {
+        if (gameState.usedCodes.includes("HELPME!")) {
+            alert("❌ 이미 사용한 쿠폰입니다! (계정당 1회 제한)");
+            return;
+        }
+        gameState.usedCodes.push("HELPME!");
+        gameState.jc += 1000000;
+        saveGame();
+        updateStatsUI();
+        ui.codeInput.value = '';
+        ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [HELPME! 쿠폰 성공!] 100만 JC가 지급되었습니다!");
+    } else if (codeVal === "NEWUPDATE") {
         if (gameState.usedCodes.includes("NEWUPDATE")) {
             alert("❌ 이미 사용한 쿠폰입니다! (계정당 1회 제한)");
             return;
@@ -389,7 +416,7 @@ ui.submitCodeBtn.addEventListener('click', () => {
         saveGame();
         ui.codeInput.value = '';
         ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [SORRYBRO 쿠폰 성공!] 한계의 물약(2개), 극복의 물약(2개), 천상의 물약(2개)이 지급되었습니다!");
+        alert("🎉 [SORRYBRO 쿠폰 성공!] 한계의 물약 2개, 극복의 물약 2개, 천상의 물약 2개가 지급되었습니다!");
     } else {
         alert("❌ 존재하지 않거나 잘못된 코드입니다.");
     }
@@ -408,8 +435,15 @@ function applySoundSettingsToUI() {
 
 ui.volMaster.addEventListener('input', (e) => { soundSettings.master = e.target.value / 100; ui.volMasterVal.innerText = e.target.value; updateBgmVolume(); saveSoundSettings(); });
 ui.volBgm.addEventListener('input', (e) => { soundSettings.bgm = e.target.value / 100; ui.volBgmVal.innerText = e.target.value; updateBgmVolume(); saveSoundSettings(); });
-ui.volCutscene.addEventListener('input', (e) => { soundSettings.cutscene = e.target.value / 100; ui.volCutsceneVal.innerText = e.target.value; updateBgmVolume(); saveSoundSettings(); });
-ui.volClick.addEventListener('input', (e) => { soundSettings.click = e.target.value / 100; ui.volClickVal.innerText = e.target.value; updateBgmVolume(); saveSoundSettings(); });
+ui.volCutscene.addEventListener('input', (e) => { 
+    soundSettings.cutscene = e.target.value / 100; 
+    soundSettings.drop = soundSettings.cutscene; 
+    ui.volCutsceneVal.innerText = e.target.value; 
+    if (activeCutsceneAudio) activeCutsceneAudio.volume = soundSettings.master * soundSettings.cutscene;
+    if (skipAudioPlayer) skipAudioPlayer.volume = soundSettings.master * soundSettings.cutscene;
+    saveSoundSettings(); 
+});
+ui.volClick.addEventListener('input', (e) => { soundSettings.click = e.target.value / 100; ui.volClickVal.innerText = e.target.value; saveSoundSettings(); });
 ui.volRoll.addEventListener('input', (e) => { soundSettings.roll = e.target.value / 100; ui.volRollVal.innerText = e.target.value; saveSoundSettings(); });
 
 ui.soundToggleBtn.addEventListener('click', () => {
@@ -474,7 +508,11 @@ window.exitDevMode = function() {
 
 function getTotalMultBonus() {
     if (!gameState.activeMultBuffs || gameState.activeMultBuffs.length === 0) return 0;
-    return gameState.activeMultBuffs.reduce((sum, buff) => sum + buff.bonus, 0); // 횟수 곱 연산 제거 및 고정 배수 합산
+    let maxBonus = 0;
+    gameState.activeMultBuffs.forEach(buff => {
+        if (buff.bonus > maxBonus) maxBonus = buff.bonus;
+    });
+    return maxBonus;
 }
 
 function updateStatsUI() { 
@@ -555,35 +593,72 @@ async function playStarCutscene(rolled) {
     ui.cutsceneStarContainer.style.color = rolled.color;
     ui.cutsceneStarContainer.className = 'spin-zoom-accel';
 
+    let soundKey = 'divine_all';
     if (rolled.grade === "JS") {
         if (rolled.id === "divine_angel_gaen") {
             ui.starOverlay.style.setProperty('--js-center-col', '#fff176'); 
             ui.starOverlay.style.setProperty('--js-mid-col', '#cddc39'); 
             ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255, 235, 59, 0.2)'); 
             ui.starOverlay.style.setProperty('--js-glow-col', '#ffff00'); 
+            soundKey = 'js_all';
+        } else if (rolled.id === "js_lightning_jisung") {
+            ui.starOverlay.style.setProperty('--js-center-col', '#00ffff'); 
+            ui.starOverlay.style.setProperty('--js-mid-col', '#1a237e'); 
+            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(0, 255, 255, 0.25)'); 
+            ui.starOverlay.style.setProperty('--js-glow-col', '#00e5ff'); 
+            soundKey = 'js_all';
         } else {
             ui.starOverlay.style.setProperty('--js-center-col', '#6a0000');
             ui.starOverlay.style.setProperty('--js-mid-col', '#200000');
             ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255,0,0,0.15)');
             ui.starOverlay.style.setProperty('--js-glow-col', '#ff0000');
+            soundKey = 'js_all';
         }
         ui.starOverlay.classList.add('cutscene-bg-js');
-        playIntegratedSound('js_all');
     } else if (rolled.grade === "COSMIC") {
         ui.starOverlay.classList.add('cutscene-bg-cosmic');
-        playIntegratedSound('cosmic_all');
-    } else { 
-        playIntegratedSound('divine_all');
+        soundKey = 'cosmic_all';
     }
 
-    await sleep(9500);
+    // 1. 컷씬 시작 시 노래를 처음(0초)부터 정상 재생
+    playIntegratedSound(soundKey);
 
-    ui.starOverlay.classList.add('flash-white'); 
-    await sleep(500); 
-    ui.starOverlay.classList.remove('flash-white'); 
-    ui.starOverlay.classList.add('hidden'); 
-    ui.starOverlay.classList.remove('cutscene-bg-cosmic', 'cutscene-bg-js');
-    ui.cutsceneStarContainer.className = ''; 
+    return new Promise((resolve) => {
+        let isResolved = false;
+        let wasSkipped = false;
+
+        const finish = () => {
+            if (isResolved) return;
+            isResolved = true;
+            clearTimeout(cutsceneTimer);
+            
+            if (wasSkipped) {
+                // 스킵 버튼을 누른 경우: 기존 컷씬 노래는 꺼지고 9.5초부터 시작하는 새로운 사운드 재생
+                playSkipSoundAt95(soundKey);
+            } else {
+                // 자연 종료된 경우: 기존 컷씬 노래 종료
+                stopIntegratedSound();
+            }
+
+            ui.skipCutsceneBtn.removeEventListener('click', skipHandler);
+            ui.starOverlay.classList.add('flash-white');
+            setTimeout(() => {
+                ui.starOverlay.classList.remove('flash-white');
+                ui.starOverlay.classList.add('hidden');
+                ui.starOverlay.classList.remove('cutscene-bg-cosmic', 'cutscene-bg-js');
+                ui.cutsceneStarContainer.className = '';
+                resolve();
+            }, 500);
+        };
+
+        const skipHandler = () => {
+            wasSkipped = true;
+            finish();
+        };
+
+        ui.skipCutsceneBtn.addEventListener('click', skipHandler, { once: true });
+        const cutsceneTimer = setTimeout(finish, 10000);
+    });
 }
 
 async function finishRoll() {
@@ -806,7 +881,6 @@ document.getElementById('confirm-use-btn').addEventListener('click', () => {
         }
     } else if (item.type === "luck_mult") {
         if (!gameState.activeMultBuffs) gameState.activeMultBuffs = [];
-        // 개수와 상관없이 고정 배수만 적용되도록 중첩 방지 혹은 단일 합산 구조로 처리
         gameState.activeMultBuffs.push({ name: item.name, bonus: item.value, uses: item.maxUses * amount });
     }
 
@@ -826,9 +900,11 @@ function updateInventory() {
             const isJS = auraInfo.grade === "JS";
             const isCosmic = auraInfo.grade === "COSMIC";
             const isHolyAngel = (id === "divine_angel_gaen");
+            const isLightning = (id === "js_lightning_jisung");
 
             let borderClass = '';
-            if (isHolyAngel) borderClass = 'border-holy-gold';
+            if (isLightning) borderClass = 'border-lightning';
+            else if (isHolyAngel) borderClass = 'border-holy-gold';
             else if (isJS) borderClass = 'border-js';
             else if (isCosmic) borderClass = 'border-cosmic';
 
@@ -900,10 +976,12 @@ function updateIndex() {
         const isJS = aura.grade === "JS";
         const isCosmic = aura.grade === "COSMIC";
         const isHolyAngel = (aura.id === "divine_angel_gaen");
+        const isLightning = (aura.id === "js_lightning_jisung");
 
         if (isDiscovered) { 
             let borderClass = '';
-            if (isHolyAngel) borderClass = 'border-holy-gold';
+            if (isLightning) borderClass = 'border-lightning';
+            else if (isHolyAngel) borderClass = 'border-holy-gold';
             else if (isJS) borderClass = 'border-js';
             else if (isCosmic) borderClass = 'border-cosmic';
 
