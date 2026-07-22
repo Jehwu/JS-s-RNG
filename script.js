@@ -28,7 +28,7 @@ const audioFiles = {
     dropMythic: new Audio('drop_mythic.mp3'),
     divine_all: new Audio('divine_full.mp3'),
     cosmic_all: new Audio('cosmic_full.mp3'),
-    js_all: new Audio('JS_full.mp3')
+    js_all: new Audio('js_full.mp3')
 };
 
 audioFiles.lobbyBgm.loop = true;
