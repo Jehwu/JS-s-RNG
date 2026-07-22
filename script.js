@@ -220,7 +220,7 @@ const AURA_DATA = [
     // COSMIC (1/20,000,000 ~ 1/99,999,999)
     { id: "variant_haebeoji", name: "두개의 심장 박지성 : 해버지", grade: "COSMIC", in: 26666666, color: "#ff8c00", class: "aura-cosmic-1" },
     { id: "legend_gonjiam", name: "곤지암병은", grade: "COSMIC", in: 29999999, color: "#ff1493", class: "aura-cosmic-2" },
-    { id: "js_collector", name: "전설의 공병수집가 공병은", grade: "COSMIC", in: 3333333, color: "#ffaa00", class: "aura-cosmic-3" },
+    { id: "js_collector", name: "전설의 공병수집가 공병은", grade: "COSMIC", in: 33333333, color: "#ffaa00", class: "aura-cosmic-3" },
     { id: "js_creator", name: "우주의 대거악 김민채", grade: "COSMIC", in: 50000000, color: "#ff0055", class: "aura-cosmic-4" },
     { id: "cosmic_diarrhea_tv", name: "똥먹방 김티비 : 설사먹방", grade: "COSMIC", in: 64564564, color: "#795548", class: "aura-cosmic-3" }, // 요청하신 수치 유지
 
