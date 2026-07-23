@@ -62,7 +62,7 @@
         </div>
         <div id="active-buffs" style="font-size: 11px; color: #f39c12; min-height: 16px; margin-bottom: 5px; font-weight: bold;"></div>
 
-        <!-- 롤링 컨트롤 버튼 (빠른 롤 / 오토 롤 분화) -->
+        <!-- 롤링 컨트롤 버튼 -->
         <div class="roll-controls">
             <button id="roll-btn">
                 <div class="roll-btn-content">
@@ -79,12 +79,89 @@
 
         <!-- 하단 메인 메뉴 -->
         <div class="main-menu">
+            <button id="ranking-btn" class="main-menu-btn" style="background: linear-gradient(145deg, #d35400, #e67e22);">🏆 랭킹</button>
+            <button id="market-btn" class="main-menu-btn" style="background: linear-gradient(145deg, #27ae60, #2ecc71);">🏪 유저장터</button>
+            <button id="profile-btn" class="main-menu-btn" style="background: linear-gradient(145deg, #2980b9, #3498db);">👤 내 프로필</button>
             <button id="inventory-btn" class="main-menu-btn">🎒 칭호 가방</button>
             <button id="item-inven-btn" class="main-menu-btn">🧪 물약 가방</button>
             <button id="craft-btn" class="main-menu-btn">🔨 제작소</button>
-            <button id="shop-btn" class="main-menu-btn">🛒 상점</button>
+            <button id="shop-btn" class="main-menu-btn">🛒 NPC상점</button>
             <button id="quest-btn" class="main-menu-btn">📜 퀘스트</button>
             <button id="index-btn" class="main-menu-btn">📖 도감</button>
+        </div>
+    </div>
+
+    <!-- 🏆 랭킹 모달 (안에 3개 버튼 배치) -->
+    <div id="ranking-modal" class="modal hidden">
+        <div class="modal-content large">
+            <span id="close-ranking" class="close-btn">&times;</span>
+            <h2 id="ranking-modal-title">🏆 유저 실시간 랭킹</h2>
+
+            <!-- 랭킹 모달 안의 3개 카테고리 버튼 -->
+            <div class="tab-group" style="display: flex; gap: 5px; margin: 15px 0 10px 0;">
+                <button id="rank-tab-rolls" class="action-btn craft-tab active" style="flex: 1; padding: 10px; font-weight: bold;">🎲 롤 횟수</button>
+                <button id="rank-tab-jc" class="action-btn craft-tab" style="flex: 1; padding: 10px; font-weight: bold;">🪙 JC 보유량</button>
+                <button id="rank-tab-aura" class="action-btn craft-tab" style="flex: 1; padding: 10px; font-weight: bold; background: #8e44ad;">👑 가장 희귀한 칭호</button>
+            </div>
+
+            <div id="ranking-list-grid" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <!-- 🏪 유저 장터 (경매장) 모달 -->
+    <div id="market-modal" class="modal hidden">
+        <div class="modal-content large">
+            <span id="close-market" class="close-btn">&times;</span>
+            <h2>🏪 유저 거래 장터</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span style="font-size: 13px; color: #ccc;">친구들이 올린 칭호를 JC로 구매해보세요!</span>
+                <button id="open-sell-market-btn" class="action-btn buy" style="width: auto; padding: 8px 15px;">+ 칭호 매물 등록</button>
+            </div>
+            <div id="market-item-grid"></div>
+        </div>
+    </div>
+
+    <!-- 🏪 매물 등록 팝업 모달 -->
+    <div id="register-market-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-register-market" class="close-btn">&times;</span>
+            <h3>🏪 장터 매물 등록</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <label style="font-size: 12px;">판매할 칭호 선택:</label>
+                <select id="market-sell-aura-select" style="padding: 8px; background: #111; color: white; border-radius: 5px; border: 1px solid #555;"></select>
+                <label style="font-size: 12px;">판매 가격 (JC):</label>
+                <input type="number" id="market-sell-price" min="1" value="1000" style="padding: 8px; font-size: 14px; text-align: right;">
+                <button id="confirm-register-market-btn" class="action-btn use" style="padding: 10px; font-size: 14px; margin-top: 10px;">등록하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 👤 프로필 모달 -->
+    <div id="profile-modal" class="modal hidden">
+        <div class="modal-content" style="text-align: center;">
+            <span id="close-profile" class="close-btn">&times;</span>
+            <div id="profile-card-container">
+                <img id="profile-user-img" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #f1c40f; margin-bottom: 10px;">
+                <h2 id="profile-user-name" style="margin: 0; font-size: 20px;">유저 이름</h2>
+                <div id="profile-user-status" style="font-size: 13px; color: #f39c12; margin: 8px 0;">"한 줄 상태 메시지"</div>
+                
+                <hr style="border: 0.5px solid #444; margin: 15px 0;">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; font-size: 13px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;">
+                    <div>🎲 총 롤 횟수: <strong id="profile-rolls" style="color:#3498db;">0</strong></div>
+                    <div>🪙 보유 JC: <strong id="profile-jc" style="color:#f1c40f;">0</strong></div>
+                    <div style="grid-column: span 2;">👑 최고 획득 칭호: <span id="profile-best-aura" style="font-weight:bold;">없음</span></div>
+                    <div style="grid-column: span 2;">🥊 대표 장착 건틀렛: <span id="profile-gear" style="color:#2ecc71;">없음</span></div>
+                </div>
+
+                <div id="my-profile-edit-box" class="hidden" style="margin-top: 15px; text-align: left;">
+                    <label style="font-size: 12px; font-weight: bold; color: #ccc;">✏️ 한 줄 상태 메시지 수정:</label>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;">
+                        <input type="text" id="status-msg-input" placeholder="상태 메시지 입력" style="flex:1; padding: 6px; background: #111; color: white; border: 1px solid #555; border-radius: 5px;">
+                        <button id="save-status-msg-btn" class="action-btn buy" style="width: auto; padding: 6px 12px;">저장</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -134,7 +211,7 @@
     <div id="shop-modal" class="modal hidden">
         <div class="modal-content large">
             <span id="close-shop" class="close-btn">&times;</span>
-            <h2>🛒 상점</h2>
+            <h2>상점</h2>
             <div id="shop-grid"></div>
         </div>
     </div>
@@ -213,7 +290,7 @@
                 </div>
                 <div class="grade-card border-mythic">
                     <span class="grade-name col-mythic">[MYTHIC]</span>
-                    <span class="grade-val col-mythic">1 in 10,000 ~ 999,999</span>
+                    <span class="grade-val col-mythic">1 in 10,000 ~ 99,999</span>
                 </div>
                 <div class="grade-card border-divine">
                     <span class="grade-name col-divine">[DIVINE]</span>
@@ -311,7 +388,7 @@
         </div>
     </div>
 
-    <!-- 🛠️ 개발자 패널 모달 (신규 치트 버튼 2종 추가) -->
+    <!-- 🛠️ 개발자 패널 모달 -->
     <div id="dev-modal" class="modal hidden">
         <div class="modal-content">
             <span id="close-dev" class="close-btn">&times;</span>

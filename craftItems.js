@@ -43,7 +43,7 @@ export const CRAFT_ITEMS = [
         desc: "영구적으로 행운 25%, 속도 35%가 증가합니다.", 
         luckBonus: 0.25, 
         speedBonus: 0.35, 
-        req: { "legend_speed": 2, "ep_crazykong": 10, "ep_baksisung": 10, "rare_train": 35, "com_darkminchae": 150 } 
+        req: { "legend_speed": 2, "ep_crazykong": 10, "ep_baksisung": 10, "rare_train": 20, "com_darkminchae": 55 } 
     },
     { 
         id: "gear_gold_button", 
@@ -52,7 +52,7 @@ export const CRAFT_ITEMS = [
         desc: "영구적으로 행운 50%, 속도 20%가 증가합니다.", 
         luckBonus: 0.5, 
         speedBonus: 0.2, 
-        req: { "mythic_tube": 2, "epic_kimmodi": 3, "ep_mc_byungeun": 10, "epic_lucky": 25, "com_normal": 400 } 
+        req: { "mythic_tube": 2, "epic_kimmodi": 3, "ep_mc_byungeun": 10, "epic_lucky": 15, "com_normal": 100 } 
     },
     { 
         id: "gear_pacifist_heart", 
@@ -61,7 +61,7 @@ export const CRAFT_ITEMS = [
         desc: "영구적으로 행운 100%, 속도 20%가 증가합니다.", 
         luckBonus: 1.0, 
         speedBonus: 0.2, 
-        req: { "mythic_pacifist_jisung": 3, "com_steel_gaen": 10, "unc_hospital": 40, "com_drum": 1000 } 
+        req: { "mythic_pacifist_jisung": 3, "com_steel_gaen": 10, "unc_hospital": 20, "com_drum": 300 } 
     },
 
     // 📜 부적 아이템

@@ -109,6 +109,18 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .close-btn { position: absolute; top: 15px; right: 18px; font-size: 22px; cursor: pointer; color: #888; transition: color 0.2s; }
 .close-btn:hover { color: white; }
 
+/* 🏆 랭킹 카드 레이아웃 */
+.ranking-card { display: flex; align-items: center; gap: 12px; background: #2b2b2b; padding: 10px 15px; border-radius: 8px; border: 1px solid #444; cursor: pointer; transition: 0.2s; }
+.ranking-card:hover { background: #3a3a3a; transform: translateX(3px); }
+.rank-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; background: #555; color: white; }
+.rank-1 { background: #f1c40f; color: black; box-shadow: 0 0 10px rgba(241, 196, 15, 0.8); }
+.rank-2 { background: #bdc3c7; color: black; }
+.rank-3 { background: #e67e22; color: white; }
+
+/* 🏪 유저 거래 장터 레이아웃 */
+#market-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
+.market-item-card { background: #2a2a2a; border: 2px solid #555; padding: 12px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+
 #quest-list-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
 .quest-card { background: #2b2b2b; border: 2px solid #444; border-radius: 10px; padding: 15px; text-align: left; position: relative; }
 .quest-card.active-quest { border-color: #e67e22; box-shadow: 0 0 10px rgba(230, 126, 34, 0.3); }
@@ -298,7 +310,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     text-shadow: 0 0 22px rgba(0, 229, 255, 0.9), 0 0 12px rgba(121, 40, 202, 0.7);
 }
 
-/* 💩+🌸 종말의 보이스 전용 */
 .aura-doomsday-voice {
     background: linear-gradient(90deg, #8d6e63, #ff69b4, #795548, #ff1493);
     -webkit-background-clip: text; color: transparent !important;
@@ -306,7 +317,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     text-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
 }
 
-/* 👑 퀸카의 밥상 전용 */
 .aura-queen-table {
     background: linear-gradient(90deg, #ff4081, #ff80ab, #f48fb1, #ff1744);
     -webkit-background-clip: text; color: transparent !important;
@@ -314,7 +324,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     text-shadow: 0 0 20px rgba(255, 64, 129, 0.9);
 }
 
-/* 🌈 힘을 숨긴자 전용 */
 .aura-hidden-power {
     background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
     -webkit-background-clip: text; color: transparent !important;
@@ -322,7 +331,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     text-shadow: 0 0 20px rgba(255, 255, 255, 0.9);
 }
 
-/* ⚔️ 강철검제 전용 */
 .aura-steel-emperor {
     background: linear-gradient(90deg, #00b0ff, #b0bec5, #0288d1, #eceff1);
     -webkit-background-clip: text; color: transparent !important;
@@ -330,7 +338,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     text-shadow: 0 0 22px rgba(0, 176, 255, 0.9);
 }
 
-/* 🩸 흉악범 전용 칭호 & 네온 글로우 테두리 */
 .border-heinous-criminal {
     border-color: #8b0000 !important;
     box-shadow: 0 0 18px rgba(139, 0, 0, 0.95), inset 0 0 12px rgba(0, 77, 64, 0.9);
