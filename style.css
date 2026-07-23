@@ -109,7 +109,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .close-btn { position: absolute; top: 15px; right: 18px; font-size: 22px; cursor: pointer; color: #888; transition: color 0.2s; }
 .close-btn:hover { color: white; }
 
-/* 🏆 랭킹 카드 레이아웃 */
 .ranking-card { display: flex; align-items: center; gap: 12px; background: #2b2b2b; padding: 10px 15px; border-radius: 8px; border: 1px solid #444; cursor: pointer; transition: 0.2s; }
 .ranking-card:hover { background: #3a3a3a; transform: translateX(3px); }
 .rank-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; background: #555; color: white; }
@@ -117,7 +116,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .rank-2 { background: #bdc3c7; color: black; }
 .rank-3 { background: #e67e22; color: white; }
 
-/* 🏪 유저 거래 장터 레이아웃 */
 #market-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
 .market-item-card { background: #2a2a2a; border: 2px solid #555; padding: 12px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
 
@@ -208,6 +206,41 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     0% { box-shadow: 0 0 15px #f1c40f, inset 0 0 10px #fff; border-color: #f1c40f; }
     50% { box-shadow: 0 0 30px #ffeaa7, inset 0 0 20px #f39c12; border-color: #ffffff; }
     100% { box-shadow: 0 0 35px #fdcb6e, inset 0 0 25px #ffffff; border-color: #f1c40f; }
+}
+
+.border-void {
+    border-color: #8e44ad !important;
+    box-shadow: 0 0 25px rgba(142, 68, 173, 0.9), inset 0 0 18px rgba(10, 0, 20, 0.95);
+    animation: void-neon-pulse 1.4s infinite alternate !important;
+}
+@keyframes void-neon-pulse {
+    0% { box-shadow: 0 0 15px #8e44ad, inset 0 0 10px #000; border-color: #8e44ad; }
+    50% { box-shadow: 0 0 30px #e056fd, inset 0 0 20px #4a0072; border-color: #e056fd; }
+    100% { box-shadow: 0 0 35px #341f97, inset 0 0 25px #0f051d; border-color: #9b59b6; }
+}
+
+.aura-170kg-heavy {
+    background: linear-gradient(90deg, #4a3b32, #8d6e63, #212121, #5d4037);
+    -webkit-background-clip: text; color: transparent !important;
+    font-weight: 900; text-shadow: 0 0 15px rgba(141, 110, 99, 0.8);
+}
+
+.aura-170kg-minchae {
+    background: linear-gradient(90deg, #00e676, #1b5e20, #00b0ff, #004d40);
+    -webkit-background-clip: text; color: transparent !important;
+    font-weight: 900; background-size: 200% auto; animation: shine-anim 1.2s linear infinite;
+    text-shadow: 0 0 25px rgba(0, 230, 118, 0.9), 0 0 12px rgba(0, 176, 255, 0.8);
+}
+
+/* 🟢 170kg OOO : 김민채 전용 초록빛 네온 반짝임 테두리 애니메이션 */
+.border-170kg-minchae {
+    border-color: #00e676 !important;
+    box-shadow: 0 0 18px rgba(0, 230, 118, 0.95), inset 0 0 12px rgba(27, 94, 32, 0.9);
+    animation: minchae-green-glow 1.1s infinite alternate !important;
+}
+@keyframes minchae-green-glow {
+    0% { border-color: #00e676; box-shadow: 0 0 12px rgba(0, 230, 118, 0.7), inset 0 0 8px rgba(27, 94, 32, 0.6); }
+    100% { border-color: #00b0ff; box-shadow: 0 0 28px rgba(0, 230, 118, 1), inset 0 0 20px rgba(0, 176, 255, 0.9); }
 }
 
 .border-holy-gold {
@@ -448,7 +481,6 @@ input[type="number"] { background: #222; color: white; border: 1px solid #555; b
 .flash-white { animation: flashWhite 0.5s ease-out forwards; }
 @keyframes flashWhite { 0% { background-color: black; } 50% { background-color: white; } 100% { background-color: transparent; } }
 
-/* 🏷️ 인벤토리 & 도감 등급별 헤더 구획 스타일 */
 .grade-section-header {
     grid-column: 1 / -1;
     font-size: 15px;

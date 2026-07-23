@@ -22,7 +22,27 @@ const provider = new GoogleAuthProvider();
 
 let currentUser = null;
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+// ⚡ 백그라운드 웹워커 오토롤
+const workerCode = `
+    let timer = null;
+    self.onmessage = function(e) {
+        if (e.data.command === 'start') {
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => { self.postMessage('tick'); }, e.data.interval || 200);
+        } else if (e.data.command === 'stop') {
+            if (timer) clearInterval(timer);
+            timer = null;
+        }
+    };
+`;
+const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+const autoWorker = new Worker(URL.createObjectURL(workerBlob));
+
+autoWorker.onmessage = function(e) {
+    if (e.data === 'tick' && isAutoRolling && !isRolling) {
+        startRoll();
+    }
+};
 
 let soundSettings = { 
     enabled: true, master: 1.0, bgm: 0.7, cutscene: 0.5, drop: 0.5, click: 1.0, roll: 1.0 
@@ -180,7 +200,8 @@ const SHOP_ITEMS = [
     { id: "speed_3", name: "속도의 물약 3", price: 3000, type: "speed", level: 3, value: 0.55, duration: 180, desc: "+55% 속도 (3분)", border: "border-blue" },
     { id: "limit_potion", name: "한계의 물약", price: 43333, type: "luck_mult", value: 5000, maxUses: 3, desc: "×5000배 행운 (3회 소모)", border: "border-limit" },
     { id: "overcome_potion", name: "극복의 물약", price: 195000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×50000배 행운 (2회 소모)", border: "border-overcome" },
-    { id: "heaven_potion", name: "천상의 물약", price: 300000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150000배 행운 (1회 소모)", border: "border-heaven" }
+    { id: "heaven_potion", name: "천상의 물약", price: 300000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150000배 행운 (1회 소모)", border: "border-heaven" },
+    { id: "void_potion", name: "공허의 물약", price: 1100000, type: "luck_mult", value: 700000, maxUses: 1, desc: "×700000배 행운 (1회 소모)", border: "border-void" }
 ];
 
 const QUEST_DATA = [
@@ -206,7 +227,8 @@ let gameState = {
     inventory: {}, itemInventory: {}, discoveredAuras: [], 
     autoDelete: {}, activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0, luckLevel: 0, speedLevel: 0 }, 
     activeMultBuffs: [], gear: null, amulet: null, amuletStack: 0, craftedGears: [], usedCodes: [],
-    completedQuests: [], activeQuest: null, questProgress: {}, quickRollUnlocked: false, statusMsg: "운빨 최강 도전 중!"
+    completedQuests: [], activeQuest: null, questProgress: {}, quickRollUnlocked: false,
+    customNickname: "", customPhoto: "", selectedTitleAuraId: "", statusMsg: "운빨 최강 도전 중!"
 };
 
 let isRolling = false; let isAutoRolling = false; let isQuickRollActive = false;
@@ -243,18 +265,14 @@ const ui = {
     gradeTableBtn: document.getElementById('grade-table-btn'), gradeTableModal: document.getElementById('grade-table-modal'), closeGradeTable: document.getElementById('close-grade-table'),
     autoDeleteOptions: document.getElementById('auto-delete-options'),
     
-    // 🏆 랭킹 모달 & 3개 탭 UI Elements
-    rankingBtn: document.getElementById('ranking-btn'),
-    rankingModal: document.getElementById('ranking-modal'),
-    closeRanking: document.getElementById('close-ranking'),
-    rankingListGrid: document.getElementById('ranking-list-grid'),
-    rankTabRolls: document.getElementById('rank-tab-rolls'),
-    rankTabJc: document.getElementById('rank-tab-jc'),
-    rankTabAura: document.getElementById('rank-tab-aura'),
+    rankingBtn: document.getElementById('ranking-btn'), rankingModal: document.getElementById('ranking-modal'), closeRanking: document.getElementById('close-ranking'), rankingListGrid: document.getElementById('ranking-list-grid'),
+    rankTabRolls: document.getElementById('rank-tab-rolls'), rankTabJc: document.getElementById('rank-tab-jc'), rankTabAura: document.getElementById('rank-tab-aura'),
     
     marketBtn: document.getElementById('market-btn'), marketModal: document.getElementById('market-modal'), closeMarket: document.getElementById('close-market'), marketItemGrid: document.getElementById('market-item-grid'), openSellMarketBtn: document.getElementById('open-sell-market-btn'),
-    registerMarketModal: document.getElementById('register-market-modal'), closeRegisterMarket: document.getElementById('close-register-market'), marketSellAuraSelect: document.getElementById('market-sell-aura-select'), marketSellPrice: document.getElementById('market-sell-price'), confirmRegisterMarketBtn: document.getElementById('confirm-register-market-btn'),
-    profileBtn: document.getElementById('profile-btn'), profileModal: document.getElementById('profile-modal'), closeProfile: document.getElementById('close-profile')
+    registerMarketModal: document.getElementById('register-market-modal'), closeRegisterMarket: document.getElementById('close-register-market'), marketSellAuraSelect: document.getElementById('market-sell-aura-select'), marketSellCount: document.getElementById('market-sell-count'), marketSellPrice: document.getElementById('market-sell-price'), marketPriceLimitText: document.getElementById('market-price-limit-text'), confirmRegisterMarketBtn: document.getElementById('confirm-register-market-btn'),
+    
+    profileBtn: document.getElementById('profile-btn'), profileModal: document.getElementById('profile-modal'), closeProfile: document.getElementById('close-profile'),
+    editNicknameInput: document.getElementById('edit-nickname-input'), editPhotoInput: document.getElementById('edit-photo-input'), editAvatarSelect: document.getElementById('edit-avatar-select'), editTitleSelect: document.getElementById('edit-title-select'), saveProfileAllBtn: document.getElementById('save-profile-all-btn')
 };
 
 loadSoundSettings();
@@ -329,7 +347,7 @@ function getBestAuraInfo() {
     gameState.discoveredAuras.forEach(auraId => {
         const aura = AURA_DATA.find(a => a.id === auraId);
         if (aura && aura.in > best.in) {
-            best = { name: `[${aura.grade}] ${aura.name}`, in: aura.in };
+            best = { name: `[${aura.grade}] ${aura.name}`, in: aura.in, id: aura.id };
         }
     });
     return best;
@@ -339,17 +357,25 @@ async function updateRankData() {
     if (!currentUser) return;
     try {
         const gearItem = gameState.gear ? CRAFT_ITEMS.find(g => g.id === gameState.gear) : null;
+        const amuletItem = gameState.amulet ? CRAFT_ITEMS.find(a => a.id === gameState.amulet) : null;
         const best = getBestAuraInfo();
+        
+        const finalName = gameState.customNickname || currentUser.displayName || "무명 유저";
+        const finalPhoto = gameState.customPhoto || currentUser.photoURL || "https://via.placeholder.com/80";
+        const finalTitleId = gameState.selectedTitleAuraId || best.id || "";
+
         const rankRef = doc(db, "rankings", currentUser.uid);
         await setDoc(rankRef, {
             uid: currentUser.uid,
-            name: currentUser.displayName || "무명 유저",
-            photo: currentUser.photoURL || "https://via.placeholder.com/80",
+            name: finalName,
+            photo: finalPhoto,
             rolls: gameState.rolls || 0,
             jc: gameState.jc || 0,
             bestAura: best.name,
             bestAuraIn: best.in,
+            selectedTitleAuraId: finalTitleId,
             gearName: gearItem ? gearItem.name : "없음",
+            amuletName: amuletItem ? amuletItem.name : "없음",
             statusMsg: gameState.statusMsg || "운빨 최강 도전 중!",
             lastUpdated: Date.now()
         }, { merge: true });
@@ -375,7 +401,20 @@ ui.submitCodeBtn.addEventListener('click', () => {
     const codeVal = ui.codeInput.value.trim().toUpperCase();
     if (!gameState.usedCodes) gameState.usedCodes = [];
 
-    if (codeVal === "QUEST1") {
+    if (codeVal === "RANKING") {
+        if (gameState.usedCodes.includes("RANKING")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
+        gameState.usedCodes.push("RANKING");
+        gameState.itemInventory["void_potion"] = (gameState.itemInventory["void_potion"] || 0) + 1;
+        saveGame(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [RANKING 쿠폰 성공!] 🧪 공허의 물약 1개가 지급되었습니다!");
+    } else if (codeVal === "PROFILE") {
+        if (gameState.usedCodes.includes("PROFILE")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
+        gameState.usedCodes.push("PROFILE");
+        gameState.jc += 1000000;
+        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 2;
+        saveGame(); updateStatsUI(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [PROFILE 쿠폰 성공!] 🪙 100만 JC & 🧪 극복의 물약 2개가 지급되었습니다!");
+    } else if (codeVal === "QUEST1") {
         if (gameState.usedCodes.includes("QUEST1")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
         gameState.usedCodes.push("QUEST1");
         gameState.jc += 1000000;
@@ -426,6 +465,9 @@ function loadGame() {
         if(!gameState.questProgress) gameState.questProgress = {};
         if(gameState.amuletStack === undefined) gameState.amuletStack = 0;
         if(!gameState.statusMsg) gameState.statusMsg = "운빨 최강 도전 중!";
+        if(!gameState.customNickname) gameState.customNickname = "";
+        if(!gameState.customPhoto) gameState.customPhoto = "";
+        if(!gameState.selectedTitleAuraId) gameState.selectedTitleAuraId = "";
         for(let auraId in gameState.inventory) { if(!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId); }
     }
     updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
@@ -461,13 +503,14 @@ window.cheatAllCraftItems = function() {
 
 window.setNextRoll = function() { nextRollOverride = document.getElementById('dev-aura-select').value; const auraInfo = AURA_DATA.find(a => a.id === nextRollOverride); alert(`🎯 다음 굴리기: [${auraInfo.grade}] ${auraInfo.name}`); }
 
+// 🔑 개발자 비번 '로블록스33' 원복 처리
 ui.devBtn.addEventListener('click', () => {
     if (!disableSave) {
         const pwd = prompt("🛠️ 개발자 모드 접근\n비밀번호를 입력하세요:");
         if (pwd === "로블록스33") {
             disableSave = true; backupGameState = JSON.parse(JSON.stringify(gameState));
             ui.mainDevBtn.classList.remove('hidden'); ui.settingsHubModal.classList.add('hidden');
-            alert("✅ [개발자 모드 ON] 메인 화면에 '개발자 패널' 버튼이 추가되었습니다.");
+            alert("✅ [개발자 모드 ON] 메인 화면에 '개발자 패널' 버튼이 추가되었으며, 유저장터 강제 삭제 기능이 활성화됩니다.");
             const select = document.getElementById('dev-aura-select');
             if (select.children.length === 0) { AURA_DATA.forEach(a => { const opt = document.createElement('option'); opt.value = a.id; opt.innerText = `[${a.grade}] ${a.name}`; select.appendChild(opt); }); }
             ui.devModal.classList.remove('hidden');
@@ -570,7 +613,19 @@ ui.quickRollBtn.addEventListener('click', () => {
     updateQuickRollUI();
 });
 
-ui.autoRollBtn.addEventListener('click', () => { isAutoRolling = !isAutoRolling; if (isAutoRolling) { ui.autoRollBtn.innerText = "오토: ON"; ui.autoRollBtn.classList.add('active'); if (!isRolling) startRoll(); } else { ui.autoRollBtn.innerText = "오토: OFF"; ui.autoRollBtn.classList.remove('active'); } });
+ui.autoRollBtn.addEventListener('click', () => { 
+    isAutoRolling = !isAutoRolling; 
+    if (isAutoRolling) { 
+        ui.autoRollBtn.innerText = "오토: ON"; 
+        ui.autoRollBtn.classList.add('active'); 
+        autoWorker.postMessage({ command: 'start', interval: 250 });
+        if (!isRolling) startRoll(); 
+    } else { 
+        ui.autoRollBtn.innerText = "오토: OFF"; 
+        ui.autoRollBtn.classList.remove('active'); 
+        autoWorker.postMessage({ command: 'stop' });
+    } 
+});
 
 function trackQuestProgress(type, amount = 1) {
     if (!gameState.activeQuest) return;
@@ -621,41 +676,17 @@ async function playStarCutscene(rolled) {
 
     let soundKey = 'divine_all';
     if (rolled.grade === "JS") {
-        if (rolled.id === "js_heinous_criminal") {
+        if (rolled.id === "js_170kg_minchae") {
+            ui.starOverlay.style.setProperty('--js-center-col', '#00e676');
+            ui.starOverlay.style.setProperty('--js-mid-col', '#1b5e20');
+            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(0, 230, 118, 0.3)');
+            ui.starOverlay.style.setProperty('--js-glow-col', '#00e676');
+            soundKey = 'js_all';
+        } else if (rolled.id === "js_heinous_criminal") {
             ui.starOverlay.style.setProperty('--js-center-col', '#8b0000'); 
             ui.starOverlay.style.setProperty('--js-mid-col', '#004d40'); 
             ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(139, 0, 0, 0.3)'); 
             ui.starOverlay.style.setProperty('--js-glow-col', '#ff0033'); 
-            soundKey = 'js_all';
-        } else if (rolled.id === "divine_angel_gaen") {
-            ui.starOverlay.style.setProperty('--js-center-col', '#fff59d'); 
-            ui.starOverlay.style.setProperty('--js-mid-col', '#fbc02d'); 
-            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255, 245, 157, 0.15)'); 
-            ui.starOverlay.style.setProperty('--js-glow-col', '#fdd835'); 
-            soundKey = 'js_all';
-        } else if (rolled.id === "js_lightning_jisung") {
-            ui.starOverlay.style.setProperty('--js-center-col', '#00ffff'); 
-            ui.starOverlay.style.setProperty('--js-mid-col', '#1a237e'); 
-            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(0, 255, 255, 0.25)'); 
-            ui.starOverlay.style.setProperty('--js-glow-col', '#00e5ff'); 
-            soundKey = 'js_all';
-        } else if (rolled.id === "js_false_theatre_tv") {
-            ui.starOverlay.style.setProperty('--js-center-col', '#0033aa'); 
-            ui.starOverlay.style.setProperty('--js-mid-col', '#050515'); 
-            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(0, 85, 255, 0.2)'); 
-            ui.starOverlay.style.setProperty('--js-glow-col', '#0055ff'); 
-            soundKey = 'js_all';
-        } else if (rolled.id === "js_demon_minchae") {
-            ui.starOverlay.style.setProperty('--js-center-col', '#ff007f'); 
-            ui.starOverlay.style.setProperty('--js-mid-col', '#4a0050'); 
-            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255, 0, 127, 0.25)'); 
-            ui.starOverlay.style.setProperty('--js-glow-col', '#8a00e6'); 
-            soundKey = 'js_all';
-        } else if (rolled.id === "js_monkey_liberator") {
-            ui.starOverlay.style.setProperty('--js-center-col', '#f1c40f'); 
-            ui.starOverlay.style.setProperty('--js-mid-col', '#7f1d1d'); 
-            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(243, 156, 18, 0.3)'); 
-            ui.starOverlay.style.setProperty('--js-glow-col', '#ffaa00'); 
             soundKey = 'js_all';
         } else {
             ui.starOverlay.style.setProperty('--js-center-col', '#6a0000');
@@ -1024,6 +1055,22 @@ function updateQuestUI() {
     });
 }
 
+// 🛡️ 칭호별 전용 테두리 클래스 반환 헬퍼 (인벤토리/도감/프로필 카드 공통 적용)
+function getAuraBorderClass(aura) {
+    if (!aura) return 'border-common';
+    if (aura.id === "js_170kg_minchae") return 'border-170kg-minchae';
+    if (aura.id === "js_heinous_criminal") return 'border-heinous-criminal';
+    if (aura.id === "js_monkey_liberator") return 'border-monkey-liberator';
+    if (aura.id === "js_false_theatre_tv") return 'border-false-theatre';
+    if (aura.id === "js_demon_minchae") return 'border-demon-minchae';
+    if (aura.id === "js_lightning_jisung") return 'border-lightning';
+    if (aura.id === "divine_angel_gaen") return 'border-holy-gold';
+    if (aura.grade === "JS") return 'border-js';
+    if (aura.grade === "COSMIC") return 'border-cosmic';
+    return `border-${aura.grade.toLowerCase()}`;
+}
+
+// 🎒 칭호 인벤토리 업데이트 (김민채 테두리 초록빛 반짝임 보장)
 function updateInventory() { 
     ui.inventoryGrid.innerHTML = ''; 
     let hasItems = false;
@@ -1041,24 +1088,7 @@ function updateInventory() {
         aurasInGrade.forEach(auraInfo => {
             const count = gameState.inventory[auraInfo.id];
             const tile = document.createElement('div'); 
-            const isJS = auraInfo.grade === "JS";
-            const isCosmic = auraInfo.grade === "COSMIC";
-            const isHolyAngel = (auraInfo.id === "divine_angel_gaen");
-            const isLightning = (auraInfo.id === "js_lightning_jisung");
-            const isFalseTheatre = (auraInfo.id === "js_false_theatre_tv");
-            const isDemonMinchae = (auraInfo.id === "js_demon_minchae");
-            const isMonkeyLiberator = (auraInfo.id === "js_monkey_liberator");
-            const isHeinous = (auraInfo.id === "js_heinous_criminal");
-
-            let borderClass = '';
-            if (isHeinous) borderClass = 'border-heinous-criminal';
-            else if (isMonkeyLiberator) borderClass = 'border-monkey-liberator';
-            else if (isFalseTheatre) borderClass = 'border-false-theatre';
-            else if (isDemonMinchae) borderClass = 'border-demon-minchae';
-            else if (isLightning) borderClass = 'border-lightning';
-            else if (isHolyAngel) borderClass = 'border-holy-gold';
-            else if (isJS) borderClass = 'border-js';
-            else if (isCosmic) borderClass = 'border-cosmic';
+            const borderClass = getAuraBorderClass(auraInfo);
 
             tile.className = `inventory-tile ${borderClass}`; 
             tile.style.borderColor = auraInfo.color;
@@ -1166,6 +1196,7 @@ function buildShopUI() {
     } 
 }
 
+// 📖 도감 업데이트 (발견된 칭호 빛나는 특수 테두리 100% 적용)
 function updateIndex() { 
     ui.indexGrid.innerHTML = ''; 
     if(!gameState.discoveredAuras) gameState.discoveredAuras = [];
@@ -1182,26 +1213,9 @@ function updateIndex() {
         aurasInGrade.forEach(aura => {
             const item = document.createElement('div'); 
             const isDiscovered = gameState.discoveredAuras.includes(aura.id) || gameState.inventory[aura.id] || gameState.autoDelete[aura.grade];
-            const isJS = aura.grade === "JS";
-            const isCosmic = aura.grade === "COSMIC";
-            const isHolyAngel = (aura.id === "divine_angel_gaen");
-            const isLightning = (aura.id === "js_lightning_jisung");
-            const isFalseTheatre = (aura.id === "js_false_theatre_tv");
-            const isDemonMinchae = (aura.id === "js_demon_minchae");
-            const isMonkeyLiberator = (aura.id === "js_monkey_liberator");
-            const isHeinous = (aura.id === "js_heinous_criminal");
 
             if (isDiscovered) { 
-                let borderClass = '';
-                if (isHeinous) borderClass = 'border-heinous-criminal';
-                else if (isMonkeyLiberator) borderClass = 'border-monkey-liberator';
-                else if (isFalseTheatre) borderClass = 'border-false-theatre';
-                else if (isDemonMinchae) borderClass = 'border-demon-minchae';
-                else if (isLightning) borderClass = 'border-lightning';
-                else if (isHolyAngel) borderClass = 'border-holy-gold';
-                else if (isJS) borderClass = 'border-js';
-                else if (isCosmic) borderClass = 'border-cosmic';
-
+                const borderClass = getAuraBorderClass(aura);
                 item.className = `index-item ${borderClass}`; 
                 item.style.borderColor = aura.color;
                 item.innerHTML = `
@@ -1235,15 +1249,10 @@ function buildAutoDeleteUI() {
     } 
 }
 
-// ------------------------------------------------------------------
-// 🏆 모달 내부 3가지 탭 랭킹 조회 시스템
-// ------------------------------------------------------------------
-
 async function loadRankingList(tabType) {
     currentRankTab = tabType;
     ui.rankingListGrid.innerHTML = `<p style="color:#aaa; text-align:center;">⏳ 랭킹 데이터 불러오는 중...</p>`;
     
-    // 탭 UI 활성화 클래스 변경
     ui.rankTabRolls.classList.remove('active');
     ui.rankTabJc.classList.remove('active');
     ui.rankTabAura.classList.remove('active');
@@ -1277,6 +1286,8 @@ async function loadRankingList(tabType) {
             else if (rank === 2) rankBadgeClass = "rank-2";
             else if (rank === 3) rankBadgeClass = "rank-3";
 
+            let titleCardHtml = getAuraCardHtml(data.selectedTitleAuraId);
+
             let displayValue = "";
             if (tabType === 'rolls') displayValue = `🎲 ${(data.rolls || 0).toLocaleString()}회`;
             else if (tabType === 'jc') displayValue = `🪙 ${(data.jc || 0).toLocaleString()} JC`;
@@ -1285,9 +1296,9 @@ async function loadRankingList(tabType) {
             card.innerHTML = `
                 <div class="rank-badge ${rankBadgeClass}">${rank}</div>
                 <img src="${data.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-                <div style="flex: 1; text-align: left;">
+                <div style="flex: 1; text-align: left; overflow: hidden;">
                     <div style="font-weight:bold; font-size:14px; color:white;">${data.name}</div>
-                    <div style="font-size:11px; color:#aaa;">"${data.statusMsg || '운빨 최강 도전 중!'}"</div>
+                    <div style="margin-top: 2px;">${titleCardHtml}</div>
                 </div>
                 <div style="text-align: right;">
                     <div style="font-size:13px; font-weight:bold; color:#f1c40f;">${displayValue}</div>
@@ -1302,7 +1313,7 @@ async function loadRankingList(tabType) {
         }
     } catch(e) {
         console.error("랭킹 로드 오류:", e);
-        ui.rankingListGrid.innerHTML = `<p style="color:#e74c3c; text-align:center;">랭킹을 불러올 수 없습니다. 로그인 상태를 확인해보세요.</p>`;
+        ui.rankingListGrid.innerHTML = `<p style="color:#e74c3c; text-align:center;">랭킹을 불러올 수 없습니다.</p>`;
     }
 }
 
@@ -1316,7 +1327,22 @@ ui.rankTabJc.addEventListener('click', () => loadRankingList('jc'));
 ui.rankTabAura.addEventListener('click', () => loadRankingList('aura'));
 ui.closeRanking.addEventListener('click', () => ui.rankingModal.classList.add('hidden'));
 
-// 👤 프로필 모달 오픈
+// 👑 대표 칭호 도감 카드 UI 생성 함수 (빛나는 효과 보장)
+function getAuraCardHtml(auraId) {
+    if (!auraId) return `<div class="title-card-mini border-common"><span style="color:#aaa;">대표 칭호 없음</span></div>`;
+    const aura = AURA_DATA.find(a => a.id === auraId);
+    if (!aura) return `<div class="title-card-mini border-common"><span style="color:#aaa;">대표 칭호 없음</span></div>`;
+
+    const borderClass = getAuraBorderClass(aura);
+
+    return `
+        <div class="title-card-mini ${borderClass}" style="border-color:${aura.color}; display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:6px; background:rgba(0,0,0,0.5);">
+            <span style="font-size:10px; font-weight:bold; color:${aura.color}">[${aura.grade}]</span>
+            <span class="${aura.class || ''}" style="font-size:12px; font-weight:bold; ${aura.class ? '' : `color:${aura.color};`}">${aura.name}</span>
+        </div>
+    `;
+}
+
 ui.profileBtn.addEventListener('click', () => {
     if (!currentUser) { alert("❌ 로그인이 필요한 기능입니다!"); return; }
     openUserProfileModal(currentUser.uid);
@@ -1334,32 +1360,65 @@ async function openUserProfileModal(targetUid) {
         const rankSnap = await getDoc(doc(db, "rankings", targetUid));
         if (rankSnap.exists()) {
             const data = rankSnap.data();
+            
             document.getElementById('profile-user-img').src = data.photo || 'https://via.placeholder.com/80';
-            document.getElementById('profile-user-name').innerText = data.name;
+            document.getElementById('profile-user-name').innerText = data.name || "무명 유저";
             document.getElementById('profile-user-status').innerText = `"${data.statusMsg || '운빨 최강 도전 중!'}"`;
             document.getElementById('profile-rolls').innerText = (data.rolls || 0).toLocaleString();
             document.getElementById('profile-jc').innerText = (data.jc || 0).toLocaleString();
-            document.getElementById('profile-best-aura').innerText = data.bestAura || '없음';
-            document.getElementById('profile-gear').innerText = data.gearName || '없음';
-            document.getElementById('status-msg-input').value = data.statusMsg || '';
-        } else {
-            alert("프로필 정보를 찾을 수 없습니다.");
+            document.getElementById('profile-gauntlet').innerText = data.gearName || '없음';
+            document.getElementById('profile-amulet').innerText = data.amuletName || '없음';
+
+            document.getElementById('profile-title-card-slot').innerHTML = getAuraCardHtml(data.selectedTitleAuraId);
+
+            if (isMe) {
+                ui.editNicknameInput.value = gameState.customNickname || data.name;
+                ui.editPhotoInput.value = gameState.customPhoto || data.photo;
+                document.getElementById('status-msg-input').value = gameState.statusMsg || data.statusMsg;
+
+                ui.editTitleSelect.innerHTML = `<option value="">-- 선택 안함 --</option>`;
+                if (gameState.discoveredAuras) {
+                    gameState.discoveredAuras.forEach(auraId => {
+                        const aura = AURA_DATA.find(a => a.id === auraId);
+                        if (aura) {
+                            const opt = document.createElement('option');
+                            opt.value = aura.id;
+                            opt.innerText = `[${aura.grade}] ${aura.name}`;
+                            if (aura.id === gameState.selectedTitleAuraId) opt.selected = true;
+                            ui.editTitleSelect.appendChild(opt);
+                        }
+                    });
+                }
+            }
         }
     } catch(e) { console.error("프로필 로드 오류:", e); }
 }
 
-document.getElementById('save-status-msg-btn').addEventListener('click', async () => {
-    const newMsg = document.getElementById('status-msg-input').value.trim();
-    if (!newMsg) return;
-    gameState.statusMsg = newMsg;
+ui.editAvatarSelect.addEventListener('change', (e) => {
+    if (e.target.value) {
+        ui.editPhotoInput.value = e.target.value;
+    }
+});
+
+ui.saveProfileAllBtn.addEventListener('click', async () => {
+    const nick = ui.editNicknameInput.value.trim();
+    const photo = ui.editPhotoInput.value.trim();
+    const titleId = ui.editTitleSelect.value;
+    const msg = document.getElementById('status-msg-input').value.trim();
+
+    gameState.customNickname = nick;
+    gameState.customPhoto = photo;
+    gameState.selectedTitleAuraId = titleId;
+    gameState.statusMsg = msg;
+
     saveGame();
     await updateRankData();
-    document.getElementById('profile-user-status').innerText = `"${newMsg}"`;
-    alert("✨ 상태 메시지가 업데이트 되었습니다!");
+    await openUserProfileModal(currentUser.uid);
+    alert("✨ 프로필 설정이 업데이트 되었습니다!");
 });
+
 ui.closeProfile.addEventListener('click', () => { ui.profileModal.classList.add('hidden'); });
 
-// 🏪 유저 거래 장터
 ui.marketBtn.addEventListener('click', async () => {
     if (!currentUser) { alert("❌ 거래 장터는 로그인 후 이용 가능합니다!"); return; }
     ui.marketModal.classList.remove('hidden');
@@ -1388,11 +1447,15 @@ async function loadMarketList() {
                 `<button class="action-btn" style="background:#888;" onclick="cancelMarketListing('${itemId}', '${item.auraId}')">취소하기</button>` :
                 `<button class="action-btn buy" onclick="buyMarketItem('${itemId}', '${item.sellerUid}', '${item.auraId}', ${item.price})">구매하기</button>`;
 
+            let devDeleteBtn = disableSave ? 
+                `<button class="action-btn" style="background:#e74c3c; margin-top:5px; font-size:10px;" onclick="forceDeleteMarketItem('${itemId}')">🗑️ 강제 삭제</button>` : '';
+
             tile.innerHTML = `
                 <div style="font-size: 11px; color:#aaa;">판매자: ${item.sellerName}</div>
-                <div style="font-size: 15px; font-weight: bold; color:${auraInfo.color}; margin: 6px 0;">[${auraInfo.grade}] ${auraInfo.name}</div>
+                <div style="font-size: 14px; font-weight: bold; color:${auraInfo.color}; margin: 6px 0;">[${auraInfo.grade}] ${auraInfo.name}</div>
                 <div style="font-size: 13px; font-weight: bold; color:#f1c40f; margin-bottom: 8px;">🪙 ${item.price.toLocaleString()} JC</div>
                 ${actionBtnHtml}
+                ${devDeleteBtn}
             `;
             ui.marketItemGrid.appendChild(tile);
         });
@@ -1427,34 +1490,63 @@ ui.openSellMarketBtn.addEventListener('click', () => {
         return;
     }
 
+    updatePriceLimitUI();
     ui.registerMarketModal.classList.remove('hidden');
 });
+
+function updatePriceLimitUI() {
+    const auraId = ui.marketSellAuraSelect.value;
+    const aura = AURA_DATA.find(a => a.id === auraId);
+    if (aura) {
+        const maxPrice = aura.jcValue * 10;
+        ui.marketPriceLimitText.innerText = maxPrice.toLocaleString();
+    }
+}
+
+ui.marketSellAuraSelect.addEventListener('change', updatePriceLimitUI);
 ui.closeRegisterMarket.addEventListener('click', () => { ui.registerMarketModal.classList.add('hidden'); });
 
 ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
     const auraId = ui.marketSellAuraSelect.value;
+    const count = parseInt(ui.marketSellCount.value);
     const price = parseInt(ui.marketSellPrice.value);
+    const aura = AURA_DATA.find(a => a.id === auraId);
 
-    if (!auraId || isNaN(price) || price <= 0) { alert("❌ 가격을 제대로 입력해주세요."); return; }
-    if (!gameState.inventory[auraId] || gameState.inventory[auraId] < 1) { alert("❌ 해당 칭호가 부족합니다."); return; }
+    if (!auraId || !aura || isNaN(price) || price <= 0 || isNaN(count) || count <= 0) {
+        alert("❌ 수량과 가격을 바르게 입력해주세요."); return;
+    }
 
-    gameState.inventory[auraId]--;
+    const maxAllowedPrice = aura.jcValue * 10;
+    if (price > maxAllowedPrice) {
+        alert(`❌ 가격이 너무 높습니다!\n해당 칭호의 최고 등록 가능 가격은 ${maxAllowedPrice.toLocaleString()} JC (기본 가치의 10배) 입니다.`);
+        return;
+    }
+
+    if (!gameState.inventory[auraId] || gameState.inventory[auraId] < count) {
+        alert(`❌ 보유한 칭호 수량(${gameState.inventory[auraId] || 0}개)보다 많이 등록할 수 없습니다.`);
+        return;
+    }
+
+    gameState.inventory[auraId] -= count;
     if (gameState.inventory[auraId] === 0) delete gameState.inventory[auraId];
 
     saveGame(); updateInventory();
 
     try {
-        const marketRef = doc(collection(db, "market"));
-        await setDoc(marketRef, {
-            sellerUid: currentUser.uid,
-            sellerName: currentUser.displayName || "무명 유저",
-            auraId: auraId,
-            price: price,
-            createdAt: Date.now()
-        });
+        const name = gameState.customNickname || currentUser.displayName || "무명 유저";
+        for (let i = 0; i < count; i++) {
+            const marketRef = doc(collection(db, "market"));
+            await setDoc(marketRef, {
+                sellerUid: currentUser.uid,
+                sellerName: name,
+                auraId: auraId,
+                price: price,
+                createdAt: Date.now() + i
+            });
+        }
         ui.registerMarketModal.classList.add('hidden');
         await loadMarketList();
-        alert("🎉 성공적으로 장터에 매물을 등록했습니다!");
+        alert(`🎉 성공적으로 칭호 ${count}개를 각각의 매물로 연달아 등록했습니다!`);
     } catch(e) { alert("등록 실패: " + e.message); }
 });
 
@@ -1471,7 +1563,6 @@ window.cancelMarketListing = async function(listingId, auraId) {
 window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
     if (gameState.jc < price) { alert("❌ JC가 부족합니다!"); return; }
     const auraInfo = AURA_DATA.find(a => a.id === auraId);
-    if (!confirm(`[${auraInfo ? auraInfo.name : '칭호'}]를 ${price.toLocaleString()} JC에 구매하시겠습니까?`)) return;
 
     try {
         await runTransaction(db, async (transaction) => {
@@ -1492,9 +1583,18 @@ window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
         gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
         if (!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId);
 
-        saveGame(); updateStatsUI(); updateInventory(); await loadMarketList();
-        alert("🎉 구매에 성공했습니다! 칭호가 인벤토리로 들어왔습니다.");
+        saveGame(); updateStatsUI(); updateInventory();
+        await loadMarketList();
     } catch(e) { alert("구매 실패: " + e); }
+};
+
+window.forceDeleteMarketItem = async function(listingId) {
+    if (!confirm("🛠️ [개발자 권한] 해당 매물을 강제 삭제하시겠습니까?")) return;
+    try {
+        await deleteDoc(doc(db, "market", listingId));
+        await loadMarketList();
+        alert("🗑️ 매물이 즉시 강제 삭제되었습니다.");
+    } catch(e) { alert("삭제 실패: " + e.message); }
 };
 
 ui.btn.addEventListener('click', startRoll);
