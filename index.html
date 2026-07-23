@@ -62,7 +62,7 @@
         </div>
         <div id="active-buffs" style="font-size: 11px; color: #f39c12; min-height: 16px; margin-bottom: 5px; font-weight: bold;"></div>
 
-        <!-- 롤링 컨트롤 버튼 (색상 원복 & 영상 구조 유지) -->
+        <!-- 롤링 컨트롤 버튼 (빠른 롤 / 오토 롤 분화) -->
         <div class="roll-controls">
             <button id="roll-btn">
                 <div class="roll-btn-content">
@@ -71,7 +71,10 @@
                 </div>
                 <div id="cooldown-bar"></div>
             </button>
-            <button id="auto-roll-btn">오토: OFF</button>
+            <div class="auto-roll-group">
+                <button id="quick-roll-btn" disabled>🔒 빠른 롤 (잠김)</button>
+                <button id="auto-roll-btn">오토: OFF</button>
+            </div>
         </div>
 
         <!-- 하단 메인 메뉴 -->
@@ -80,7 +83,17 @@
             <button id="item-inven-btn" class="main-menu-btn">🧪 물약 가방</button>
             <button id="craft-btn" class="main-menu-btn">🔨 제작소</button>
             <button id="shop-btn" class="main-menu-btn">🛒 상점</button>
+            <button id="quest-btn" class="main-menu-btn">📜 퀘스트</button>
             <button id="index-btn" class="main-menu-btn">📖 도감</button>
+        </div>
+    </div>
+
+    <!-- 📜 퀘스트 모달 -->
+    <div id="quest-modal" class="modal hidden">
+        <div class="modal-content large">
+            <span id="close-quest" class="close-btn">&times;</span>
+            <h2>📜 퀘스트 목록</h2>
+            <div id="quest-list-grid"></div>
         </div>
     </div>
 
@@ -171,7 +184,7 @@
         </div>
     </div>
 
-    <!-- 📊 등급 및 확률 안내 모달 (사진 스타일 반영) -->
+    <!-- 📊 등급 및 확률 안내 모달 -->
     <div id="grade-table-modal" class="modal hidden">
         <div class="modal-content" style="background-color: #1a1a1a; border-radius: 12px; padding: 25px;">
             <span id="close-grade-table" class="close-btn">&times;</span>
@@ -298,7 +311,7 @@
         </div>
     </div>
 
-    <!-- 🛠️ 개발자 패널 모달 -->
+    <!-- 🛠️ 개발자 패널 모달 (신규 치트 버튼 2종 추가) -->
     <div id="dev-modal" class="modal hidden">
         <div class="modal-content">
             <span id="close-dev" class="close-btn">&times;</span>
@@ -307,6 +320,8 @@
                 <button onclick="cheatJC()" class="action-btn buy">🪙 +100만 JC 지급</button>
                 <button onclick="cheatLuck()" class="action-btn use">🍀 운 10,000배 설정</button>
                 <button onclick="cheatItems()" class="action-btn">🎒 모든 칭호 50개씩 지급</button>
+                <button onclick="cheatCompleteQuests()" class="action-btn" style="background:#8e44ad;">📜 모든 퀘스트 완료</button>
+                <button onclick="cheatAllCraftItems()" class="action-btn" style="background:#2980b9;">🔨 모든 제작템 획득</button>
                 <hr style="border:0.5px solid #444; width:100%;">
                 <label style="font-size:12px;">🎯 다음 롤 원하는 칭호 지정:</label>
                 <select id="dev-aura-select" style="padding:8px; background:#111; color:white; border-radius:5px;"></select>

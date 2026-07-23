@@ -73,5 +73,20 @@ export const CRAFT_ITEMS = [
         luckBonus: 0, 
         speedBonus: 0, 
         req: { "com_drum": 500 } 
+    },
+    { 
+        id: "amulet_commander", 
+        category: "amulet", 
+        name: "우주 사령관의 부적", 
+        desc: "롤을 10회 돌리면 다음 1회 롤에 행운이 5배로 증가합니다.", 
+        luckBonus: 0, 
+        speedBonus: 0, 
+        req: { 
+            "mythic_space_byungeun": 5, 
+            "epic_emperor": 15, 
+            "ep_commander_byungeun": 30, 
+            "rare_drill_byungeun": 75, 
+            "com_normal": 600 
+        } 
     }
 ];

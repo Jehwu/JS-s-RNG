@@ -71,7 +71,28 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .cooldown-active #cooldown-bar { animation-name: cooldown-shrink; animation-timing-function: linear; animation-fill-mode: forwards; }
 @keyframes cooldown-shrink { 0% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
 
-#auto-roll-btn { background-color: #333; color: white; border: 1px solid #555; padding: 15px 20px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.3s; z-index: 5; position: relative; }
+.auto-roll-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 5;
+}
+
+#quick-roll-btn, #auto-roll-btn { 
+    background-color: #333; 
+    color: white; 
+    border: 1px solid #555; 
+    padding: 8px 12px; 
+    font-size: 13px; 
+    font-weight: bold; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    transition: 0.3s; 
+    flex: 1;
+}
+
+#quick-roll-btn.active { background-color: #e67e22; border-color: #d35400; }
+#quick-roll-btn:disabled { background-color: #222; color: #666; border-color: #333; cursor: not-allowed; }
 #auto-roll-btn.active { background-color: #2ecc71; border-color: #27ae60; }
 
 #multiplier-container { display: flex; gap: 10px; justify-content: center; margin-bottom: 5px; width: 100%; }
@@ -88,7 +109,21 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .close-btn { position: absolute; top: 15px; right: 18px; font-size: 22px; cursor: pointer; color: #888; transition: color 0.2s; }
 .close-btn:hover { color: white; }
 
-/* 📊 확률표 카드 전용 */
+#quest-list-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+.quest-card { background: #2b2b2b; border: 2px solid #444; border-radius: 10px; padding: 15px; text-align: left; position: relative; }
+.quest-card.active-quest { border-color: #e67e22; box-shadow: 0 0 10px rgba(230, 126, 34, 0.3); }
+.quest-card.completed { border-color: #27ae60; opacity: 0.8; }
+.quest-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.quest-title { font-size: 18px; font-weight: bold; color: #f39c12; }
+.quest-badge { font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
+.quest-badge.ing { background: #e67e22; color: white; }
+.quest-badge.done { background: #27ae60; color: white; }
+.quest-desc { font-size: 12px; color: #aaa; margin-bottom: 12px; }
+.quest-target-list { display: flex; flex-direction: column; gap: 4px; font-size: 13px; margin-bottom: 12px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; }
+.quest-target { color: #e74c3c; font-weight: bold; }
+.quest-target.met { color: #2ecc71; }
+.quest-reward { font-size: 13px; font-weight: bold; color: #00d2d3; margin-bottom: 12px; }
+
 .grade-list-container { display: flex; flex-direction: column; gap: 8px; }
 .grade-card { display: flex; justify-content: space-between; align-items: center; background-color: #2b2c2e; padding: 14px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; border-left: 4px solid transparent; }
 
@@ -102,7 +137,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .col-cosmic { color: #a55fea; }
 .col-js { color: #ff3366; }
 
-/* 🛠️ [버그 수정] 인벤토리/도감 카드용 전체 테두리 색상 개편 */
 .border-common { border-color: #8c8c8c !important; }
 .border-uncommon { border-color: #2ecc71 !important; }
 .border-rare { border-color: #3498db !important; }
@@ -112,7 +146,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .border-divine { border-color: #00d2d3 !important; }
 .border-cosmic { border-color: #a55fea !important; box-shadow: 0 0 10px rgba(165, 95, 234, 0.4); }
 
-/* 🛠️ [버그 수정] 공허왕 공허병은 및 JS 전용 글로우 테두리 생성 */
 .border-js { 
     border-color: #500000 !important; 
     box-shadow: 0 0 15px rgba(255, 0, 85, 0.8), inset 0 0 10px rgba(138, 0, 0, 0.6); 
@@ -134,7 +167,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .border-green { border-color: #27ae60 !important; }
 .border-blue { border-color: #2980b9 !important; }
 
-/* 🧪 특수 배수 물약 전용 화려한 테두리 애니메이션 */
 .border-limit {
     border-color: #ff6b08 !important;
     box-shadow: 0 0 15px rgba(255, 107, 8, 0.8), inset 0 0 10px rgba(142, 68, 173, 0.6);
@@ -266,6 +298,56 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     text-shadow: 0 0 22px rgba(0, 229, 255, 0.9), 0 0 12px rgba(121, 40, 202, 0.7);
 }
 
+/* 💩+🌸 종말의 보이스 전용 */
+.aura-doomsday-voice {
+    background: linear-gradient(90deg, #8d6e63, #ff69b4, #795548, #ff1493);
+    -webkit-background-clip: text; color: transparent !important;
+    font-weight: 900; background-size: 200% auto; animation: shine-anim 1.5s linear infinite;
+    text-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
+}
+
+/* 👑 퀸카의 밥상 전용 */
+.aura-queen-table {
+    background: linear-gradient(90deg, #ff4081, #ff80ab, #f48fb1, #ff1744);
+    -webkit-background-clip: text; color: transparent !important;
+    font-weight: 900; background-size: 200% auto; animation: shine-anim 1.2s linear infinite;
+    text-shadow: 0 0 20px rgba(255, 64, 129, 0.9);
+}
+
+/* 🌈 힘을 숨긴자 전용 */
+.aura-hidden-power {
+    background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+    -webkit-background-clip: text; color: transparent !important;
+    font-weight: 900; background-size: 300% auto; animation: shine-anim 2s linear infinite;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.9);
+}
+
+/* ⚔️ 강철검제 전용 */
+.aura-steel-emperor {
+    background: linear-gradient(90deg, #00b0ff, #b0bec5, #0288d1, #eceff1);
+    -webkit-background-clip: text; color: transparent !important;
+    font-weight: 900; background-size: 200% auto; animation: shine-anim 1.8s linear infinite;
+    text-shadow: 0 0 22px rgba(0, 176, 255, 0.9);
+}
+
+/* 🩸 흉악범 전용 칭호 & 네온 글로우 테두리 */
+.border-heinous-criminal {
+    border-color: #8b0000 !important;
+    box-shadow: 0 0 18px rgba(139, 0, 0, 0.95), inset 0 0 12px rgba(0, 77, 64, 0.9);
+    animation: heinous-neon 1.0s infinite alternate !important;
+}
+@keyframes heinous-neon {
+    0% { border-color: #8b0000; box-shadow: 0 0 12px #8b0000, inset 0 0 8px #004d40; }
+    100% { border-color: #ff0033; box-shadow: 0 0 28px #ff0033, inset 0 0 20px #00796b; }
+}
+
+.aura-heinous-criminal {
+    background: linear-gradient(90deg, #8b0000, #004d40, #ff0033, #00796b);
+    -webkit-background-clip: text; color: transparent !important;
+    font-weight: 900; background-size: 200% auto; animation: shine-anim 1.2s linear infinite;
+    text-shadow: 0 0 25px rgba(255, 0, 51, 0.9), 0 0 10px rgba(0, 77, 64, 0.8);
+}
+
 input[type="range"] { -webkit-appearance: none; width: 100%; background: #555; height: 6px; border-radius: 3px; outline: none; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #f1c40f; cursor: pointer; }
 input[type="number"] { background: #222; color: white; border: 1px solid #555; border-radius: 4px; padding: 3px; text-align: center; outline: none; }
@@ -358,3 +440,19 @@ input[type="number"] { background: #222; color: white; border: 1px solid #555; b
 
 .flash-white { animation: flashWhite 0.5s ease-out forwards; }
 @keyframes flashWhite { 0% { background-color: black; } 50% { background-color: white; } 100% { background-color: transparent; } }
+
+/* 🏷️ 인벤토리 & 도감 등급별 헤더 구획 스타일 */
+.grade-section-header {
+    grid-column: 1 / -1;
+    font-size: 15px;
+    font-weight: 800;
+    color: #666;
+    text-align: center;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+}
+.grade-section-header:first-child {
+    margin-top: 5px;
+}

@@ -183,6 +183,22 @@ const SHOP_ITEMS = [
     { id: "heaven_potion", name: "천상의 물약", price: 300000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150000배 행운 (1회 소모)", border: "border-heaven" }
 ];
 
+const QUEST_DATA = [
+    {
+        id: "quest_swift",
+        name: "신속하게",
+        desc: "빠른 롤 시스템을 사용하기 위한 신속함 증명하기",
+        rewardDesc: "⚡ 빠른 롤 기능 해금 + 🧪 천상의 물약 5개",
+        targets: {
+            rolls: 5000,
+            divine: 15,
+            cosmic: 5,
+            jc: 3000000,
+            shopPurchases: 20
+        }
+    }
+];
+
 for (let i = 0; i < AURA_DATA.length; i++) { 
     AURA_DATA[i].chance = 100 / AURA_DATA[i].in; 
     let baseJc = Math.max(1, Math.floor(AURA_DATA[i].in / 5)); 
@@ -195,20 +211,26 @@ let gameState = {
     rolls: 0, luck: 1, jc: 0, 
     inventory: {}, itemInventory: {}, discoveredAuras: [], 
     autoDelete: {}, activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0, luckLevel: 0, speedLevel: 0 }, 
-    activeMultBuffs: [], gear: null, amulet: null, amuletStack: 0, craftedGears: [], usedCodes: [] 
+    activeMultBuffs: [], gear: null, amulet: null, amuletStack: 0, craftedGears: [], usedCodes: [],
+    completedQuests: [],
+    activeQuest: null,
+    questProgress: {},
+    quickRollUnlocked: false
 };
 
-let isRolling = false; let isAutoRolling = false; let disableSave = false; let backupGameState = null; let nextRollOverride = null;
+let isRolling = false; let isAutoRolling = false; let isQuickRollActive = false;
+let disableSave = false; let backupGameState = null; let nextRollOverride = null;
 let currentCraftTab = "gauntlet";
 
 const ui = {
     rollCount: document.getElementById('roll-count'), jcCount: document.getElementById('jc-count'),
     luckMultiplier: document.getElementById('luck-multiplier'), speedMultiplier: document.getElementById('speed-multiplier'),
-    activeBuffs: document.getElementById('active-buffs'), display: document.getElementById('aura-display'), btn: document.getElementById('roll-btn'), btnMainText: document.getElementById('btn-main-text'), btnSubText: document.getElementById('btn-sub-text'), cooldownBar: document.getElementById('cooldown-bar'), autoRollBtn: document.getElementById('auto-roll-btn'),
+    activeBuffs: document.getElementById('active-buffs'), display: document.getElementById('aura-display'), btn: document.getElementById('roll-btn'), btnMainText: document.getElementById('btn-main-text'), btnSubText: document.getElementById('btn-sub-text'), cooldownBar: document.getElementById('cooldown-bar'), autoRollBtn: document.getElementById('auto-roll-btn'), quickRollBtn: document.getElementById('quick-roll-btn'),
     inventoryBtn: document.getElementById('inventory-btn'), inventoryModal: document.getElementById('inventory-modal'), closeInventory: document.getElementById('close-inventory'), inventoryGrid: document.getElementById('inventory-grid'),
     itemInvenBtn: document.getElementById('item-inven-btn'), itemInvenModal: document.getElementById('item-inven-modal'), closeItemInven: document.getElementById('close-item-inven'), itemInvenGrid: document.getElementById('item-inven-grid'),
     shopBtn: document.getElementById('shop-btn'), shopModal: document.getElementById('shop-modal'), closeShop: document.getElementById('close-shop'), shopGrid: document.getElementById('shop-grid'),
     indexBtn: document.getElementById('index-btn'), indexModal: document.getElementById('index-modal'), closeIndex: document.getElementById('close-index'), indexGrid: document.getElementById('index-grid'),
+    questBtn: document.getElementById('quest-btn'), questModal: document.getElementById('quest-modal'), closeQuest: document.getElementById('close-quest'), questListGrid: document.getElementById('quest-list-grid'),
     settingsHubBtn: document.getElementById('settings-hub-btn'), settingsHubModal: document.getElementById('settings-hub-modal'), closeSettingsHub: document.getElementById('close-settings-hub'),
     devBtn: document.getElementById('dev-btn'), mainDevBtn: document.getElementById('main-dev-btn'), devModal: document.getElementById('dev-modal'), closeDev: document.getElementById('close-dev'),
     craftBtn: document.getElementById('craft-btn'), craftModal: document.getElementById('craft-modal'), closeCraft: document.getElementById('close-craft'), craftGrid: document.getElementById('craft-grid'),
@@ -284,7 +306,7 @@ async function loadGameFromCloud() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             gameState = { ...gameState, ...docSnap.data() };
-            updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI();
+            updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
         } else { await saveGameToCloud(); }
     } catch (e) { console.error("클라우드 로드 실패:", e); }
 }
@@ -304,30 +326,25 @@ ui.closeSound.addEventListener('click', () => { ui.soundModal.classList.add('hid
 ui.settingsHubBtn.addEventListener('click', () => { ui.settingsHubModal.classList.remove('hidden'); });
 ui.closeSettingsHub.addEventListener('click', () => { ui.settingsHubModal.classList.add('hidden'); });
 
+// 🎁 신규 쿠폰 개편 (QUEST1, SPEEEED)
 ui.submitCodeBtn.addEventListener('click', () => {
     const codeVal = ui.codeInput.value.trim().toUpperCase();
     if (!gameState.usedCodes) gameState.usedCodes = [];
 
-    if (codeVal === "AMULET!") {
-        if (gameState.usedCodes.includes("AMULET!")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
-        gameState.usedCodes.push("AMULET!");
-        gameState.itemInventory["limit_potion"] = (gameState.itemInventory["limit_potion"] || 0) + 2;
-        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 2;
-        gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 2;
-        saveGame(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [AMULET! 쿠폰 성공!] 한계 2개, 극복 2개, 천상의 물약 2개가 지급되었습니다!");
-    } else if (codeVal === "LETSLOGIN") {
-        if (gameState.usedCodes.includes("LETSLOGIN")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
-        gameState.usedCodes.push("LETSLOGIN");
-        gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 1;
-        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 3;
-        saveGame(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [LETSLOGIN 쿠폰 성공!] 천상의 물약 1개, 극복의 물약 3개가 지급되었습니다!");
-    } else if (codeVal === "HELPME!") {
-        if (gameState.usedCodes.includes("HELPME!")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
-        gameState.usedCodes.push("HELPME!"); gameState.jc += 1000000;
+    if (codeVal === "QUEST1") {
+        if (gameState.usedCodes.includes("QUEST1")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
+        gameState.usedCodes.push("QUEST1");
+        gameState.jc += 1000000;
+        gameState.itemInventory["limit_potion"] = (gameState.itemInventory["limit_potion"] || 0) + 5;
+        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 1;
         saveGame(); updateStatsUI(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [HELPME! 쿠폰 성공!] 100만 JC가 지급되었습니다!");
+        alert("🎉 [QUEST1 쿠폰 성공!] 100만 JC, 한계의 물약 5개, 극복의 물약 1개가 지급되었습니다!");
+    } else if (codeVal === "SPEEEED") {
+        if (gameState.usedCodes.includes("SPEEEED")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
+        gameState.usedCodes.push("SPEEEED");
+        gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 3;
+        saveGame(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [SPEEEED 쿠폰 성공!] 천상의 물약 3개가 지급되었습니다!");
     } else { alert("❌ 존재하지 않거나 잘못된 코드입니다."); }
 });
 
@@ -361,10 +378,12 @@ function loadGame() {
         if(!gameState.usedCodes) gameState.usedCodes = [];
         if(!gameState.activeMultBuffs) gameState.activeMultBuffs = [];
         if(!gameState.discoveredAuras) gameState.discoveredAuras = [];
+        if(!gameState.completedQuests) gameState.completedQuests = [];
+        if(!gameState.questProgress) gameState.questProgress = {};
         if(gameState.amuletStack === undefined) gameState.amuletStack = 0;
         for(let auraId in gameState.inventory) { if(!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId); }
     }
-    updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI();
+    updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
 }
 
 function saveGame() { 
@@ -373,9 +392,34 @@ function saveGame() {
     saveGameToCloud(); 
 }
 
+// 🛠️ 개발자 치트 기능
 window.cheatJC = function() { gameState.jc += 1000000; updateStatsUI(); alert("100만 JC 지급!"); }
 window.cheatLuck = function() { gameState.luck = 10000; updateStatsUI(); alert("운 10,000배!"); }
 window.cheatItems = function() { AURA_DATA.forEach(a => { gameState.inventory[a.id] = (gameState.inventory[a.id] || 0) + 50; if(!gameState.discoveredAuras.includes(a.id)) gameState.discoveredAuras.push(a.id); }); updateInventory(); updateCraftUI(); alert("칭호 50개씩 지급 및 도감 등록!"); }
+
+window.cheatCompleteQuests = function() {
+    QUEST_DATA.forEach(q => {
+        if (!gameState.completedQuests) gameState.completedQuests = [];
+        if (!gameState.completedQuests.includes(q.id)) gameState.completedQuests.push(q.id);
+    });
+    gameState.quickRollUnlocked = true;
+    saveGame();
+    updateQuestUI();
+    updateQuickRollUI();
+    alert("📜 모든 퀘스트 완료 및 빠른 롤 기능이 해금되었습니다!");
+};
+
+window.cheatAllCraftItems = function() {
+    CRAFT_ITEMS.forEach(item => {
+        if (!gameState.craftedGears.includes(item.id)) {
+            gameState.craftedGears.push(item.id);
+        }
+    });
+    saveGame();
+    updateCraftUI();
+    alert("🔨 모든 제작 아이템을 해금 및 획득했습니다!");
+};
+
 window.setNextRoll = function() { nextRollOverride = document.getElementById('dev-aura-select').value; const auraInfo = AURA_DATA.find(a => a.id === nextRollOverride); alert(`🎯 다음 굴리기: [${auraInfo.grade}] ${auraInfo.name}`); }
 
 ui.devBtn.addEventListener('click', () => {
@@ -408,6 +452,23 @@ function getTotalMultBonus() {
     return sumBonus;
 }
 
+function updateQuickRollUI() {
+    if (gameState.quickRollUnlocked) {
+        ui.quickRollBtn.disabled = false;
+        if (isQuickRollActive) {
+            ui.quickRollBtn.innerText = "빠른롤: ON";
+            ui.quickRollBtn.classList.add('active');
+        } else {
+            ui.quickRollBtn.innerText = "빠른롤: OFF";
+            ui.quickRollBtn.classList.remove('active');
+        }
+    } else {
+        ui.quickRollBtn.disabled = true;
+        ui.quickRollBtn.innerText = "🔒 빠른 롤 (잠김)";
+        ui.quickRollBtn.classList.remove('active');
+    }
+}
+
 function updateStatsUI() { 
     ui.rollCount.innerText = gameState.rolls; 
     ui.jcCount.innerText = gameState.jc.toLocaleString(); 
@@ -419,6 +480,8 @@ function updateStatsUI() {
 
     if (gameState.amulet === "amulet_drum" && gameState.amuletStack >= 10) {
         baseTotalLuck *= 2;
+    } else if (gameState.amulet === "amulet_commander" && gameState.amuletStack >= 10) {
+        baseTotalLuck *= 5;
     }
 
     let multBonus = getTotalMultBonus();
@@ -429,10 +492,11 @@ function updateStatsUI() {
     if(ui.luckMultiplier) ui.luckMultiplier.innerText = finalLuck.toLocaleString(); 
     if(ui.speedMultiplier) ui.speedMultiplier.innerText = currentSpeed;
 
-    if (gameState.amulet === "amulet_drum") {
+    if (gameState.amulet === "amulet_drum" || gameState.amulet === "amulet_commander") {
         ui.btnSubText.classList.remove('hidden');
+        const targetMultText = gameState.amulet === "amulet_commander" ? "x5" : "x2";
         if (gameState.amuletStack >= 10) {
-            ui.btnSubText.innerText = "x2 행운 준비";
+            ui.btnSubText.innerText = `${targetMultText} 행운 준비`;
             ui.btnSubText.style.color = "#f1c40f";
         } else {
             ui.btnSubText.innerText = `${gameState.amuletStack} / 10`;
@@ -465,14 +529,39 @@ setInterval(() => {
     if (updated) { updateStatsUI(); saveGame(); }
 }, 1000);
 
+ui.quickRollBtn.addEventListener('click', () => {
+    if (!gameState.quickRollUnlocked) return;
+    isQuickRollActive = !isQuickRollActive;
+    updateQuickRollUI();
+});
+
 ui.autoRollBtn.addEventListener('click', () => { isAutoRolling = !isAutoRolling; if (isAutoRolling) { ui.autoRollBtn.innerText = "오토: ON"; ui.autoRollBtn.classList.add('active'); if (!isRolling) startRoll(); } else { ui.autoRollBtn.innerText = "오토: OFF"; ui.autoRollBtn.classList.remove('active'); } });
+
+function trackQuestProgress(type, amount = 1) {
+    if (!gameState.activeQuest) return;
+    const qId = gameState.activeQuest;
+    if (!gameState.questProgress[qId]) {
+        gameState.questProgress[qId] = { rolls: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
+    }
+
+    if (type in gameState.questProgress[qId]) {
+        gameState.questProgress[qId][type] += amount;
+    }
+}
 
 function startRoll() {
     if (isRolling) return; isRolling = true;
     ui.btn.disabled = true; ui.btn.classList.remove('cooldown-active'); 
     gameState.rolls++; 
+    trackQuestProgress("rolls", 1);
 
     updateStatsUI(); saveGame();
+
+    if (isQuickRollActive && gameState.quickRollUnlocked) {
+        finishRoll();
+        return;
+    }
+
     let gearSpeed = gameState.gear ? (CRAFT_ITEMS.find(g => g.id === gameState.gear)?.speedBonus || 0) : 0;
     const speedBonus = (gameState.activeBuffs.speedBonus || 0) + gearSpeed;
     const maxTime = Math.max(400, 1200 * (1 - speedBonus)); const intervalTime = 60; let rollTime = 0; 
@@ -507,7 +596,13 @@ async function playStarCutscene(rolled) {
 
     let soundKey = 'divine_all';
     if (rolled.grade === "JS") {
-        if (rolled.id === "divine_angel_gaen") {
+        if (rolled.id === "js_heinous_criminal") {
+            ui.starOverlay.style.setProperty('--js-center-col', '#8b0000'); 
+            ui.starOverlay.style.setProperty('--js-mid-col', '#004d40'); 
+            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(139, 0, 0, 0.3)'); 
+            ui.starOverlay.style.setProperty('--js-glow-col', '#ff0033'); 
+            soundKey = 'js_all';
+        } else if (rolled.id === "divine_angel_gaen") {
             ui.starOverlay.style.setProperty('--js-center-col', '#fff59d'); 
             ui.starOverlay.style.setProperty('--js-mid-col', '#fbc02d'); 
             ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255, 245, 157, 0.15)'); 
@@ -588,11 +683,20 @@ async function finishRoll() {
         let gearLuck = gameState.gear ? (CRAFT_ITEMS.find(g => g.id === gameState.gear)?.luckBonus || 0) : 0;
         let baseTotalLuck = gameState.luck + gearLuck + (gameState.activeBuffs.luckBonus || 0);
 
-        if (gameState.amulet === "amulet_drum" && gameState.amuletStack >= 10) {
-            baseTotalLuck *= 2;
-            gameState.amuletStack = 0;
-        } else if (gameState.amulet === "amulet_drum") {
-            gameState.amuletStack = (gameState.amuletStack || 0) + 1;
+        if (gameState.amulet === "amulet_drum") {
+            if (gameState.amuletStack >= 10) {
+                baseTotalLuck *= 2;
+                gameState.amuletStack = 0;
+            } else {
+                gameState.amuletStack = (gameState.amuletStack || 0) + 1;
+            }
+        } else if (gameState.amulet === "amulet_commander") {
+            if (gameState.amuletStack >= 10) {
+                baseTotalLuck *= 5;
+                gameState.amuletStack = 0;
+            } else {
+                gameState.amuletStack = (gameState.amuletStack || 0) + 1;
+            }
         }
 
         let multBonus = getTotalMultBonus();
@@ -614,6 +718,9 @@ async function finishRoll() {
         }
         if (!found) rolled = pool[0];
     }
+
+    if (rolled.grade === "DIVINE") trackQuestProgress("divine", 1);
+    else if (rolled.grade === "COSMIC") trackQuestProgress("cosmic", 1);
 
     if (gameState.activeMultBuffs && gameState.activeMultBuffs.length > 0) {
         for (let i = 0; i < gameState.activeMultBuffs.length; i++) {
@@ -660,9 +767,17 @@ async function finishRoll() {
     const speedBonus = (gameState.activeBuffs.speedBonus || 0) + gearSpeed;
     const baseCooldown = isAutoRolling ? 2000 : 1000; const cooldownTime = Math.max(300, baseCooldown * (1 - speedBonus));
 
-    ui.cooldownBar.style.transitionDuration = `${cooldownTime}ms`; ui.cooldownBar.style.animationDuration = `${cooldownTime}ms`; ui.btn.classList.add('cooldown-active');
+    // 🔧 빠른 롤 연속 실행 시 애니메이션 재트리거 버그 완벽 수정
+    ui.btn.classList.remove('cooldown-active');
+    void ui.cooldownBar.offsetWidth; // DOM Reflow를 발생시켜 애니메이션 초기화
+
+    ui.cooldownBar.style.transitionDuration = `${cooldownTime}ms`; 
+    ui.cooldownBar.style.animationDuration = `${cooldownTime}ms`; 
+    ui.btn.classList.add('cooldown-active');
+
     setTimeout(() => { 
-        ui.btn.classList.remove('cooldown-active'); ui.btn.disabled = false; 
+        ui.btn.classList.remove('cooldown-active'); 
+        ui.btn.disabled = false; 
         isRolling = false; 
         updateStatsUI();
         if (isAutoRolling) startRoll(); 
@@ -728,6 +843,8 @@ document.getElementById('confirm-buy-btn').addEventListener('click', () => {
     gameState.jc -= totalPrice; 
     if (!gameState.itemInventory[currentBuyId]) gameState.itemInventory[currentBuyId] = buyAmount;
     else gameState.itemInventory[currentBuyId] += buyAmount;
+
+    trackQuestProgress("shopPurchases", buyAmount);
 
     saveGame(); updateStatsUI(); buildShopUI();
     ui.buyModal.classList.add('hidden');
@@ -814,22 +931,126 @@ document.getElementById('confirm-use-btn').addEventListener('click', () => {
     alert(`✨ '${item.name}' ${amount}개 사용 완료!`);
 });
 
+window.startQuest = function(qId) {
+    if (gameState.activeQuest) {
+        alert("⚠️ 이미 진행 중인 퀘스트가 있습니다!");
+        return;
+    }
+    gameState.activeQuest = qId;
+    if (!gameState.questProgress[qId]) {
+        gameState.questProgress[qId] = { rolls: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
+    }
+    saveGame();
+    updateQuestUI();
+    alert("📜 퀘스트를 시작했습니다!");
+};
+
+window.claimQuestReward = function(qId) {
+    const quest = QUEST_DATA.find(q => q.id === qId);
+    if (!quest) return;
+
+    if (!gameState.completedQuests) gameState.completedQuests = [];
+    gameState.completedQuests.push(qId);
+    gameState.activeQuest = null;
+
+    if (qId === "quest_swift") {
+        gameState.quickRollUnlocked = true;
+        gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 5;
+    }
+
+    saveGame();
+    updateQuestUI();
+    updateQuickRollUI();
+    alert(`🎉 퀘스트 완료! 보상이 지급되었습니다:\n${quest.rewardDesc}`);
+};
+
+function updateQuestUI() {
+    ui.questListGrid.innerHTML = '';
+
+    QUEST_DATA.forEach(quest => {
+        const isCompleted = gameState.completedQuests && gameState.completedQuests.includes(quest.id);
+        const isActive = gameState.activeQuest === quest.id;
+        const p = (gameState.questProgress && gameState.questProgress[quest.id]) ? gameState.questProgress[quest.id] : { rolls: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
+
+        const curRolls = Math.min(quest.targets.rolls, p.rolls || 0);
+        const curDivine = Math.min(quest.targets.divine, p.divine || 0);
+        const curCosmic = Math.min(quest.targets.cosmic, p.cosmic || 0);
+        const curJC = Math.min(quest.targets.jc, gameState.jc);
+        const curShop = Math.min(quest.targets.shopPurchases, p.shopPurchases || 0);
+
+        const isRollsMet = curRolls >= quest.targets.rolls;
+        const isDivineMet = curDivine >= quest.targets.divine;
+        const isCosmicMet = curCosmic >= quest.targets.cosmic;
+        const isJCMet = curJC >= quest.targets.jc;
+        const isShopMet = curShop >= quest.targets.shopPurchases;
+
+        const canClaim = isActive && isRollsMet && isDivineMet && isCosmicMet && isJCMet && isShopMet;
+
+        const card = document.createElement('div');
+        card.className = `quest-card ${isCompleted ? 'completed' : (isActive ? 'active-quest' : '')}`;
+
+        let btnHtml = '';
+        if (isCompleted) {
+            btnHtml = `<button class="action-btn" disabled style="background:#555;">✅ 완료됨</button>`;
+        } else if (canClaim) {
+            btnHtml = `<button class="action-btn use" onclick="claimQuestReward('${quest.id}')">🎉 보상 받기</button>`;
+        } else if (isActive) {
+            btnHtml = `<button class="action-btn" disabled style="background:#e67e22;">⏳ 진행 중</button>`;
+        } else {
+            const hasOtherActive = !!gameState.activeQuest;
+            btnHtml = `<button class="action-btn buy" onclick="startQuest('${quest.id}')" ${hasOtherActive ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>▶️ 시작하기</button>`;
+        }
+
+        card.innerHTML = `
+            <div class="quest-header">
+                <span class="quest-title">'${quest.name}'</span>
+                ${isCompleted ? '<span class="quest-badge done">완료</span>' : (isActive ? '<span class="quest-badge ing">진행중</span>' : '')}
+            </div>
+            <div class="quest-desc">${quest.desc}</div>
+            <div class="quest-target-list">
+                <div class="quest-target ${isRollsMet ? 'met' : ''}">• 롤 5000번 하기 (${curRolls.toLocaleString()} / 5,000)</div>
+                <div class="quest-target ${isDivineMet ? 'met' : ''}">• 디바인 15개 뽑기 (${curDivine} / 15)</div>
+                <div class="quest-target ${isCosmicMet ? 'met' : ''}">• 코스믹 5개 뽑기 (${curCosmic} / 5)</div>
+                <div class="quest-target ${isJCMet ? 'met' : ''}">• 3,000,000 JC 모으기 (${curJC.toLocaleString()} / 3,000,000)</div>
+                <div class="quest-target ${isShopMet ? 'met' : ''}">• 상점 아이템 20개 구매 (${curShop} / 20)</div>
+            </div>
+            <div class="quest-reward">🎁 보상: ${quest.rewardDesc}</div>
+            ${btnHtml}
+        `;
+        ui.questListGrid.appendChild(card);
+    });
+}
+
+// 🎒 칭호 가방 - 등급별 그룹 정렬 적용
 function updateInventory() { 
     ui.inventoryGrid.innerHTML = ''; 
-    for (let id in gameState.inventory) { 
-        const count = gameState.inventory[id]; const auraInfo = AURA_DATA.find(a => a.id === id); 
-        if (auraInfo) { 
+    let hasItems = false;
+
+    GRADES.forEach(grade => {
+        const aurasInGrade = AURA_DATA.filter(a => a.grade === grade && gameState.inventory[a.id]);
+        if (aurasInGrade.length === 0) return;
+        hasItems = true;
+
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'grade-section-header';
+        sectionHeader.innerHTML = `--- <span class="col-${grade.toLowerCase()}">[${grade}]</span> ---`;
+        ui.inventoryGrid.appendChild(sectionHeader);
+
+        aurasInGrade.forEach(auraInfo => {
+            const count = gameState.inventory[auraInfo.id];
             const tile = document.createElement('div'); 
             const isJS = auraInfo.grade === "JS";
             const isCosmic = auraInfo.grade === "COSMIC";
-            const isHolyAngel = (id === "divine_angel_gaen");
-            const isLightning = (id === "js_lightning_jisung");
-            const isFalseTheatre = (id === "js_false_theatre_tv");
-            const isDemonMinchae = (id === "js_demon_minchae");
-            const isMonkeyLiberator = (id === "js_monkey_liberator");
+            const isHolyAngel = (auraInfo.id === "divine_angel_gaen");
+            const isLightning = (auraInfo.id === "js_lightning_jisung");
+            const isFalseTheatre = (auraInfo.id === "js_false_theatre_tv");
+            const isDemonMinchae = (auraInfo.id === "js_demon_minchae");
+            const isMonkeyLiberator = (auraInfo.id === "js_monkey_liberator");
+            const isHeinous = (auraInfo.id === "js_heinous_criminal");
 
             let borderClass = '';
-            if (isMonkeyLiberator) borderClass = 'border-monkey-liberator';
+            if (isHeinous) borderClass = 'border-heinous-criminal';
+            else if (isMonkeyLiberator) borderClass = 'border-monkey-liberator';
             else if (isFalseTheatre) borderClass = 'border-false-theatre';
             else if (isDemonMinchae) borderClass = 'border-demon-minchae';
             else if (isLightning) borderClass = 'border-lightning';
@@ -843,11 +1064,15 @@ function updateInventory() {
                 <div class="tile-grade" style="color:${auraInfo.color}">[${auraInfo.grade}]</div>
                 <div class="tile-name ${auraInfo.class || ''}" style="${auraInfo.class ? '' : `color:${auraInfo.color}`}">${auraInfo.name}</div>
                 <div class="tile-count">보유: ${count}개</div>
-                <button class="action-btn" onclick="openSellModal('${id}')">판매</button>
+                <button class="action-btn" onclick="openSellModal('${auraInfo.id}')">판매</button>
             `; 
             ui.inventoryGrid.appendChild(tile); 
-        } 
-    } 
+        });
+    });
+
+    if (!hasItems) {
+        ui.inventoryGrid.innerHTML = `<p style="color:#777; grid-column: 1 / -1; text-align:center;">획득한 칭호가 없습니다.</p>`;
+    }
 }
 
 window.craftGear = function(gearId) { 
@@ -951,47 +1176,60 @@ function buildShopUI() {
     } 
 }
 
+// 📖 칭호 도감 - 등급별 그룹 정렬 적용
 function updateIndex() { 
     ui.indexGrid.innerHTML = ''; 
     if(!gameState.discoveredAuras) gameState.discoveredAuras = [];
 
-    for (let aura of AURA_DATA) { 
-        const item = document.createElement('div'); 
-        const isDiscovered = gameState.discoveredAuras.includes(aura.id) || gameState.inventory[aura.id] || gameState.autoDelete[aura.grade];
-        const isJS = aura.grade === "JS";
-        const isCosmic = aura.grade === "COSMIC";
-        const isHolyAngel = (aura.id === "divine_angel_gaen");
-        const isLightning = (aura.id === "js_lightning_jisung");
-        const isFalseTheatre = (aura.id === "js_false_theatre_tv");
-        const isDemonMinchae = (aura.id === "js_demon_minchae");
-        const isMonkeyLiberator = (aura.id === "js_monkey_liberator");
+    GRADES.forEach(grade => {
+        const aurasInGrade = AURA_DATA.filter(a => a.grade === grade);
+        if (aurasInGrade.length === 0) return;
 
-        if (isDiscovered) { 
-            let borderClass = '';
-            if (isMonkeyLiberator) borderClass = 'border-monkey-liberator';
-            else if (isFalseTheatre) borderClass = 'border-false-theatre';
-            else if (isDemonMinchae) borderClass = 'border-demon-minchae';
-            else if (isLightning) borderClass = 'border-lightning';
-            else if (isHolyAngel) borderClass = 'border-holy-gold';
-            else if (isJS) borderClass = 'border-js';
-            else if (isCosmic) borderClass = 'border-cosmic';
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'grade-section-header';
+        sectionHeader.innerHTML = `--- <span class="col-${grade.toLowerCase()}">[${grade}]</span> ---`;
+        ui.indexGrid.appendChild(sectionHeader);
 
-            item.className = `index-item ${borderClass}`; 
-            item.style.borderColor = aura.color;
-            item.innerHTML = `
-                <div style="font-weight:bold; color:${aura.color}">[${aura.grade}]</div>
-                <div class="${aura.class || ''}" style="font-size:14px; font-weight:bold; margin:4px 0; ${aura.class ? '' : `color:${aura.color}`}">${aura.name}</div>
-                <div class="index-chance" style="font-size:12px; color:#aaa;">1 in ${aura.in.toLocaleString()}</div>
-            `; 
-        } else { 
-            item.className = 'index-item unknown'; 
-            item.innerHTML = `
-                <div style="font-weight:bold;">???</div>
-                <div class="index-chance" style="font-size:12px;">1 in ${aura.in.toLocaleString()}</div>
-            `; 
-        } 
-        ui.indexGrid.appendChild(item); 
-    } 
+        aurasInGrade.forEach(aura => {
+            const item = document.createElement('div'); 
+            const isDiscovered = gameState.discoveredAuras.includes(aura.id) || gameState.inventory[aura.id] || gameState.autoDelete[aura.grade];
+            const isJS = aura.grade === "JS";
+            const isCosmic = aura.grade === "COSMIC";
+            const isHolyAngel = (aura.id === "divine_angel_gaen");
+            const isLightning = (aura.id === "js_lightning_jisung");
+            const isFalseTheatre = (aura.id === "js_false_theatre_tv");
+            const isDemonMinchae = (aura.id === "js_demon_minchae");
+            const isMonkeyLiberator = (aura.id === "js_monkey_liberator");
+            const isHeinous = (aura.id === "js_heinous_criminal");
+
+            if (isDiscovered) { 
+                let borderClass = '';
+                if (isHeinous) borderClass = 'border-heinous-criminal';
+                else if (isMonkeyLiberator) borderClass = 'border-monkey-liberator';
+                else if (isFalseTheatre) borderClass = 'border-false-theatre';
+                else if (isDemonMinchae) borderClass = 'border-demon-minchae';
+                else if (isLightning) borderClass = 'border-lightning';
+                else if (isHolyAngel) borderClass = 'border-holy-gold';
+                else if (isJS) borderClass = 'border-js';
+                else if (isCosmic) borderClass = 'border-cosmic';
+
+                item.className = `index-item ${borderClass}`; 
+                item.style.borderColor = aura.color;
+                item.innerHTML = `
+                    <div style="font-weight:bold; color:${aura.color}">[${aura.grade}]</div>
+                    <div class="${aura.class || ''}" style="font-size:14px; font-weight:bold; margin:4px 0; ${aura.class ? '' : `color:${aura.color}`}">${aura.name}</div>
+                    <div class="index-chance" style="font-size:12px; color:#aaa;">1 in ${aura.in.toLocaleString()}</div>
+                `; 
+            } else { 
+                item.className = 'index-item unknown'; 
+                item.innerHTML = `
+                    <div style="font-weight:bold;">???</div>
+                    <div class="index-chance" style="font-size:12px;">1 in ${aura.in.toLocaleString()}</div>
+                `; 
+            } 
+            ui.indexGrid.appendChild(item); 
+        });
+    });
 }
 
 function buildAutoDeleteUI() { 
@@ -1013,6 +1251,7 @@ ui.inventoryBtn.addEventListener('click', () => { updateInventory(); ui.inventor
 ui.itemInvenBtn.addEventListener('click', () => { updateItemInventory(); ui.itemInvenModal.classList.remove('hidden'); }); ui.closeItemInven.addEventListener('click', () => { ui.itemInvenModal.classList.add('hidden'); });
 ui.shopBtn.addEventListener('click', () => { ui.shopModal.classList.remove('hidden'); }); ui.closeShop.addEventListener('click', () => { ui.shopModal.classList.add('hidden'); });
 ui.indexBtn.addEventListener('click', () => { updateIndex(); ui.indexModal.classList.remove('hidden'); }); ui.closeIndex.addEventListener('click', () => { ui.indexModal.classList.add('hidden'); });
+ui.questBtn.addEventListener('click', () => { updateQuestUI(); ui.questModal.classList.remove('hidden'); }); ui.closeQuest.addEventListener('click', () => { ui.questModal.classList.add('hidden'); });
 ui.craftBtn.addEventListener('click', () => { updateCraftUI(); ui.craftModal.classList.remove('hidden'); }); ui.closeCraft.addEventListener('click', () => { ui.craftModal.classList.add('hidden'); });
 
 loadGame();

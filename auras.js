@@ -1,5 +1,6 @@
 export const AURA_DATA = [
     // 1. COMMON
+    { id: "com_just_byungeun", name: "그저 공병은", grade: "COMMON", in: 6, color: "#95a5a6" },
     { id: "com_drum", name: "동네북 김가은", grade: "COMMON", in: 2, color: "#696969" },
     { id: "com_normal", name: "평범한 김티비", grade: "COMMON", in: 4, color: "#808080" },
     { id: "com_new_gunwoo", name: "심심한 김건우", grade: "COMMON", in: 5, color: "#7f8c8d" },
@@ -8,6 +9,7 @@ export const AURA_DATA = [
     { id: "com_sleepy_jisung", name: "하품하는 박지성", grade: "COMMON", in: 8, color: "#95a5a6" },
 
     // 2. UNCOMMON
+    { id: "unc_cute_tv", name: "귀척 김티비", grade: "UNCOMMON", in: 66, color: "#ffb6c1" },
     { id: "unc_running", name: "뛰어가는 김민채", grade: "UNCOMMON", in: 12, color: "#90ee90" },
     { id: "unc_angry", name: "조금 화난 김건우", grade: "UNCOMMON", in: 16, color: "#3cb371" },
     { id: "unc_new_byungeun", name: "군기 잡힌 공병은", grade: "UNCOMMON", in: 18, color: "#27ae60" },
@@ -26,6 +28,7 @@ export const AURA_DATA = [
     { id: "rare_drill_byungeun", name: "조교 공병은", grade: "RARE", in: 90, color: "#3498db" },
 
     // 4. EPIC
+    { id: "ep_sorry_minchae", name: "쏘리맨 김민채", grade: "EPIC", in: 300, color: "#9b59b6" },
     { id: "ep_baksisung", name: "밪지성", grade: "EPIC", in: 100, color: "#27ae60" },
     { id: "epic_lucky", name: "운수 좋은 김티비", grade: "EPIC", in: 150, color: "#da70d6" },
     { id: "unc_hospital", name: "박지성지병원", grade: "EPIC", in: 250, color: "#2e8b57" },
@@ -36,6 +39,7 @@ export const AURA_DATA = [
     { id: "ep_commander_byungeun", name: "지휘관 공병은", grade: "EPIC", in: 400, color: "#9b59b6" },
 
     // 5. LEGEND
+    { id: "leg_gold_sujeo", name: "김가은수저 : 금수저", grade: "LEGEND", in: 7373, color: "#ffd700", class: "aura-legend-4" },
     { id: "rare_gaedoor", name: "김가은두르", grade: "LEGEND", in: 500, color: "#4682b4" },
     { id: "ep_poop_tv", name: "똥먹방 김티비", grade: "LEGEND", in: 645, color: "#8d6e63" },
     { id: "ep_gaen_sujeo", name: "김가은수저", grade: "LEGEND", in: 737, color: "#f39c12" },
@@ -52,6 +56,7 @@ export const AURA_DATA = [
     { id: "leg_shadow_minchae", name: "그림자 암살자 김민채", grade: "LEGEND", in: 5500, color: "#8e44ad", class: "aura-legend-5" },
 
     // 6. MYTHIC
+    { id: "mythic_minjeryam", name: "김민제리얌", grade: "MYTHIC", in: 36000, color: "#ff70a6", class: "aura-mythic-3" },
     { id: "gemini_basic", name: "김민제미나이", grade: "MYTHIC", in: 10101, color: "#00ffff", class: "aura-mythic-1" },
     { id: "epic_monkey", name: "건숭이", grade: "MYTHIC", in: 13131, color: "#ba55d3", class: "aura-mythic-2" },
     { id: "mythic_empress", name: "절대여제 김가은", grade: "MYTHIC", in: 15000, color: "#ff69b4", class: "aura-mythic-3" },
@@ -67,6 +72,7 @@ export const AURA_DATA = [
     { id: "mythic_overlord_gunwoo", name: "심연의 패왕 김건우", grade: "MYTHIC", in: 555555, color: "#e74c3c", class: "aura-mythic-2" },
 
     // 7. DIVINE
+    { id: "divine_doomsday_voice", name: "귀척 김티비 : 종말의 보이스", grade: "DIVINE", in: 6666666, color: "#e056fd", class: "aura-doomsday-voice" },
     { id: "gemini_pro", name: "김민제미나이 : 프로", grade: "DIVINE", in: 1010101, color: "#9b59b6", class: "aura-divine-1" },
     { id: "div_absolute_gaen", name: "절대여제 김가은 : 범접불가", grade: "DIVINE", in: 1515151, color: "#a55fea", class: "aura-divine-2" },
     { id: "var_virtual", name: "100만 유튜버 김티비 : 버츄얼 모드", grade: "DIVINE", in: 2545454, color: "#2ecc71", class: "aura-divine-3" },
@@ -81,6 +87,9 @@ export const AURA_DATA = [
     { id: "divine_monkey_prisoner", name: "건숭이 : 긴고아의 죄수", grade: "DIVINE", in: 19999999, color: "#d4ac0d", class: "aura-monkey-prisoner" },
 
     // 8. COSMIC
+    { id: "cosmic_queen_table", name: "김민제리얌 : 퀸카의 밥상", grade: "COSMIC", in: 36000000, color: "#ff4081", class: "aura-queen-table" },
+    { id: "cosmic_hidden_power", name: "그저 공병은 : 힘을 숨긴자", grade: "COSMIC", in: 60000000, color: "#00e676", class: "aura-hidden-power" },
+    { id: "cosmic_steel_emperor", name: "강철검 공병은 : 강철검제", grade: "COSMIC", in: 99999999, color: "#00b0ff", class: "aura-steel-emperor" },
     { id: "variant_haebeoji", name: "두개의 심장 박지성 : 해버지", grade: "COSMIC", in: 26666666, color: "#ff8c00", class: "aura-cosmic-1" },
     { id: "legend_gonjiam", name: "곤지암병은", grade: "COSMIC", in: 29999999, color: "#ff1493", class: "aura-cosmic-2" },
     { id: "js_collector", name: "전설의 공병수집가 공병은", grade: "COSMIC", in: 36363636, color: "#ffaa00", class: "aura-cosmic-3" },
@@ -92,6 +101,7 @@ export const AURA_DATA = [
     { id: "cosmic_lord_slayer", name: "군주학살자 김건우", grade: "COSMIC", in: 72772772, color: "#ff0000", class: "aura-lord-slayer" },
 
     // 9. JS
+    { id: "js_heinous_criminal", name: "흉악범", grade: "JS", in: 200000000, color: "#8b0000", class: "aura-heinous-criminal" },
     { id: "js_void_king", name: "공허왕 공허병은", grade: "JS", in: 111111111, color: "#ff0000", class: "aura-js-void" },
     { id: "js_false_theatre_tv", name: "거짓 종막의 연출가 김티비", grade: "JS", in: 123123123, color: "#0055ff", class: "aura-false-theatre" },
     { id: "divine_angel_gaen", name: "환희의 대천사 김가은", grade: "JS", in: 150000000, color: "#fff59d", class: "aura-holy-angel" },
