@@ -1,11 +1,10 @@
 import { AURA_DATA } from './auras.js';
+import { CRAFT_ITEMS } from './craftItems.js';
 
-// 1. 파이어베이스 라이브러리 불러오기
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 2. ⚠️ 파이어베이스 콘솔에서 발급받은 본인의 키를 입력해주세요!
 const firebaseConfig = {
     apiKey: "AIzaSyBnkRDIJtAiIkPOTLwbi0YvaBGO7wl0UxA",
     authDomain: "jssrng.firebaseapp.com",
@@ -14,7 +13,7 @@ const firebaseConfig = {
     messagingSenderId: "557587020425",
     appId: "1:557587020425:web:fd72864840b0ecc4046458",
     measurementId: "G-WKJB7L00ML"
-  };
+};
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -26,20 +25,12 @@ let currentUser = null;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let soundSettings = { 
-    enabled: true, 
-    master: 1.0, 
-    bgm: 0.7, 
-    cutscene: 0.5, 
-    drop: 0.5, 
-    click: 1.0,
-    roll: 1.0 
+    enabled: true, master: 1.0, bgm: 0.7, cutscene: 0.5, drop: 0.5, click: 1.0, roll: 1.0 
 };
 
 function loadSoundSettings() {
     const saved = localStorage.getItem('js_rng_sound');
-    if (saved) {
-        soundSettings = { ...soundSettings, ...JSON.parse(saved) };
-    }
+    if (saved) soundSettings = { ...soundSettings, ...JSON.parse(saved) };
 }
 function saveSoundSettings() {
     localStorage.setItem('js_rng_sound', JSON.stringify(soundSettings));
@@ -69,33 +60,19 @@ function updateBgmVolume() {
 
 function playBgm(type) {
     stopBgm();
-    if (type === 'lobby') {
-        currentBgm = audioFiles.lobbyBgm;
-    } else if (type === 'main') {
-        currentBgm = audioFiles.mainBgm;
-    }
-    if (currentBgm) {
-        updateBgmVolume();
-        currentBgm.play().catch(e => {});
-    }
+    if (type === 'lobby') currentBgm = audioFiles.lobbyBgm;
+    else if (type === 'main') currentBgm = audioFiles.mainBgm;
+    if (currentBgm) { updateBgmVolume(); currentBgm.play().catch(e => {}); }
 }
 
 function stopBgm() {
-    if (currentBgm) {
-        currentBgm.pause();
-        currentBgm.currentTime = 0;
-        currentBgm = null;
-    }
+    if (currentBgm) { currentBgm.pause(); currentBgm.currentTime = 0; currentBgm = null; }
 }
 
 let audioCtx = null;
 function initSynthAudio() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
 function playSynthesizedTone(freq, type, volCategoryMultiplier, attack, release) {
@@ -113,20 +90,13 @@ function playSynthesizedTone(freq, type, volCategoryMultiplier, attack, release)
         gain.gain.linearRampToValueAtTime(finalVol, audioCtx.currentTime + attack);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + attack + release);
         
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + attack + release);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + attack + release);
     } catch(e) {}
 }
 
-function playRollTickSound() {
-    playSynthesizedTone(150, 'triangle', 0.15 * soundSettings.roll, 0.01, 0.08);
-}
-
-function playNormalDropSound() {
-    playSynthesizedTone(600, 'sine', 0.2 * soundSettings.cutscene, 0.02, 0.4);
-}
+function playRollTickSound() { playSynthesizedTone(150, 'triangle', 0.15 * soundSettings.roll, 0.01, 0.08); }
+function playNormalDropSound() { playSynthesizedTone(600, 'sine', 0.2 * soundSettings.cutscene, 0.02, 0.4); }
 
 function playUIClick() {
     if (!soundSettings.enabled) return;
@@ -180,28 +150,18 @@ function playSkipSoundAt95(soundName) {
 }
 
 function stopIntegratedSound() {
-    if (activeCutsceneAudio) {
-        activeCutsceneAudio.pause();
-        activeCutsceneAudio.currentTime = 0;
-        activeCutsceneAudio = null;
-    }
-    if (skipAudioPlayer) {
-        skipAudioPlayer.pause();
-        skipAudioPlayer.currentTime = 0;
-        skipAudioPlayer = null;
-    }
+    if (activeCutsceneAudio) { activeCutsceneAudio.pause(); activeCutsceneAudio.currentTime = 0; activeCutsceneAudio = null; }
+    if (skipAudioPlayer) { skipAudioPlayer.pause(); skipAudioPlayer.currentTime = 0; skipAudioPlayer = null; }
 }
 
 document.body.addEventListener('click', () => {
     initSynthAudio();
-    if (currentBgm && currentBgm.paused) {
-        currentBgm.play().catch(e => {});
-    }
+    if (currentBgm && currentBgm.paused) currentBgm.play().catch(e => {});
 }, { once: true });
 
 document.body.addEventListener('click', (e) => {
     if (e.target.tagName.toLowerCase() === 'button' || e.target.closest('button')) {
-        if (e.target.id !== 'roll-btn' && e.target.id !== 'btn-text' && e.target.id !== 'skip-cutscene-btn') {
+        if (e.target.id !== 'roll-btn' && !e.target.closest('#roll-btn') && e.target.id !== 'skip-cutscene-btn') {
             playUIClick();
         }
     }
@@ -212,53 +172,39 @@ AURA_DATA.sort((a, b) => a.in - b.in);
 const GRADES = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGEND", "MYTHIC", "DIVINE", "COSMIC", "JS"];
 
 const SHOP_ITEMS = [
-    { id: "luck_1", name: "행운의 물약 1", price: 300, type: "luck", value: 0.15, duration: 120, desc: "+15% 행운 (2분)", border: "border-green" },
-    { id: "luck_2", name: "행운의 물약 2", price: 800, type: "luck", value: 0.30, duration: 120, desc: "+30% 행운 (2분)", border: "border-green" },
-    { id: "luck_3", name: "행운의 물약 3", price: 2000, type: "luck", value: 0.66, duration: 120, desc: "+66% 행운 (2분)", border: "border-green" },
-    { id: "speed_1", name: "속도의 물약 1", price: 500, type: "speed", value: 0.15, duration: 180, desc: "+15% 속도 (3분)", border: "border-blue" },
-    { id: "speed_2", name: "속도의 물약 2", price: 1200, type: "speed", value: 0.30, duration: 180, desc: "+30% 속도 (3분)", border: "border-blue" },
-    { id: "speed_3", name: "속도의 물약 3", price: 3000, type: "speed", value: 0.55, duration: 180, desc: "+55% 속도 (3분)", border: "border-blue" },
-    { id: "limit_potion", name: "한계의 물약", price: 43333, type: "luck_mult", value: 5000, maxUses: 3, desc: "×5000배 행운 (3회 소모)", border: "border-green" },
-    { id: "overcome_potion", name: "극복의 물약", price: 195000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×50000배 행운 (2회 소모)", border: "border-blue" },
-    { id: "heaven_potion", name: "천상의 물약", price: 300000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150000배 행운 (1회 소모)", border: "border-epic" }
+    { id: "luck_1", name: "행운의 물약 1", price: 300, type: "luck", level: 1, value: 0.15, duration: 120, desc: "+15% 행운 (2분)", border: "border-green" },
+    { id: "luck_2", name: "행운의 물약 2", price: 800, type: "luck", level: 2, value: 0.30, duration: 120, desc: "+30% 행운 (2분)", border: "border-green" },
+    { id: "luck_3", name: "행운의 물약 3", price: 2000, type: "luck", level: 3, value: 0.66, duration: 120, desc: "+66% 행운 (2분)", border: "border-green" },
+    { id: "speed_1", name: "속도의 물약 1", price: 500, type: "speed", level: 1, value: 0.15, duration: 180, desc: "+15% 속도 (3분)", border: "border-blue" },
+    { id: "speed_2", name: "속도의 물약 2", price: 1200, type: "speed", level: 2, value: 0.30, duration: 180, desc: "+30% 속도 (3분)", border: "border-blue" },
+    { id: "speed_3", name: "속도의 물약 3", price: 3000, type: "speed", level: 3, value: 0.55, duration: 180, desc: "+55% 속도 (3분)", border: "border-blue" },
+    { id: "limit_potion", name: "한계의 물약", price: 43333, type: "luck_mult", value: 5000, maxUses: 3, desc: "×5000배 행운 (3회 소모)", border: "border-limit" },
+    { id: "overcome_potion", name: "극복의 물약", price: 195000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×50000배 행운 (2회 소모)", border: "border-overcome" },
+    { id: "heaven_potion", name: "천상의 물약", price: 300000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150000배 행운 (1회 소모)", border: "border-heaven" }
 ];
-
-const CRAFT_ITEMS = [
-    { id: "gear_beginner", name: "초보자의 운수대통 장갑", desc: "영구적으로 행운이 10% 증가합니다.", luckBonus: 0.1, speedBonus: 0, req: { "com_drum": 30, "com_normal": 15, "unc_tired": 5 } },
-    { id: "gear_speed", name: "폭주기관차의 부츠", desc: "영구적으로 롤 속도와 쿨타임이 10% 단축됩니다.", luckBonus: 0, speedBonus: 0.1, req: { "rare_train": 8, "unc_running": 20, "com_passerby": 40 } },
-    { id: "gear_crazykong_heart", name: "크레이지콩의 심장", desc: "영구적으로 행운 10%, 속도 30%가 증가합니다.", luckBonus: 0.1, speedBonus: 0.3, req: { "ep_crazykong": 5, "ep_baksisung": 10, "com_darkminchae": 44 } },
-    { id: "gear_destroyer_fist", name: "파괴신의 주먹", desc: "영구적으로 행운 25%, 속도 15%가 증가합니다.", luckBonus: 0.25, speedBonus: 0.15, req: { "epic_destroy": 5, "rare_train": 10, "unc_angry": 50 } },
-    { id: "gear_speedkong_heart", name: "광속의콩 심장", desc: "영구적으로 행운 25%, 속도 50%가 증가합니다.", luckBonus: 0.25, speedBonus: 0.5, req: { "legend_speed": 2, "ep_crazykong": 10, "ep_baksisung": 10, "rare_train": 20, "com_darkminchae": 55 } },
-    { id: "gear_gold_button", name: "골드버튼", desc: "영구적으로 행운 50%, 속도 30%가 증가합니다.", luckBonus: 0.5, speedBonus: 0.3, req: { "mythic_tube": 2, "epic_kimmodi": 3, "ep_mc_byungeun": 10, "epic_lucky": 15, "com_normal": 100 } }
-];
-
-CRAFT_ITEMS.sort((a, b) => (a.luckBonus + a.speedBonus) - (b.luckBonus + b.speedBonus));
 
 for (let i = 0; i < AURA_DATA.length; i++) { 
     AURA_DATA[i].chance = 100 / AURA_DATA[i].in; 
     let baseJc = Math.max(1, Math.floor(AURA_DATA[i].in / 5)); 
-    if (["MYTHIC", "DIVINE", "COSMIC", "JS"].includes(AURA_DATA[i].grade)) {
-        baseJc = Math.floor(baseJc * 0.5); 
-    }
-    if (["DIVINE", "COSMIC", "JS"].includes(AURA_DATA[i].grade)) {
-        baseJc = Math.floor(baseJc * 0.6);
-    }
+    if (["MYTHIC", "DIVINE", "COSMIC", "JS"].includes(AURA_DATA[i].grade)) baseJc = Math.floor(baseJc * 0.5); 
+    if (["DIVINE", "COSMIC", "JS"].includes(AURA_DATA[i].grade)) baseJc = Math.floor(baseJc * 0.6);
     AURA_DATA[i].jcValue = Math.max(1, baseJc);
 }
 
 let gameState = { 
     rolls: 0, luck: 1, jc: 0, 
     inventory: {}, itemInventory: {}, discoveredAuras: [], 
-    autoDelete: {}, activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0 }, 
-    activeMultBuffs: [], gear: null, craftedGears: [], usedCodes: [] 
+    autoDelete: {}, activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0, luckLevel: 0, speedLevel: 0 }, 
+    activeMultBuffs: [], gear: null, amulet: null, amuletStack: 0, craftedGears: [], usedCodes: [] 
 };
 
 let isRolling = false; let isAutoRolling = false; let disableSave = false; let backupGameState = null; let nextRollOverride = null;
+let currentCraftTab = "gauntlet";
 
 const ui = {
     rollCount: document.getElementById('roll-count'), jcCount: document.getElementById('jc-count'),
     luckMultiplier: document.getElementById('luck-multiplier'), speedMultiplier: document.getElementById('speed-multiplier'),
-    activeBuffs: document.getElementById('active-buffs'), display: document.getElementById('aura-display'), btn: document.getElementById('roll-btn'), btnText: document.getElementById('btn-text'), cooldownBar: document.getElementById('cooldown-bar'), autoRollBtn: document.getElementById('auto-roll-btn'),
+    activeBuffs: document.getElementById('active-buffs'), display: document.getElementById('aura-display'), btn: document.getElementById('roll-btn'), btnMainText: document.getElementById('btn-main-text'), btnSubText: document.getElementById('btn-sub-text'), cooldownBar: document.getElementById('cooldown-bar'), autoRollBtn: document.getElementById('auto-roll-btn'),
     inventoryBtn: document.getElementById('inventory-btn'), inventoryModal: document.getElementById('inventory-modal'), closeInventory: document.getElementById('close-inventory'), inventoryGrid: document.getElementById('inventory-grid'),
     itemInvenBtn: document.getElementById('item-inven-btn'), itemInvenModal: document.getElementById('item-inven-modal'), closeItemInven: document.getElementById('close-item-inven'), itemInvenGrid: document.getElementById('item-inven-grid'),
     shopBtn: document.getElementById('shop-btn'), shopModal: document.getElementById('shop-modal'), closeShop: document.getElementById('close-shop'), shopGrid: document.getElementById('shop-grid'),
@@ -266,6 +212,7 @@ const ui = {
     settingsHubBtn: document.getElementById('settings-hub-btn'), settingsHubModal: document.getElementById('settings-hub-modal'), closeSettingsHub: document.getElementById('close-settings-hub'),
     devBtn: document.getElementById('dev-btn'), mainDevBtn: document.getElementById('main-dev-btn'), devModal: document.getElementById('dev-modal'), closeDev: document.getElementById('close-dev'),
     craftBtn: document.getElementById('craft-btn'), craftModal: document.getElementById('craft-modal'), closeCraft: document.getElementById('close-craft'), craftGrid: document.getElementById('craft-grid'),
+    craftTabGauntlet: document.getElementById('craft-tab-gauntlet'), craftTabAmulet: document.getElementById('craft-tab-amulet'),
     submitCodeBtn: document.getElementById('submit-code-btn'), codeInput: document.getElementById('code-input'),
     glowOverlay: document.getElementById('border-glow-overlay'), starOverlay: document.getElementById('star-cutscene-overlay'), skipCutsceneBtn: document.getElementById('skip-cutscene-btn'), cutsceneStarContainer: document.getElementById('cutscene-star-container'),
     glitchTextContainer: document.getElementById('glitch-text-container'),
@@ -287,53 +234,49 @@ loadSoundSettings();
 applySoundSettingsToUI();
 playBgm('lobby');
 
-// 로그인 / 로그아웃 버튼 이벤트 처리
-document.getElementById('google-login-btn').addEventListener('click', () => {
-    signInWithPopup(auth, provider).then((result) => {
-        alert(`🎉 로그인 성공! 환영합니다, ${result.user.displayName}님!`);
-    }).catch((err) => {
-        alert("로그인 실패: " + err.message);
+document.querySelectorAll('.google-login-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        signInWithPopup(auth, provider).then((result) => {
+            alert(`🎉 로그인 성공! 환영합니다, ${result.user.displayName}님!`);
+        }).catch((err) => { alert("로그인 실패: " + err.message); });
     });
 });
 
-document.getElementById('google-logout-btn').addEventListener('click', () => {
-    signOut(auth).then(() => {
-        alert("로그아웃 되었습니다.");
+document.querySelectorAll('.google-logout-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        signOut(auth).then(() => { alert("로그아웃 되었습니다."); });
     });
 });
 
-// 로그인 상태 감지 및 자동 동기화
 onAuthStateChanged(auth, async (user) => {
     const statusText = document.getElementById('user-status-text');
-    const loginBtn = document.getElementById('google-login-btn');
-    const logoutBtn = document.getElementById('google-logout-btn');
+    const statusTextSettings = document.getElementById('user-status-text-settings');
+    const loginBtns = document.querySelectorAll('.google-login-btn');
+    const logoutBtns = document.querySelectorAll('.google-logout-btn');
 
     if (user) {
         currentUser = user;
-        if (statusText) statusText.innerText = `🟢 로그인됨: ${user.displayName}`;
-        if (loginBtn) loginBtn.classList.add('hidden');
-        if (logoutBtn) logoutBtn.classList.remove('hidden');
-        
+        const txt = `🟢 로그인됨: ${user.displayName}`;
+        if (statusText) statusText.innerText = txt;
+        if (statusTextSettings) statusTextSettings.innerText = txt;
+        loginBtns.forEach(b => b.classList.add('hidden'));
+        logoutBtns.forEach(b => b.classList.remove('hidden'));
         await loadGameFromCloud();
     } else {
         currentUser = null;
-        if (statusText) statusText.innerText = "🔴 로그인 필요 (로컬 데이터 사용 중)";
-        if (loginBtn) loginBtn.classList.remove('hidden');
-        if (logoutBtn) logoutBtn.classList.add('hidden');
+        const txt = "🔴 로그인 필요 (로컬 데이터 사용 중)";
+        if (statusText) statusText.innerText = txt;
+        if (statusTextSettings) statusTextSettings.innerText = txt;
+        loginBtns.forEach(b => b.classList.remove('hidden'));
+        logoutBtns.forEach(b => b.classList.add('hidden'));
     }
 });
 
-// 클라우드 자동 저장
 async function saveGameToCloud() {
     if (!currentUser || disableSave) return;
-    try {
-        await setDoc(doc(db, "users", currentUser.uid), gameState);
-    } catch (e) {
-        console.error("클라우드 저장 실패:", e);
-    }
+    try { await setDoc(doc(db, "users", currentUser.uid), gameState); } catch (e) { console.error("클라우드 저장 실패:", e); }
 }
 
-// 클라우드 불러오기
 async function loadGameFromCloud() {
     if (!currentUser) return;
     try {
@@ -341,16 +284,9 @@ async function loadGameFromCloud() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             gameState = { ...gameState, ...docSnap.data() };
-            updateStatsUI();
-            buildShopUI();
-            buildAutoDeleteUI();
-            updateCraftUI();
-        } else {
-            await saveGameToCloud();
-        }
-    } catch (e) {
-        console.error("클라우드 로드 실패:", e);
-    }
+            updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI();
+        } else { await saveGameToCloud(); }
+    } catch (e) { console.error("클라우드 로드 실패:", e); }
 }
 
 document.getElementById('game-start-btn').addEventListener('click', () => {
@@ -368,64 +304,31 @@ ui.closeSound.addEventListener('click', () => { ui.soundModal.classList.add('hid
 ui.settingsHubBtn.addEventListener('click', () => { ui.settingsHubModal.classList.remove('hidden'); });
 ui.closeSettingsHub.addEventListener('click', () => { ui.settingsHubModal.classList.add('hidden'); });
 
-// 쿠폰 입력 처리 (신규 LETSLOGIN 쿠폰 추가)
 ui.submitCodeBtn.addEventListener('click', () => {
     const codeVal = ui.codeInput.value.trim().toUpperCase();
     if (!gameState.usedCodes) gameState.usedCodes = [];
 
-    if (codeVal === "LETSLOGIN") {
-        if (gameState.usedCodes.includes("LETSLOGIN")) {
-            alert("❌ 이미 사용한 쿠폰입니다! (계정당 1회 제한)");
-            return;
-        }
-        gameState.usedCodes.push("LETSLOGIN");
-        gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 1;
-        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 3;
-        saveGame();
-        ui.codeInput.value = '';
-        ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [LETSLOGIN 쿠폰 성공!] 천상의 물약 1개, 극복의 물약 3개가 지급되었습니다!");
-    } else if (codeVal === "HELPME!") {
-        if (gameState.usedCodes.includes("HELPME!")) {
-            alert("❌ 이미 사용한 쿠폰입니다! (계정당 1회 제한)");
-            return;
-        }
-        gameState.usedCodes.push("HELPME!");
-        gameState.jc += 1000000;
-        saveGame();
-        updateStatsUI();
-        ui.codeInput.value = '';
-        ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [HELPME! 쿠폰 성공!] 100만 JC가 지급되었습니다!");
-    } else if (codeVal === "NEWUPDATE") {
-        if (gameState.usedCodes.includes("NEWUPDATE")) {
-            alert("❌ 이미 사용한 쿠폰입니다! (계정당 1회 제한)");
-            return;
-        }
-        gameState.usedCodes.push("NEWUPDATE");
-        gameState.itemInventory["luck_2"] = (gameState.itemInventory["luck_2"] || 0) + 5;
-        gameState.itemInventory["speed_2"] = (gameState.itemInventory["speed_2"] || 0) + 5;
-        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 1;
-        saveGame();
-        ui.codeInput.value = '';
-        ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [쿠폰 성공!] 행운의 물약 2 (5개), 속도의 물약 2 (5개), 극복의 물약 (1개)이 지급되었습니다!");
-    } else if (codeVal === "SORRYBRO") {
-        if (gameState.usedCodes.includes("SORRYBRO")) {
-            alert("❌ 이미 사용한 쿠폰입니다! (계정당 1회 제한)");
-            return;
-        }
-        gameState.usedCodes.push("SORRYBRO");
+    if (codeVal === "AMULET!") {
+        if (gameState.usedCodes.includes("AMULET!")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
+        gameState.usedCodes.push("AMULET!");
         gameState.itemInventory["limit_potion"] = (gameState.itemInventory["limit_potion"] || 0) + 2;
         gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 2;
         gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 2;
-        saveGame();
-        ui.codeInput.value = '';
-        ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [SORRYBRO 쿠폰 성공!] 한계의 물약 2개, 극복의 물약 2개, 천상의 물약 2개가 지급되었습니다!");
-    } else {
-        alert("❌ 존재하지 않거나 잘못된 코드입니다.");
-    }
+        saveGame(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [AMULET! 쿠폰 성공!] 한계 2개, 극복 2개, 천상의 물약 2개가 지급되었습니다!");
+    } else if (codeVal === "LETSLOGIN") {
+        if (gameState.usedCodes.includes("LETSLOGIN")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
+        gameState.usedCodes.push("LETSLOGIN");
+        gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 1;
+        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 3;
+        saveGame(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [LETSLOGIN 쿠폰 성공!] 천상의 물약 1개, 극복의 물약 3개가 지급되었습니다!");
+    } else if (codeVal === "HELPME!") {
+        if (gameState.usedCodes.includes("HELPME!")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
+        gameState.usedCodes.push("HELPME!"); gameState.jc += 1000000;
+        saveGame(); updateStatsUI(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [HELPME! 쿠폰 성공!] 100만 JC가 지급되었습니다!");
+    } else { alert("❌ 존재하지 않거나 잘못된 코드입니다."); }
 });
 
 function applySoundSettingsToUI() {
@@ -441,23 +344,13 @@ function applySoundSettingsToUI() {
 
 ui.volMaster.addEventListener('input', (e) => { soundSettings.master = e.target.value / 100; ui.volMasterVal.innerText = e.target.value; updateBgmVolume(); saveSoundSettings(); });
 ui.volBgm.addEventListener('input', (e) => { soundSettings.bgm = e.target.value / 100; ui.volBgmVal.innerText = e.target.value; updateBgmVolume(); saveSoundSettings(); });
-ui.volCutscene.addEventListener('input', (e) => { 
-    soundSettings.cutscene = e.target.value / 100; 
-    soundSettings.drop = soundSettings.cutscene; 
-    ui.volCutsceneVal.innerText = e.target.value; 
-    if (activeCutsceneAudio) activeCutsceneAudio.volume = soundSettings.master * soundSettings.cutscene;
-    if (skipAudioPlayer) skipAudioPlayer.volume = soundSettings.master * soundSettings.cutscene;
-    saveSoundSettings(); 
-});
+ui.volCutscene.addEventListener('input', (e) => { soundSettings.cutscene = e.target.value / 100; soundSettings.drop = soundSettings.cutscene; ui.volCutsceneVal.innerText = e.target.value; if (activeCutsceneAudio) activeCutsceneAudio.volume = soundSettings.master * soundSettings.cutscene; if (skipAudioPlayer) skipAudioPlayer.volume = soundSettings.master * soundSettings.cutscene; saveSoundSettings(); });
 ui.volClick.addEventListener('input', (e) => { soundSettings.click = e.target.value / 100; ui.volClickVal.innerText = e.target.value; saveSoundSettings(); });
 ui.volRoll.addEventListener('input', (e) => { soundSettings.roll = e.target.value / 100; ui.volRollVal.innerText = e.target.value; saveSoundSettings(); });
 
 ui.soundToggleBtn.addEventListener('click', () => {
-    soundSettings.enabled = !soundSettings.enabled;
-    applySoundSettingsToUI();
-    saveSoundSettings();
-    if (!soundSettings.enabled) stopBgm();
-    else playBgm(document.getElementById('lobby-screen').classList.contains('hidden') ? 'main' : 'lobby');
+    soundSettings.enabled = !soundSettings.enabled; applySoundSettingsToUI(); saveSoundSettings();
+    if (!soundSettings.enabled) stopBgm(); else playBgm(document.getElementById('lobby-screen').classList.contains('hidden') ? 'main' : 'lobby');
 });
 
 function loadGame() {
@@ -468,12 +361,8 @@ function loadGame() {
         if(!gameState.usedCodes) gameState.usedCodes = [];
         if(!gameState.activeMultBuffs) gameState.activeMultBuffs = [];
         if(!gameState.discoveredAuras) gameState.discoveredAuras = [];
-
-        for(let auraId in gameState.inventory) {
-            if(!gameState.discoveredAuras.includes(auraId)) {
-                gameState.discoveredAuras.push(auraId);
-            }
-        }
+        if(gameState.amuletStack === undefined) gameState.amuletStack = 0;
+        for(let auraId in gameState.inventory) { if(!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId); }
     }
     updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI();
 }
@@ -494,36 +383,29 @@ ui.devBtn.addEventListener('click', () => {
         const pwd = prompt("🛠️ 개발자 모드 접근\n비밀번호를 입력하세요:");
         if (pwd === "로블록스33") {
             disableSave = true; backupGameState = JSON.parse(JSON.stringify(gameState));
-            ui.mainDevBtn.classList.remove('hidden'); 
-            ui.settingsHubModal.classList.add('hidden');
+            ui.mainDevBtn.classList.remove('hidden'); ui.settingsHubModal.classList.add('hidden');
             alert("✅ [개발자 모드 ON] 메인 화면에 '개발자 패널' 버튼이 추가되었습니다.");
             const select = document.getElementById('dev-aura-select');
             if (select.children.length === 0) { AURA_DATA.forEach(a => { const opt = document.createElement('option'); opt.value = a.id; opt.innerText = `[${a.grade}] ${a.name}`; select.appendChild(opt); }); }
             ui.devModal.classList.remove('hidden');
         } else if (pwd !== null) alert("❌ 비밀번호가 틀렸습니다.");
-    } else { ui.devModal.classList.remove('hidden'); }
+    } else ui.devModal.classList.remove('hidden');
 });
 
-ui.mainDevBtn.addEventListener('click', () => {
-    ui.devModal.classList.remove('hidden');
-});
-
+ui.mainDevBtn.addEventListener('click', () => { ui.devModal.classList.remove('hidden'); });
 ui.closeDev.addEventListener('click', () => { ui.devModal.classList.add('hidden'); });
 
 window.exitDevMode = function() {
     if(!disableSave) return;
     gameState = JSON.parse(JSON.stringify(backupGameState)); disableSave = false; backupGameState = null; saveGame();
-    ui.mainDevBtn.classList.add('hidden'); 
-    updateStatsUI(); updateInventory(); updateCraftUI(); ui.devModal.classList.add('hidden'); alert("🚪 개발자 모드를 종료하고 본계정 데이터로 복구했습니다!");
+    ui.mainDevBtn.classList.add('hidden'); updateStatsUI(); updateInventory(); updateCraftUI(); ui.devModal.classList.add('hidden'); alert("🚪 개발자 모드를 종료하고 본계정 데이터로 복구했습니다!");
 }
 
 function getTotalMultBonus() {
     if (!gameState.activeMultBuffs || gameState.activeMultBuffs.length === 0) return 0;
-    let maxBonus = 0;
-    gameState.activeMultBuffs.forEach(buff => {
-        if (buff.bonus > maxBonus) maxBonus = buff.bonus;
-    });
-    return maxBonus;
+    let sumBonus = 0;
+    gameState.activeMultBuffs.forEach(buff => { sumBonus += buff.bonus; });
+    return sumBonus;
 }
 
 function updateStatsUI() { 
@@ -534,6 +416,11 @@ function updateStatsUI() {
     if(gameState.gear) { const equipped = CRAFT_ITEMS.find(g => g.id === gameState.gear); if(equipped) { gearLuck = equipped.luckBonus; gearSpeed = equipped.speedBonus; } }
     
     let baseTotalLuck = gameState.luck + gearLuck + (gameState.activeBuffs.luckBonus || 0);
+
+    if (gameState.amulet === "amulet_drum" && gameState.amuletStack >= 10) {
+        baseTotalLuck *= 2;
+    }
+
     let multBonus = getTotalMultBonus();
     let finalLuck = baseTotalLuck + multBonus;
 
@@ -541,16 +428,29 @@ function updateStatsUI() {
     
     if(ui.luckMultiplier) ui.luckMultiplier.innerText = finalLuck.toLocaleString(); 
     if(ui.speedMultiplier) ui.speedMultiplier.innerText = currentSpeed;
+
+    if (gameState.amulet === "amulet_drum") {
+        ui.btnSubText.classList.remove('hidden');
+        if (gameState.amuletStack >= 10) {
+            ui.btnSubText.innerText = "x2 행운 준비";
+            ui.btnSubText.style.color = "#f1c40f";
+        } else {
+            ui.btnSubText.innerText = `${gameState.amuletStack} / 10`;
+            ui.btnSubText.style.color = "#ccc";
+        }
+    } else {
+        ui.btnSubText.classList.add('hidden');
+    }
 }
 
 setInterval(() => {
     const now = Date.now(); let updated = false;
-    if (gameState.activeBuffs.luckExpireTime && now > gameState.activeBuffs.luckExpireTime) { gameState.activeBuffs.luckBonus = 0; gameState.activeBuffs.luckExpireTime = 0; updated = true; }
-    if (gameState.activeBuffs.speedExpireTime && now > gameState.activeBuffs.speedExpireTime) { gameState.activeBuffs.speedBonus = 0; gameState.activeBuffs.speedExpireTime = 0; updated = true; }
+    if (gameState.activeBuffs.luckExpireTime && now > gameState.activeBuffs.luckExpireTime) { gameState.activeBuffs.luckBonus = 0; gameState.activeBuffs.luckExpireTime = 0; gameState.activeBuffs.luckLevel = 0; updated = true; }
+    if (gameState.activeBuffs.speedExpireTime && now > gameState.activeBuffs.speedExpireTime) { gameState.activeBuffs.speedBonus = 0; gameState.activeBuffs.speedExpireTime = 0; gameState.activeBuffs.speedLevel = 0; updated = true; }
     
     let buffTextArr = [];
-    if (gameState.activeBuffs.luckExpireTime && now < gameState.activeBuffs.luckExpireTime) { let leftSec = Math.ceil((gameState.activeBuffs.luckExpireTime - now) / 1000); buffTextArr.push(`🧪 행운물약 (${leftSec}초)`); }
-    if (gameState.activeBuffs.speedExpireTime && now < gameState.activeBuffs.speedExpireTime) { let leftSec = Math.ceil((gameState.activeBuffs.speedExpireTime - now) / 1000); buffTextArr.push(`🧪 속도물약 (${leftSec}초)`); }
+    if (gameState.activeBuffs.luckExpireTime && now < gameState.activeBuffs.luckExpireTime) { let leftSec = Math.ceil((gameState.activeBuffs.luckExpireTime - now) / 1000); buffTextArr.push(`🧪 행운물약 ${gameState.activeBuffs.luckLevel || ''} (${leftSec}초)`); }
+    if (gameState.activeBuffs.speedExpireTime && now < gameState.activeBuffs.speedExpireTime) { let leftSec = Math.ceil((gameState.activeBuffs.speedExpireTime - now) / 1000); buffTextArr.push(`🧪 속도물약 ${gameState.activeBuffs.speedLevel || ''} (${leftSec}초)`); }
     
     if (gameState.activeMultBuffs && gameState.activeMultBuffs.length > 0) {
         let totalBonus = getTotalMultBonus();
@@ -558,8 +458,9 @@ setInterval(() => {
         buffTextArr.push(`⚡ 특수배수 (+${totalBonus.toLocaleString()}배) [${listStr}]`);
     }
 
-    if(gameState.gear) { const equipped = CRAFT_ITEMS.find(g => g.id === gameState.gear); if(equipped) buffTextArr.push(`🔨 [${equipped.name}] 장착중`); }
-    
+    if(gameState.gear) { const equipped = CRAFT_ITEMS.find(g => g.id === gameState.gear); if(equipped) buffTextArr.push(`🥊 [${equipped.name}]`); }
+    if(gameState.amulet) { const equippedAmulet = CRAFT_ITEMS.find(g => g.id === gameState.amulet); if(equippedAmulet) buffTextArr.push(`📜 [${equippedAmulet.name}]`); }
+
     ui.activeBuffs.innerText = buffTextArr.join(" | "); 
     if (updated) { updateStatsUI(); saveGame(); }
 }, 1000);
@@ -568,7 +469,7 @@ ui.autoRollBtn.addEventListener('click', () => { isAutoRolling = !isAutoRolling;
 
 function startRoll() {
     if (isRolling) return; isRolling = true;
-    ui.btn.disabled = true; ui.btnText.innerText = "굴리는 중..."; ui.btn.classList.remove('cooldown-active'); 
+    ui.btn.disabled = true; ui.btn.classList.remove('cooldown-active'); 
     gameState.rolls++; 
 
     updateStatsUI(); saveGame();
@@ -607,16 +508,34 @@ async function playStarCutscene(rolled) {
     let soundKey = 'divine_all';
     if (rolled.grade === "JS") {
         if (rolled.id === "divine_angel_gaen") {
-            ui.starOverlay.style.setProperty('--js-center-col', '#fff176'); 
-            ui.starOverlay.style.setProperty('--js-mid-col', '#cddc39'); 
-            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255, 235, 59, 0.2)'); 
-            ui.starOverlay.style.setProperty('--js-glow-col', '#ffff00'); 
+            ui.starOverlay.style.setProperty('--js-center-col', '#fff59d'); 
+            ui.starOverlay.style.setProperty('--js-mid-col', '#fbc02d'); 
+            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255, 245, 157, 0.15)'); 
+            ui.starOverlay.style.setProperty('--js-glow-col', '#fdd835'); 
             soundKey = 'js_all';
         } else if (rolled.id === "js_lightning_jisung") {
             ui.starOverlay.style.setProperty('--js-center-col', '#00ffff'); 
             ui.starOverlay.style.setProperty('--js-mid-col', '#1a237e'); 
             ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(0, 255, 255, 0.25)'); 
             ui.starOverlay.style.setProperty('--js-glow-col', '#00e5ff'); 
+            soundKey = 'js_all';
+        } else if (rolled.id === "js_false_theatre_tv") {
+            ui.starOverlay.style.setProperty('--js-center-col', '#0033aa'); 
+            ui.starOverlay.style.setProperty('--js-mid-col', '#050515'); 
+            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(0, 85, 255, 0.2)'); 
+            ui.starOverlay.style.setProperty('--js-glow-col', '#0055ff'); 
+            soundKey = 'js_all';
+        } else if (rolled.id === "js_demon_minchae") {
+            ui.starOverlay.style.setProperty('--js-center-col', '#ff007f'); 
+            ui.starOverlay.style.setProperty('--js-mid-col', '#4a0050'); 
+            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255, 0, 127, 0.25)'); 
+            ui.starOverlay.style.setProperty('--js-glow-col', '#8a00e6'); 
+            soundKey = 'js_all';
+        } else if (rolled.id === "js_monkey_liberator") {
+            ui.starOverlay.style.setProperty('--js-center-col', '#f1c40f'); 
+            ui.starOverlay.style.setProperty('--js-mid-col', '#7f1d1d'); 
+            ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(243, 156, 18, 0.3)'); 
+            ui.starOverlay.style.setProperty('--js-glow-col', '#ffaa00'); 
             soundKey = 'js_all';
         } else {
             ui.starOverlay.style.setProperty('--js-center-col', '#6a0000');
@@ -641,10 +560,7 @@ async function playStarCutscene(rolled) {
             if (isResolved) return;
             isResolved = true;
             clearTimeout(cutsceneTimer);
-            
-            if (wasSkipped) {
-                playSkipSoundAt95(soundKey);
-            }
+            if (wasSkipped) playSkipSoundAt95(soundKey);
 
             ui.skipCutsceneBtn.removeEventListener('click', skipHandler);
             ui.starOverlay.classList.add('flash-white');
@@ -657,13 +573,9 @@ async function playStarCutscene(rolled) {
             }, 500);
         };
 
-        const skipHandler = () => {
-            wasSkipped = true;
-            finish();
-        };
-
+        const skipHandler = () => { wasSkipped = true; finish(); };
         ui.skipCutsceneBtn.addEventListener('click', skipHandler, { once: true });
-        const cutsceneTimer = setTimeout(finish, 10000);
+        const cutsceneTimer = setTimeout(finish, 9500);
     });
 }
 
@@ -675,15 +587,21 @@ async function finishRoll() {
     } else {
         let gearLuck = gameState.gear ? (CRAFT_ITEMS.find(g => g.id === gameState.gear)?.luckBonus || 0) : 0;
         let baseTotalLuck = gameState.luck + gearLuck + (gameState.activeBuffs.luckBonus || 0);
+
+        if (gameState.amulet === "amulet_drum" && gameState.amuletStack >= 10) {
+            baseTotalLuck *= 2;
+            gameState.amuletStack = 0;
+        } else if (gameState.amulet === "amulet_drum") {
+            gameState.amuletStack = (gameState.amuletStack || 0) + 1;
+        }
+
         let multBonus = getTotalMultBonus();
         const totalLuck = baseTotalLuck + multBonus;
 
         let pool = AURA_DATA;
         if (multBonus > 0) {
             let filtered = AURA_DATA.filter(a => a.in >= totalLuck);
-            if (filtered.length > 0) {
-                pool = filtered;
-            }
+            if (filtered.length > 0) pool = filtered;
         }
 
         let found = false;
@@ -691,14 +609,10 @@ async function finishRoll() {
             const aura = pool[i];
             let rawChance = totalLuck / aura.in;
             if (rawChance >= 1.0 || Math.random() < Math.min(1.0, rawChance)) {
-                rolled = aura;
-                found = true;
-                break;
+                rolled = aura; found = true; break;
             }
         }
-        if (!found) {
-            rolled = pool[0];
-        }
+        if (!found) rolled = pool[0];
     }
 
     if (gameState.activeMultBuffs && gameState.activeMultBuffs.length > 0) {
@@ -709,29 +623,24 @@ async function finishRoll() {
     }
 
     if (!gameState.discoveredAuras) gameState.discoveredAuras = [];
-    if (!gameState.discoveredAuras.includes(rolled.id)) {
-        gameState.discoveredAuras.push(rolled.id);
-    }
+    if (!gameState.discoveredAuras.includes(rolled.id)) gameState.discoveredAuras.push(rolled.id);
 
     if (rolled.grade === "DIVINE" || rolled.grade === "COSMIC" || rolled.grade === "JS") { 
         await playStarCutscene(rolled); 
         playShakeGlowEffect(rolled); 
     } else if (rolled.grade === "LEGEND" || rolled.grade === "MYTHIC") { 
         playShakeGlowEffect(rolled);
-        setTimeout(() => {
-            playDropSound(rolled.grade);
-        }, 50);
+        setTimeout(() => { playDropSound(rolled.grade); }, 50);
     }
 
     if (currentBgm && soundSettings.enabled) {
-        updateBgmVolume();
-        currentBgm.play().catch(e => {});
+        updateBgmVolume(); currentBgm.play().catch(e => {});
     }
 
     let autoSoldMsg = "";
     if (gameState.autoDelete[rolled.grade]) { 
         gameState.jc += rolled.jcValue; 
-        autoSoldMsg = `<div style="font-size: 14px; color: #f1c40f; margin-top: 5px;">(자동 판매됨: +${rolled.jcValue.toLocaleString()} JC)</div>`; 
+        autoSoldMsg = `<div style="font-size: 14px; color: #f1c40f; margin-top: 5px;">(자동 판매됨: +${rolled.jcValue.toLocaleString()} JC🪙)</div>`; 
     } else { 
         if (!gameState.inventory[rolled.id]) gameState.inventory[rolled.id] = 1; 
         else gameState.inventory[rolled.id]++; 
@@ -751,8 +660,13 @@ async function finishRoll() {
     const speedBonus = (gameState.activeBuffs.speedBonus || 0) + gearSpeed;
     const baseCooldown = isAutoRolling ? 2000 : 1000; const cooldownTime = Math.max(300, baseCooldown * (1 - speedBonus));
 
-    ui.btnText.innerText = "쿨타임..."; ui.cooldownBar.style.transitionDuration = `${cooldownTime}ms`; ui.cooldownBar.style.animationDuration = `${cooldownTime}ms`; ui.btn.classList.add('cooldown-active');
-    setTimeout(() => { ui.btn.classList.remove('cooldown-active'); ui.btn.disabled = false; ui.btnText.innerText = "ROLL (굴리기)"; isRolling = false; if (isAutoRolling) startRoll(); }, cooldownTime); 
+    ui.cooldownBar.style.transitionDuration = `${cooldownTime}ms`; ui.cooldownBar.style.animationDuration = `${cooldownTime}ms`; ui.btn.classList.add('cooldown-active');
+    setTimeout(() => { 
+        ui.btn.classList.remove('cooldown-active'); ui.btn.disabled = false; 
+        isRolling = false; 
+        updateStatsUI();
+        if (isAutoRolling) startRoll(); 
+    }, cooldownTime); 
 }
 
 let currentSellId = null; let currentSellMax = 0; let currentSellPrice = 0;
@@ -785,19 +699,14 @@ let currentBuyId = null; let currentBuyMax = 0; let currentBuyPrice = 0;
 
 window.openBuyModal = function(id) {
     const item = SHOP_ITEMS.find(i => i.id === id); if(!item) return;
-    
-    currentBuyId = id; 
-    currentBuyPrice = item.price;
-    currentBuyMax = Math.floor(gameState.jc / item.price);
+    currentBuyId = id; currentBuyPrice = item.price; currentBuyMax = Math.floor(gameState.jc / item.price);
 
     document.getElementById('buy-item-name').innerText = `🛒 [${item.name}] (구매가능: 최대 ${currentBuyMax}개)`;
     const slider = document.getElementById('buy-slider'); const input = document.getElementById('buy-input');
     
     let startVal = currentBuyMax > 0 ? 1 : 0;
-    slider.max = Math.max(1, currentBuyMax); slider.value = startVal; 
-    input.max = Math.max(1, currentBuyMax); input.value = startVal;
+    slider.max = Math.max(1, currentBuyMax); slider.value = startVal; input.max = Math.max(1, currentBuyMax); input.value = startVal;
     document.getElementById('buy-total-jc').innerText = (startVal * currentBuyPrice).toLocaleString();
-    
     ui.buyModal.classList.remove('hidden');
 }
 
@@ -809,7 +718,6 @@ document.getElementById('buy-input').addEventListener('input', (e) => { let val 
 document.getElementById('confirm-buy-btn').addEventListener('click', () => {
     if (!currentBuyId) return; 
     const buyAmount = parseInt(document.getElementById('buy-input').value); 
-    
     if (buyAmount <= 0) { alert("❌ 구매할 개수를 1개 이상 선택해주세요."); return; }
 
     const item = SHOP_ITEMS.find(i => i.id === currentBuyId);
@@ -835,25 +743,18 @@ window.openUseModal = function(itemId) {
 
     currentUseId = itemId;
     document.getElementById('use-potion-name').innerText = `🧪 [${item.name}] (보유: ${count}개)`;
-    const slider = document.getElementById('use-slider');
-    const input = document.getElementById('use-input');
-    slider.max = count; slider.value = 1;
-    input.max = count; input.value = 1;
+    const slider = document.getElementById('use-slider'); const input = document.getElementById('use-input');
+    slider.max = count; slider.value = 1; input.max = count; input.value = 1;
     ui.usePotionModal.classList.remove('hidden');
 }
 
 ui.closeUse.addEventListener('click', () => { ui.usePotionModal.classList.add('hidden'); });
 
-document.getElementById('use-slider').addEventListener('input', (e) => {
-    document.getElementById('use-input').value = e.target.value;
-});
+document.getElementById('use-slider').addEventListener('input', (e) => { document.getElementById('use-input').value = e.target.value; });
 document.getElementById('use-input').addEventListener('input', (e) => {
-    let val = parseInt(e.target.value);
-    const maxVal = parseInt(e.target.max) || 1;
-    if (val > maxVal) val = maxVal;
-    if (val < 1 || isNaN(val)) val = 1;
-    e.target.value = val;
-    document.getElementById('use-slider').value = val;
+    let val = parseInt(e.target.value); const maxVal = parseInt(e.target.max) || 1;
+    if (val > maxVal) val = maxVal; if (val < 1 || isNaN(val)) val = 1;
+    e.target.value = val; document.getElementById('use-slider').value = val;
 });
 
 document.getElementById('confirm-use-btn').addEventListener('click', () => {
@@ -861,16 +762,33 @@ document.getElementById('confirm-use-btn').addEventListener('click', () => {
     const amount = parseInt(document.getElementById('use-input').value);
     const item = SHOP_ITEMS.find(i => i.id === currentUseId);
     if (!item || !gameState.itemInventory[currentUseId] || gameState.itemInventory[currentUseId] < amount) {
-        alert("❌ 물약 수량이 부족합니다!");
-        return;
+        alert("❌ 물약 수량이 부족합니다!"); return;
+    }
+
+    const now = Date.now();
+
+    if (item.type === "luck") {
+        if (gameState.activeBuffs.luckExpireTime && gameState.activeBuffs.luckExpireTime > now) {
+            if (gameState.activeBuffs.luckLevel && gameState.activeBuffs.luckLevel !== item.level) {
+                alert(`❌ 이미 '행운의 물약 ${gameState.activeBuffs.luckLevel}'이(가) 사용 중입니다!\n서로 다른 단계의 행운 물약은 동시에 사용할 수 없습니다.`);
+                return;
+            }
+        }
+    } else if (item.type === "speed") {
+        if (gameState.activeBuffs.speedExpireTime && gameState.activeBuffs.speedExpireTime > now) {
+            if (gameState.activeBuffs.speedLevel && gameState.activeBuffs.speedLevel !== item.level) {
+                alert(`❌ 이미 '속도의 물약 ${gameState.activeBuffs.speedLevel}'이(가) 사용 중입니다!\n서로 다른 단계의 속도 물약은 동시에 사용할 수 없습니다.`);
+                return;
+            }
+        }
     }
 
     gameState.itemInventory[currentUseId] -= amount;
     if (gameState.itemInventory[currentUseId] === 0) delete gameState.itemInventory[currentUseId];
 
-    const now = Date.now();
     if (item.type === "luck") {
         gameState.activeBuffs.luckBonus = item.value;
+        gameState.activeBuffs.luckLevel = item.level;
         const addDurationMs = item.duration * 1000 * amount;
         if (gameState.activeBuffs.luckExpireTime && gameState.activeBuffs.luckExpireTime > now) {
             gameState.activeBuffs.luckExpireTime += addDurationMs;
@@ -879,6 +797,7 @@ document.getElementById('confirm-use-btn').addEventListener('click', () => {
         }
     } else if (item.type === "speed") {
         gameState.activeBuffs.speedBonus = item.value;
+        gameState.activeBuffs.speedLevel = item.level;
         const addDurationMs = item.duration * 1000 * amount;
         if (gameState.activeBuffs.speedExpireTime && gameState.activeBuffs.speedExpireTime > now) {
             gameState.activeBuffs.speedExpireTime += addDurationMs;
@@ -890,9 +809,7 @@ document.getElementById('confirm-use-btn').addEventListener('click', () => {
         gameState.activeMultBuffs.push({ name: item.name, bonus: item.value, uses: item.maxUses * amount });
     }
 
-    saveGame();
-    updateStatsUI();
-    updateItemInventory();
+    saveGame(); updateStatsUI(); updateItemInventory();
     ui.usePotionModal.classList.add('hidden');
     alert(`✨ '${item.name}' ${amount}개 사용 완료!`);
 });
@@ -907,9 +824,15 @@ function updateInventory() {
             const isCosmic = auraInfo.grade === "COSMIC";
             const isHolyAngel = (id === "divine_angel_gaen");
             const isLightning = (id === "js_lightning_jisung");
+            const isFalseTheatre = (id === "js_false_theatre_tv");
+            const isDemonMinchae = (id === "js_demon_minchae");
+            const isMonkeyLiberator = (id === "js_monkey_liberator");
 
             let borderClass = '';
-            if (isLightning) borderClass = 'border-lightning';
+            if (isMonkeyLiberator) borderClass = 'border-monkey-liberator';
+            else if (isFalseTheatre) borderClass = 'border-false-theatre';
+            else if (isDemonMinchae) borderClass = 'border-demon-minchae';
+            else if (isLightning) borderClass = 'border-lightning';
             else if (isHolyAngel) borderClass = 'border-holy-gold';
             else if (isJS) borderClass = 'border-js';
             else if (isCosmic) borderClass = 'border-cosmic';
@@ -927,19 +850,76 @@ function updateInventory() {
     } 
 }
 
-window.craftGear = function(gearId) { const gear = CRAFT_ITEMS.find(g => g.id === gearId); for(let reqId in gear.req) { const needed = gear.req[reqId]; const have = gameState.inventory[reqId] || 0; if(have < needed) { alert("재료가 부족합니다!"); return; } } for(let reqId in gear.req) { gameState.inventory[reqId] -= gear.req[reqId]; if(gameState.inventory[reqId] === 0) delete gameState.inventory[reqId]; } gameState.craftedGears.push(gearId); gameState.gear = gearId; saveGame(); updateStatsUI(); updateInventory(); updateCraftUI(); alert(`🎉 '${gear.name}' 제작 완료!`); }
-window.equipGear = function(gearId) { gameState.gear = gearId; saveGame(); updateStatsUI(); updateCraftUI(); }
-window.unequipGear = function() { gameState.gear = null; saveGame(); updateStatsUI(); updateCraftUI(); }
+window.craftGear = function(gearId) { 
+    const gear = CRAFT_ITEMS.find(g => g.id === gearId); 
+    for(let reqId in gear.req) { 
+        const needed = gear.req[reqId]; 
+        const have = gameState.inventory[reqId] || 0; 
+        if(have < needed) { alert("재료가 부족합니다!"); return; } 
+    } 
+    for(let reqId in gear.req) { 
+        gameState.inventory[reqId] -= gear.req[reqId]; 
+        if(gameState.inventory[reqId] === 0) delete gameState.inventory[reqId]; 
+    } 
+    gameState.craftedGears.push(gearId); 
+    if (gear.category === "amulet") {
+        gameState.amulet = gearId;
+        gameState.amuletStack = 0;
+    } else {
+        gameState.gear = gearId; 
+    }
+    saveGame(); updateStatsUI(); updateInventory(); updateCraftUI(); 
+    alert(`🎉 '${gear.name}' 제작 완료!`); 
+}
+
+window.equipGear = function(gearId) { 
+    const item = CRAFT_ITEMS.find(g => g.id === gearId);
+    if (item.category === "amulet") {
+        gameState.amulet = gearId;
+        gameState.amuletStack = 0;
+    } else {
+        gameState.gear = gearId; 
+    }
+    saveGame(); updateStatsUI(); updateCraftUI(); 
+}
+
+window.unequipGear = function(gearId) { 
+    const item = CRAFT_ITEMS.find(g => g.id === gearId);
+    if (item.category === "amulet") {
+        gameState.amulet = null;
+        gameState.amuletStack = 0;
+    } else {
+        gameState.gear = null; 
+    }
+    saveGame(); updateStatsUI(); updateCraftUI(); 
+}
+
+ui.craftTabGauntlet.addEventListener('click', () => {
+    currentCraftTab = "gauntlet";
+    ui.craftTabGauntlet.classList.add('active');
+    ui.craftTabAmulet.classList.remove('active');
+    updateCraftUI();
+});
+
+ui.craftTabAmulet.addEventListener('click', () => {
+    currentCraftTab = "amulet";
+    ui.craftTabAmulet.classList.add('active');
+    ui.craftTabGauntlet.classList.remove('active');
+    updateCraftUI();
+});
 
 function updateCraftUI() {
     ui.craftGrid.innerHTML = '';
-    for(let gear of CRAFT_ITEMS) {
-        const isEquipped = (gameState.gear === gear.id); const isOwned = gameState.craftedGears.includes(gear.id);
+    const itemsToDisplay = CRAFT_ITEMS.filter(g => (g.category || "gauntlet") === currentCraftTab);
+
+    for(let gear of itemsToDisplay) {
+        const isEquipped = (gear.category === "amulet") ? (gameState.amulet === gear.id) : (gameState.gear === gear.id); 
+        const isOwned = gameState.craftedGears.includes(gear.id);
         const itemDiv = document.createElement('div'); itemDiv.className = 'craft-item';
         let reqHtml = ''; let canCraft = true;
-        for(let reqId in gear.req) { const auraInfo = AURA_DATA.find(a => a.id === reqId); const needed = gear.req[reqId]; const have = gameState.inventory[reqId] || 0; const isMet = have >= needed; if(!isMet) canCraft = false; reqHtml += `<div class="craft-req-item ${isMet ? 'met' : 'unmet'}">- [${auraInfo.grade}] ${auraInfo.name} : ${have} / ${needed}</div>`; }
+        for(let reqId in gear.req) { const auraInfo = AURA_DATA.find(a => a.id === reqId); const needed = gear.req[reqId]; const have = gameState.inventory[reqId] || 0; const isMet = have >= needed; if(!isMet) canCraft = false; reqHtml += `<div class="craft-req-item ${isMet ? 'met' : 'unmet'}">- [${auraInfo ? auraInfo.grade : '?'}] ${auraInfo ? auraInfo.name : reqId} : ${have} / ${needed}</div>`; }
         let btnHtml = '';
-        if (isEquipped) { btnHtml = `<button class="action-btn craft" style="background:#555;" onclick="unequipGear()">해제하기</button>`; } else if (isOwned) { btnHtml = `<button class="action-btn craft" style="background:#2980b9;" onclick="equipGear('${gear.id}')">장착하기</button>`; } else { btnHtml = `<button class="action-btn craft" onclick="craftGear('${gear.id}')" ${canCraft ? '' : 'disabled style="opacity:0.5; cursor:not-allowed;"'}>제작하기</button>`; }
+        if (isEquipped) { btnHtml = `<button class="action-btn craft" style="background:#555;" onclick="unequipGear('${gear.id}')">해제하기</button>`; } else if (isOwned) { btnHtml = `<button class="action-btn craft" style="background:#2980b9;" onclick="equipGear('${gear.id}')">장착하기</button>`; } else { btnHtml = `<button class="action-btn craft" onclick="craftGear('${gear.id}')" ${canCraft ? '' : 'disabled style="opacity:0.5; cursor:not-allowed;"'}>제작하기</button>`; }
         itemDiv.innerHTML = `<div class="craft-title">${gear.name}</div><div class="craft-desc">${gear.desc}</div>${isOwned ? '<div style="color:#f1c40f; font-size:12px; margin-bottom:10px;">✅ 소유함</div>' : `<div class="craft-req-list">${reqHtml}</div>`}${btnHtml}`; ui.craftGrid.appendChild(itemDiv);
     }
 }
@@ -947,8 +927,7 @@ function updateCraftUI() {
 function updateItemInventory() { 
     ui.itemInvenGrid.innerHTML = ''; 
     if (Object.keys(gameState.itemInventory).length === 0) { 
-        ui.itemInvenGrid.innerHTML = `<p style="color:#777; grid-column: span 2;">물약이 없습니다.</p>`; 
-        return; 
+        ui.itemInvenGrid.innerHTML = `<p style="color:#777; grid-column: span 2;">물약이 없습니다.</p>`; return; 
     } 
     for (let itemId in gameState.itemInventory) { 
         const count = gameState.itemInventory[itemId]; 
@@ -967,7 +946,7 @@ function buildShopUI() {
     for (let item of SHOP_ITEMS) { 
         const tile = document.createElement('div'); 
         tile.className = `shop-tile ${item.border || 'border-legend'}`; 
-        tile.innerHTML = `<div class="tile-name">${item.name}</div><div class="tile-desc">${item.desc}</div><div class="tile-count" style="font-weight:bold;">${item.price.toLocaleString()} JC</div><button class="action-btn buy" onclick="openBuyModal('${item.id}')">구매하기</button>`; 
+        tile.innerHTML = `<div class="tile-name">${item.name}</div><div class="tile-desc">${item.desc}</div><div class="tile-count" style="font-weight:bold;">${item.price.toLocaleString()} JC🪙</div><button class="action-btn buy" onclick="openBuyModal('${item.id}')">구매하기</button>`; 
         ui.shopGrid.appendChild(tile); 
     } 
 }
@@ -983,10 +962,16 @@ function updateIndex() {
         const isCosmic = aura.grade === "COSMIC";
         const isHolyAngel = (aura.id === "divine_angel_gaen");
         const isLightning = (aura.id === "js_lightning_jisung");
+        const isFalseTheatre = (aura.id === "js_false_theatre_tv");
+        const isDemonMinchae = (aura.id === "js_demon_minchae");
+        const isMonkeyLiberator = (aura.id === "js_monkey_liberator");
 
         if (isDiscovered) { 
             let borderClass = '';
-            if (isLightning) borderClass = 'border-lightning';
+            if (isMonkeyLiberator) borderClass = 'border-monkey-liberator';
+            else if (isFalseTheatre) borderClass = 'border-false-theatre';
+            else if (isDemonMinchae) borderClass = 'border-demon-minchae';
+            else if (isLightning) borderClass = 'border-lightning';
             else if (isHolyAngel) borderClass = 'border-holy-gold';
             else if (isJS) borderClass = 'border-js';
             else if (isCosmic) borderClass = 'border-cosmic';
