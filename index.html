@@ -44,6 +44,13 @@
             <div id="top-left-stats">
                 <div>🎲 TOTAL ROLLS: <span id="roll-count">0</span></div>
                 <div class="jc-text">🪙 JC: <span id="jc-count">0</span></div>
+                
+                <!-- 🔲 좌상단 가로 3개 미니 정사각형 아이콘 버튼 -->
+                <div class="top-quick-btns">
+                    <button id="ranking-btn" class="icon-square-btn" title="랭킹">🏆</button>
+                    <button id="market-btn" class="icon-square-btn" title="유저장터">🏪</button>
+                    <button id="profile-btn" class="icon-square-btn" title="내 프로필">👤</button>
+                </div>
             </div>
             <h1 class="main-title">JS RNG</h1>
             <button id="settings-hub-btn" class="secret-btn" title="설정 ⚙️">⚙️</button>
@@ -79,9 +86,6 @@
 
         <!-- 하단 메인 메뉴 -->
         <div class="main-menu">
-            <button id="ranking-btn" class="main-menu-btn" style="background: linear-gradient(145deg, #d35400, #e67e22);">🏆 랭킹</button>
-            <button id="market-btn" class="main-menu-btn" style="background: linear-gradient(145deg, #27ae60, #2ecc71);">🏪 유저장터</button>
-            <button id="profile-btn" class="main-menu-btn" style="background: linear-gradient(145deg, #2980b9, #3498db);">👤 내 프로필</button>
             <button id="inventory-btn" class="main-menu-btn">🎒 칭호 가방</button>
             <button id="item-inven-btn" class="main-menu-btn">🧪 물약 가방</button>
             <button id="craft-btn" class="main-menu-btn">🔨 제작소</button>
@@ -91,7 +95,7 @@
         </div>
     </div>
 
-    <!-- 🏆 랭킹 모달 (3가지 카테고리 탭 포함) -->
+    <!-- 🏆 랭킹 모달 -->
     <div id="ranking-modal" class="modal hidden">
         <div class="modal-content large">
             <span id="close-ranking" class="close-btn">&times;</span>
@@ -100,7 +104,8 @@
             <div class="tab-group" style="display: flex; gap: 5px; margin: 15px 0 10px 0;">
                 <button id="rank-tab-rolls" class="action-btn craft-tab active" style="flex: 1; padding: 10px; font-weight: bold;">🎲 롤 횟수</button>
                 <button id="rank-tab-jc" class="action-btn craft-tab" style="flex: 1; padding: 10px; font-weight: bold;">🪙 JC 보유량</button>
-                <button id="rank-tab-aura" class="action-btn craft-tab" style="flex: 1; padding: 10px; font-weight: bold; background: #8e44ad;">👑 가장 희귀한 칭호</button>
+                <!-- 👑 명칭 변경: BEST 칭호 -->
+                <button id="rank-tab-aura" class="action-btn craft-tab" style="flex: 1; padding: 10px; font-weight: bold; background: #8e44ad;">👑 BEST 칭호</button>
             </div>
 
             <div id="ranking-list-grid" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;"></div>
@@ -126,7 +131,7 @@
             <span id="close-register-market" class="close-btn">&times;</span>
             <h3>🏪 장터 매물 등록</h3>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                <label style="font-size: 12px;">판매할 칭호 선택:</label>
+                <label style="font-size: 12px;">판매할 칭호 선택 (등급순 정렬):</label>
                 <select id="market-sell-aura-select" style="padding: 8px; background: #111; color: white; border-radius: 5px; border: 1px solid #555;"></select>
                 
                 <label style="font-size: 12px;">등록 수량 (개수별 독립 등록):</label>
@@ -149,7 +154,7 @@
                 <h2 id="profile-user-name" style="margin: 0; font-size: 20px;">유저 이름</h2>
                 <div id="profile-user-status" style="font-size: 13px; color: #f39c12; margin: 6px 0;">"한 줄 상태 메시지"</div>
                 
-                <!-- 👑 대표 칭호 도감 스타일 카드 -->
+                <!-- 👑 대표 칭호 카드 -->
                 <div style="margin: 10px 0;">
                     <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">👑 대표 칭호</div>
                     <div id="profile-title-card-slot"></div>
@@ -170,18 +175,24 @@
                     <label style="font-size: 11px; color: #ccc;">닉네임 변경:</label>
                     <input type="text" id="edit-nickname-input" placeholder="새 닉네임 입력" style="width: 100%; padding: 6px; margin: 3px 0 8px 0; background: #111; color: white; border: 1px solid #555; border-radius: 5px; box-sizing: border-box;">
 
-                    <label style="font-size: 11px; color: #ccc;">프로필 이미지 URL (또는 기본 아바타 선택):</label>
-                    <div style="display: flex; gap: 5px; margin: 3px 0 8px 0;">
-                        <input type="text" id="edit-photo-input" placeholder="https://..." style="flex:1; padding: 6px; background: #111; color: white; border: 1px solid #555; border-radius: 5px;">
-                        <select id="edit-avatar-select" style="padding: 6px; background: #222; color: white; border: 1px solid #555; border-radius: 5px;">
-                            <option value="">직접 URL</option>
-                            <option value="https://api.dicebear.com/7.x/bottts/svg?seed=Pikachu">🤖 로봇</option>
-                            <option value="https://api.dicebear.com/7.x/adventurer/svg?seed=Knight">⚔️ 기사</option>
-                            <option value="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix">🐱 아바타</option>
-                        </select>
+                    <label style="font-size: 11px; color: #ccc;">프로필 이미지 (파일 선택 / 아바타 / URL):</label>
+                    <div style="display: flex; flex-direction: column; gap: 5px; margin: 3px 0 8px 0;">
+                        <!-- 📱 기기 파일 직접 업로드 버튼 추가 -->
+                        <input type="file" id="edit-file-input" accept="image/*" style="font-size: 11px; color: #ccc;">
+                        
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="edit-photo-input" placeholder="https://... 또는 파일 선택" style="flex:1; padding: 6px; background: #111; color: white; border: 1px solid #555; border-radius: 5px; font-size:11px;">
+                            <select id="edit-avatar-select" style="padding: 6px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; font-size:11px;">
+                                <option value="">기본 아바타</option>
+                                <option value="https://api.dicebear.com/7.x/bottts/svg?seed=Pikachu">🤖 로봇</option>
+                                <option value="https://api.dicebear.com/7.x/adventurer/svg?seed=Knight">⚔️ 기사</option>
+                                <option value="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix">🐱 아바타</option>
+                                <option value="https://api.dicebear.com/7.x/pixel-art/svg?seed=Hero">🎮 픽셀</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <label style="font-size: 11px; color: #ccc;">👑 대표 칭호 선택 (획득 도감 기준):</label>
+                    <label style="font-size: 11px; color: #ccc;">👑 대표 칭호 선택 (등급순 정렬):</label>
                     <select id="edit-title-select" style="width: 100%; padding: 6px; margin: 3px 0 8px 0; background: #111; color: white; border: 1px solid #555; border-radius: 5px; box-sizing: border-box;"></select>
 
                     <label style="font-size: 11px; color: #ccc;">한 줄 상태 메시지:</label>

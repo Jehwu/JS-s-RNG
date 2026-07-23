@@ -15,6 +15,31 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .secret-btn { background: transparent; border: 1px solid #444; color: #666; border-radius: 5px; padding: 6px; cursor: pointer; font-size: 16px; margin: 0; }
 .secret-btn:hover { background: #333; color: white; }
 
+/* 🔲 새로 추가: 상단 미니 정사각형 아이콘 버튼 모음 */
+.top-quick-btns {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+.icon-square-btn {
+    width: 32px;
+    height: 32px;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    font-size: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: 0.2s;
+    color: white;
+}
+.icon-square-btn:hover {
+    background: #3a3a3a;
+    transform: scale(1.05);
+}
+
 #aura-display { margin: auto 0; min-height: 140px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5; position: relative; width: 100%; }
 .result-grade { font-size: 20px; font-weight: bold; margin-bottom: 5px; opacity: 0.9; }
 .result-name { font-size: 38px; font-weight: bold; margin: 5px 0; word-break: keep-all; }
@@ -109,12 +134,37 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .close-btn { position: absolute; top: 15px; right: 18px; font-size: 22px; cursor: pointer; color: #888; transition: color 0.2s; }
 .close-btn:hover { color: white; }
 
-.ranking-card { display: flex; align-items: center; gap: 12px; background: #2b2b2b; padding: 10px 15px; border-radius: 8px; border: 1px solid #444; cursor: pointer; transition: 0.2s; }
+/* 🏆 랭킹 카드 (세로 깨짐 방지 교정) */
+.ranking-card { display: flex; align-items: center; gap: 12px; background: #2b2b2b; padding: 10px 15px; border-radius: 8px; border: 1px solid #444; cursor: pointer; transition: 0.2s; text-align: left; }
 .ranking-card:hover { background: #3a3a3a; transform: translateX(3px); }
-.rank-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; background: #555; color: white; }
+.rank-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; background: #555; color: white; flex-shrink: 0; }
 .rank-1 { background: #f1c40f; color: black; box-shadow: 0 0 10px rgba(241, 196, 15, 0.8); }
 .rank-2 { background: #bdc3c7; color: black; }
 .rank-3 { background: #e67e22; color: white; }
+
+.ranking-user-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 👑 대표 칭호 미니 카드 태그 */
+.title-card-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid #555;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 #market-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
 .market-item-card { background: #2a2a2a; border: 2px solid #555; padding: 12px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
@@ -346,7 +396,7 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .aura-doomsday-voice {
     background: linear-gradient(90deg, #8d6e63, #ff69b4, #795548, #ff1493);
     -webkit-background-clip: text; color: transparent !important;
-    font-weight: 900; background-size: 200% auto; animation: shine-anim 1.5s linear infinite;
+    font-weight: 900; background-size: 1.5s linear infinite; animation: shine-anim 1.5s linear infinite;
     text-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
 }
 

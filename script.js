@@ -272,7 +272,7 @@ const ui = {
     registerMarketModal: document.getElementById('register-market-modal'), closeRegisterMarket: document.getElementById('close-register-market'), marketSellAuraSelect: document.getElementById('market-sell-aura-select'), marketSellCount: document.getElementById('market-sell-count'), marketSellPrice: document.getElementById('market-sell-price'), marketPriceLimitText: document.getElementById('market-price-limit-text'), confirmRegisterMarketBtn: document.getElementById('confirm-register-market-btn'),
     
     profileBtn: document.getElementById('profile-btn'), profileModal: document.getElementById('profile-modal'), closeProfile: document.getElementById('close-profile'),
-    editNicknameInput: document.getElementById('edit-nickname-input'), editPhotoInput: document.getElementById('edit-photo-input'), editAvatarSelect: document.getElementById('edit-avatar-select'), editTitleSelect: document.getElementById('edit-title-select'), saveProfileAllBtn: document.getElementById('save-profile-all-btn')
+    editNicknameInput: document.getElementById('edit-nickname-input'), editFileInput: document.getElementById('edit-file-input'), editPhotoInput: document.getElementById('edit-photo-input'), editAvatarSelect: document.getElementById('edit-avatar-select'), editTitleSelect: document.getElementById('edit-title-select'), saveProfileAllBtn: document.getElementById('save-profile-all-btn')
 };
 
 loadSoundSettings();
@@ -503,7 +503,6 @@ window.cheatAllCraftItems = function() {
 
 window.setNextRoll = function() { nextRollOverride = document.getElementById('dev-aura-select').value; const auraInfo = AURA_DATA.find(a => a.id === nextRollOverride); alert(`🎯 다음 굴리기: [${auraInfo.grade}] ${auraInfo.name}`); }
 
-// 🔑 개발자 비번 '로블록스33' 원복 처리
 ui.devBtn.addEventListener('click', () => {
     if (!disableSave) {
         const pwd = prompt("🛠️ 개발자 모드 접근\n비밀번호를 입력하세요:");
@@ -524,7 +523,7 @@ ui.closeDev.addEventListener('click', () => { ui.devModal.classList.add('hidden'
 window.exitDevMode = function() {
     if(!disableSave) return;
     gameState = JSON.parse(JSON.stringify(backupGameState)); disableSave = false; backupGameState = null; saveGame();
-    ui.mainDevBtn.classList.add('hidden'); updateStatsUI(); updateInventory(); updateCraftUI(); ui.devModal.classList.add('hidden'); alert("🚪 개발자 모드를 종료하고 본계정 데이터로 복구했습니다!");
+    ui.mainDevBtn.classList.add('hidden'); updateStatsUI(); updateInventory(); updateCraftUI(); ui.devModal.classList.add('hidden'); alert("🚪 개발자 모드를 종료하고 본계정 복구했습니다!");
 }
 
 function getTotalMultBonus() {
@@ -1055,7 +1054,6 @@ function updateQuestUI() {
     });
 }
 
-// 🛡️ 칭호별 전용 테두리 클래스 반환 헬퍼 (인벤토리/도감/프로필 카드 공통 적용)
 function getAuraBorderClass(aura) {
     if (!aura) return 'border-common';
     if (aura.id === "js_170kg_minchae") return 'border-170kg-minchae';
@@ -1070,7 +1068,6 @@ function getAuraBorderClass(aura) {
     return `border-${aura.grade.toLowerCase()}`;
 }
 
-// 🎒 칭호 인벤토리 업데이트 (김민채 테두리 초록빛 반짝임 보장)
 function updateInventory() { 
     ui.inventoryGrid.innerHTML = ''; 
     let hasItems = false;
@@ -1196,7 +1193,6 @@ function buildShopUI() {
     } 
 }
 
-// 📖 도감 업데이트 (발견된 칭호 빛나는 특수 테두리 100% 적용)
 function updateIndex() { 
     ui.indexGrid.innerHTML = ''; 
     if(!gameState.discoveredAuras) gameState.discoveredAuras = [];
@@ -1295,13 +1291,13 @@ async function loadRankingList(tabType) {
 
             card.innerHTML = `
                 <div class="rank-badge ${rankBadgeClass}">${rank}</div>
-                <img src="${data.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-                <div style="flex: 1; text-align: left; overflow: hidden;">
+                <img src="${data.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                <div class="ranking-user-info">
                     <div style="font-weight:bold; font-size:14px; color:white;">${data.name}</div>
                     <div style="margin-top: 2px;">${titleCardHtml}</div>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-size:13px; font-weight:bold; color:#f1c40f;">${displayValue}</div>
+                <div style="text-align: right; flex-shrink:0;">
+                    <div style="font-size:12px; font-weight:bold; color:#f1c40f;">${displayValue}</div>
                 </div>
             `;
             ui.rankingListGrid.appendChild(card);
@@ -1327,7 +1323,6 @@ ui.rankTabJc.addEventListener('click', () => loadRankingList('jc'));
 ui.rankTabAura.addEventListener('click', () => loadRankingList('aura'));
 ui.closeRanking.addEventListener('click', () => ui.rankingModal.classList.add('hidden'));
 
-// 👑 대표 칭호 도감 카드 UI 생성 함수 (빛나는 효과 보장)
 function getAuraCardHtml(auraId) {
     if (!auraId) return `<div class="title-card-mini border-common"><span style="color:#aaa;">대표 칭호 없음</span></div>`;
     const aura = AURA_DATA.find(a => a.id === auraId);
@@ -1336,7 +1331,7 @@ function getAuraCardHtml(auraId) {
     const borderClass = getAuraBorderClass(aura);
 
     return `
-        <div class="title-card-mini ${borderClass}" style="border-color:${aura.color}; display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:6px; background:rgba(0,0,0,0.5);">
+        <div class="title-card-mini ${borderClass}">
             <span style="font-size:10px; font-weight:bold; color:${aura.color}">[${aura.grade}]</span>
             <span class="${aura.class || ''}" style="font-size:12px; font-weight:bold; ${aura.class ? '' : `color:${aura.color};`}">${aura.name}</span>
         </div>
@@ -1346,6 +1341,18 @@ function getAuraCardHtml(auraId) {
 ui.profileBtn.addEventListener('click', () => {
     if (!currentUser) { alert("❌ 로그인이 필요한 기능입니다!"); return; }
     openUserProfileModal(currentUser.uid);
+});
+
+// 📱 내 기기 사진 파일 변환 처리
+ui.editFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            ui.editPhotoInput.value = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
 });
 
 async function openUserProfileModal(targetUid) {
@@ -1378,15 +1385,18 @@ async function openUserProfileModal(targetUid) {
 
                 ui.editTitleSelect.innerHTML = `<option value="">-- 선택 안함 --</option>`;
                 if (gameState.discoveredAuras) {
-                    gameState.discoveredAuras.forEach(auraId => {
-                        const aura = AURA_DATA.find(a => a.id === auraId);
-                        if (aura) {
-                            const opt = document.createElement('option');
-                            opt.value = aura.id;
-                            opt.innerText = `[${aura.grade}] ${aura.name}`;
-                            if (aura.id === gameState.selectedTitleAuraId) opt.selected = true;
-                            ui.editTitleSelect.appendChild(opt);
-                        }
+                    // 📊 등급순 정렬 후 옵션 생성
+                    const userDiscovered = gameState.discoveredAuras
+                        .map(id => AURA_DATA.find(a => a.id === id))
+                        .filter(Boolean)
+                        .sort((a, b) => GRADES.indexOf(a.grade) - GRADES.indexOf(b.grade) || a.in - b.in);
+
+                    userDiscovered.forEach(aura => {
+                        const opt = document.createElement('option');
+                        opt.value = aura.id;
+                        opt.innerText = `[${aura.grade}] ${aura.name}`;
+                        if (aura.id === gameState.selectedTitleAuraId) opt.selected = true;
+                        ui.editTitleSelect.appendChild(opt);
                     });
                 }
             }
@@ -1471,24 +1481,28 @@ ui.openSellMarketBtn.addEventListener('click', () => {
     const select = ui.marketSellAuraSelect;
     select.innerHTML = '';
     
-    let hasItems = false;
+    let userAuras = [];
     for (let auraId in gameState.inventory) {
         if (gameState.inventory[auraId] > 0) {
-            hasItems = true;
             const aura = AURA_DATA.find(a => a.id === auraId);
-            if (aura) {
-                const opt = document.createElement('option');
-                opt.value = aura.id;
-                opt.innerText = `[${aura.grade}] ${aura.name} (보유: ${gameState.inventory[auraId]}개)`;
-                select.appendChild(opt);
-            }
+            if (aura) userAuras.push(aura);
         }
     }
 
-    if (!hasItems) {
+    if (userAuras.length === 0) {
         alert("❌ 장터에 올릴 수 있는 보유 칭호가 없습니다!");
         return;
     }
+
+    // 📊 보유 칭호 등급순 정렬
+    userAuras.sort((a, b) => GRADES.indexOf(a.grade) - GRADES.indexOf(b.grade) || a.in - b.in);
+
+    userAuras.forEach(aura => {
+        const opt = document.createElement('option');
+        opt.value = aura.id;
+        opt.innerText = `[${aura.grade}] ${aura.name} (보유: ${gameState.inventory[aura.id]}개)`;
+        select.appendChild(opt);
+    });
 
     updatePriceLimitUI();
     ui.registerMarketModal.classList.remove('hidden');
