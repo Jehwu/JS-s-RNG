@@ -315,11 +315,12 @@ onAuthStateChanged(auth, async (user) => {
         if (statusTextSettings) statusTextSettings.innerText = txt;
         loginBtns.forEach(b => b.classList.remove('hidden'));
         logoutBtns.forEach(b => b.classList.add('hidden'));
+        loadGame(); // 비로그인 시 로컬스토리지 연결
     }
 });
 
 async function saveGameToCloud() {
-    if (!currentUser || disableSave) return;
+    if (!currentUser) return;
     try { await setDoc(doc(db, "users", currentUser.uid), gameState); } catch (e) { console.error("클라우드 저장 실패:", e); }
 }
 
@@ -335,6 +336,120 @@ async function loadGameFromCloud() {
     } catch (e) { console.error("클라우드 로드 실패:", e); }
 }
 
+function saveGame() { 
+    // disableSave 시 로컬저장 제한이 있다면 해제하여 항상 저장되도록 보장
+    localStorage.setItem('js_rng_save', JSON.stringify(gameState)); 
+    if (currentUser) {
+        saveGameToCloud(); 
+    }
+}
+
+function loadGame() {
+    const savedData = localStorage.getItem('js_rng_save');
+    if (savedData) { 
+        gameState = { ...gameState, ...JSON.parse(savedData) }; 
+        if(!gameState.craftedGears) gameState.craftedGears = []; 
+        if(!gameState.usedCodes) gameState.usedCodes = [];
+        if(!gameState.activeMultBuffs) gameState.activeMultBuffs = [];
+        if(!gameState.discoveredAuras) gameState.discoveredAuras = [];
+        if(!gameState.completedQuests) gameState.completedQuests = [];
+        if(!gameState.questProgress) gameState.questProgress = {};
+        if(gameState.amuletStack === undefined) gameState.amuletStack = 0;
+        if(!gameState.statusMsg) gameState.statusMsg = "운빨 최강 도전 중!";
+        if(!gameState.customNickname) gameState.customNickname = "";
+        if(!gameState.customPhoto) gameState.customPhoto = "";
+        if(!gameState.selectedTitleAuraId) gameState.selectedTitleAuraId = "";
+        for(let auraId in gameState.inventory) { if(!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId); }
+    }
+    updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
+}
+
+// 🔒 쿠폰 처리 강화 (입력 직후 실시간 체크 및 강제 저장)
+ui.submitCodeBtn.addEventListener('click', () => {
+    const codeVal = ui.codeInput.value.trim().toUpperCase();
+    if (!gameState.usedCodes) gameState.usedCodes = [];
+
+    if (gameState.usedCodes.includes(codeVal)) {
+        alert("❌ 이미 사용한 쿠폰 코드입니다!");
+        return;
+    }
+
+    if (codeVal === "RANKING") {
+        gameState.usedCodes.push("RANKING");
+        gameState.itemInventory["void_potion"] = (gameState.itemInventory["void_potion"] || 0) + 1;
+        saveGame(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [RANKING 쿠폰 성공!] 🧪 공허의 물약 1개가 지급되었습니다!");
+    } else if (codeVal === "PROFILE") {
+        gameState.usedCodes.push("PROFILE");
+        gameState.jc += 1000000;
+        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 2;
+        saveGame(); updateStatsUI(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [PROFILE 쿠폰 성공!] 🪙 100만 JC & 🧪 극복의 물약 2개가 지급되었습니다!");
+    } else if (codeVal === "QUEST1") {
+        gameState.usedCodes.push("QUEST1");
+        gameState.jc += 1000000;
+        gameState.itemInventory["limit_potion"] = (gameState.itemInventory["limit_potion"] || 0) + 5;
+        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 1;
+        saveGame(); updateStatsUI(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [QUEST1 쿠폰 성공!] 100만 JC, 한계의 물약 5개, 극복의 물약 1개가 지급되었습니다!");
+    } else if (codeVal === "SPEEEED") {
+        gameState.usedCodes.push("SPEEEED");
+        gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 3;
+        saveGame(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        alert("🎉 [SPEEEED 쿠폰 성공!] 천상의 물약 3개가 지급되었습니다!");
+    } else { alert("❌ 존재하지 않거나 잘못된 코드입니다."); }
+});
+
+// 🏪 취소 시 파이어베이스 DB 매물 삭제 + 세이브 보장
+window.cancelMarketListing = async function(listingId, auraId) {
+    if (!confirm("정말 매물 등록을 취소하고 칭호를 회수하시겠습니까?")) return;
+    try {
+        await deleteDoc(doc(db, "market", listingId));
+        gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
+        saveGame(); updateInventory(); await loadMarketList();
+        alert("🔄 매물이 취소되고 칭호가 인벤토리로 반환되었습니다.");
+    } catch(e) { alert("취소 실패: " + e.message); }
+};
+
+window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
+    if (gameState.jc < price) { alert("❌ JC가 부족합니다!"); return; }
+    const auraInfo = AURA_DATA.find(a => a.id === auraId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const marketRef = doc(db, "market", listingId);
+            const sellerRef = doc(db, "users", sellerUid);
+            const marketDoc = await transaction.get(marketRef);
+
+            if (!marketDoc.exists()) throw "이미 판매되었거나 취소된 매물입니다!";
+
+            const sellerDoc = await transaction.get(sellerRef);
+            let sellerJC = sellerDoc.exists() ? (sellerDoc.data().jc || 0) : 0;
+
+            transaction.update(sellerRef, { jc: sellerJC + price });
+            transaction.delete(marketRef);
+        });
+
+        gameState.jc -= price;
+        gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
+        if (!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId);
+
+        saveGame(); updateStatsUI(); updateInventory();
+        await loadMarketList();
+        alert("🎉 구매를 완료했습니다!");
+    } catch(e) { alert("구매 실패: " + e); }
+};
+
+window.forceDeleteMarketItem = async function(listingId) {
+    if (!confirm("🛠️ [개발자 권한] 해당 매물을 강제 삭제하시겠습니까?")) return;
+    try {
+        await deleteDoc(doc(db, "market", listingId));
+        await loadMarketList();
+        alert("🗑️ 매물이 즉시 DB에서 강제 삭제되었습니다.");
+    } catch(e) { alert("삭제 실패: " + e.message); }
+};
+
+// 이하 기존 시스템 및 타이머 유지
 setInterval(async () => {
     if (currentUser) {
         await updateRankData();
@@ -397,40 +512,6 @@ ui.closeSound.addEventListener('click', () => { ui.soundModal.classList.add('hid
 ui.settingsHubBtn.addEventListener('click', () => { ui.settingsHubModal.classList.remove('hidden'); });
 ui.closeSettingsHub.addEventListener('click', () => { ui.settingsHubModal.classList.add('hidden'); });
 
-ui.submitCodeBtn.addEventListener('click', () => {
-    const codeVal = ui.codeInput.value.trim().toUpperCase();
-    if (!gameState.usedCodes) gameState.usedCodes = [];
-
-    if (codeVal === "RANKING") {
-        if (gameState.usedCodes.includes("RANKING")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
-        gameState.usedCodes.push("RANKING");
-        gameState.itemInventory["void_potion"] = (gameState.itemInventory["void_potion"] || 0) + 1;
-        saveGame(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [RANKING 쿠폰 성공!] 🧪 공허의 물약 1개가 지급되었습니다!");
-    } else if (codeVal === "PROFILE") {
-        if (gameState.usedCodes.includes("PROFILE")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
-        gameState.usedCodes.push("PROFILE");
-        gameState.jc += 1000000;
-        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 2;
-        saveGame(); updateStatsUI(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [PROFILE 쿠폰 성공!] 🪙 100만 JC & 🧪 극복의 물약 2개가 지급되었습니다!");
-    } else if (codeVal === "QUEST1") {
-        if (gameState.usedCodes.includes("QUEST1")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
-        gameState.usedCodes.push("QUEST1");
-        gameState.jc += 1000000;
-        gameState.itemInventory["limit_potion"] = (gameState.itemInventory["limit_potion"] || 0) + 5;
-        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 1;
-        saveGame(); updateStatsUI(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [QUEST1 쿠폰 성공!] 100만 JC, 한계의 물약 5개, 극복의 물약 1개가 지급되었습니다!");
-    } else if (codeVal === "SPEEEED") {
-        if (gameState.usedCodes.includes("SPEEEED")) { alert("❌ 이미 사용한 쿠폰입니다!"); return; }
-        gameState.usedCodes.push("SPEEEED");
-        gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 3;
-        saveGame(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
-        alert("🎉 [SPEEEED 쿠폰 성공!] 천상의 물약 3개가 지급되었습니다!");
-    } else { alert("❌ 존재하지 않거나 잘못된 코드입니다."); }
-});
-
 function applySoundSettingsToUI() {
     ui.volMaster.value = soundSettings.master * 100; ui.volMasterVal.innerText = Math.round(soundSettings.master * 100);
     ui.volBgm.value = soundSettings.bgm * 100; ui.volBgmVal.innerText = Math.round(soundSettings.bgm * 100);
@@ -453,35 +534,9 @@ ui.soundToggleBtn.addEventListener('click', () => {
     if (!soundSettings.enabled) stopBgm(); else playBgm(document.getElementById('lobby-screen').classList.contains('hidden') ? 'main' : 'lobby');
 });
 
-function loadGame() {
-    const savedData = localStorage.getItem('js_rng_save');
-    if (savedData) { 
-        gameState = { ...gameState, ...JSON.parse(savedData) }; 
-        if(!gameState.craftedGears) gameState.craftedGears = []; 
-        if(!gameState.usedCodes) gameState.usedCodes = [];
-        if(!gameState.activeMultBuffs) gameState.activeMultBuffs = [];
-        if(!gameState.discoveredAuras) gameState.discoveredAuras = [];
-        if(!gameState.completedQuests) gameState.completedQuests = [];
-        if(!gameState.questProgress) gameState.questProgress = {};
-        if(gameState.amuletStack === undefined) gameState.amuletStack = 0;
-        if(!gameState.statusMsg) gameState.statusMsg = "운빨 최강 도전 중!";
-        if(!gameState.customNickname) gameState.customNickname = "";
-        if(!gameState.customPhoto) gameState.customPhoto = "";
-        if(!gameState.selectedTitleAuraId) gameState.selectedTitleAuraId = "";
-        for(let auraId in gameState.inventory) { if(!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId); }
-    }
-    updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
-}
-
-function saveGame() { 
-    if (disableSave) return; 
-    localStorage.setItem('js_rng_save', JSON.stringify(gameState)); 
-    saveGameToCloud(); 
-}
-
-window.cheatJC = function() { gameState.jc += 1000000; updateStatsUI(); alert("100만 JC 지급!"); }
-window.cheatLuck = function() { gameState.luck = 10000; updateStatsUI(); alert("운 10,000배!"); }
-window.cheatItems = function() { AURA_DATA.forEach(a => { gameState.inventory[a.id] = (gameState.inventory[a.id] || 0) + 50; if(!gameState.discoveredAuras.includes(a.id)) gameState.discoveredAuras.push(a.id); }); updateInventory(); updateCraftUI(); alert("칭호 50개씩 지급 및 도감 등록!"); }
+window.cheatJC = function() { gameState.jc += 1000000; updateStatsUI(); saveGame(); alert("100만 JC 지급!"); }
+window.cheatLuck = function() { gameState.luck = 10000; updateStatsUI(); saveGame(); alert("운 10,000배!"); }
+window.cheatItems = function() { AURA_DATA.forEach(a => { gameState.inventory[a.id] = (gameState.inventory[a.id] || 0) + 50; if(!gameState.discoveredAuras.includes(a.id)) gameState.discoveredAuras.push(a.id); }); saveGame(); updateInventory(); updateCraftUI(); alert("칭호 50개씩 지급 및 도감 등록!"); }
 
 window.cheatCompleteQuests = function() {
     QUEST_DATA.forEach(q => {
@@ -504,26 +559,24 @@ window.cheatAllCraftItems = function() {
 window.setNextRoll = function() { nextRollOverride = document.getElementById('dev-aura-select').value; const auraInfo = AURA_DATA.find(a => a.id === nextRollOverride); alert(`🎯 다음 굴리기: [${auraInfo.grade}] ${auraInfo.name}`); }
 
 ui.devBtn.addEventListener('click', () => {
-    if (!disableSave) {
-        const pwd = prompt("🛠️ 개발자 모드 접근\n비밀번호를 입력하세요:");
-        if (pwd === "로블록스33") {
-            disableSave = true; backupGameState = JSON.parse(JSON.stringify(gameState));
-            ui.mainDevBtn.classList.remove('hidden'); ui.settingsHubModal.classList.add('hidden');
-            alert("✅ [개발자 모드 ON] 메인 화면에 '개발자 패널' 버튼이 추가되었으며, 유저장터 강제 삭제 기능이 활성화됩니다.");
-            const select = document.getElementById('dev-aura-select');
-            if (select.children.length === 0) { AURA_DATA.forEach(a => { const opt = document.createElement('option'); opt.value = a.id; opt.innerText = `[${a.grade}] ${a.name}`; select.appendChild(opt); }); }
-            ui.devModal.classList.remove('hidden');
-        } else if (pwd !== null) alert("❌ 비밀번호가 틀렸습니다.");
-    } else ui.devModal.classList.remove('hidden');
+    const pwd = prompt("🛠️ 개발자 모드 접근\n비밀번호를 입력하세요:");
+    if (pwd === "로블록스33") {
+        backupGameState = JSON.parse(JSON.stringify(gameState));
+        ui.mainDevBtn.classList.remove('hidden'); ui.settingsHubModal.classList.add('hidden');
+        alert("✅ [개발자 모드 ON] 메인 화면에 '개발자 패널' 버튼이 추가되었으며, 유저장터 강제 삭제 기능이 활성화됩니다.");
+        const select = document.getElementById('dev-aura-select');
+        if (select.children.length === 0) { AURA_DATA.forEach(a => { const opt = document.createElement('option'); opt.value = a.id; opt.innerText = `[${a.grade}] ${a.name}`; select.appendChild(opt); }); }
+        ui.devModal.classList.remove('hidden');
+    } else if (pwd !== null) alert("❌ 비밀번호가 틀렸습니다.");
 });
 
 ui.mainDevBtn.addEventListener('click', () => { ui.devModal.classList.remove('hidden'); });
 ui.closeDev.addEventListener('click', () => { ui.devModal.classList.add('hidden'); });
 
 window.exitDevMode = function() {
-    if(!disableSave) return;
-    gameState = JSON.parse(JSON.stringify(backupGameState)); disableSave = false; backupGameState = null; saveGame();
-    ui.mainDevBtn.classList.add('hidden'); updateStatsUI(); updateInventory(); updateCraftUI(); ui.devModal.classList.add('hidden'); alert("🚪 개발자 모드를 종료하고 본계정 복구했습니다!");
+    if (backupGameState) gameState = JSON.parse(JSON.stringify(backupGameState));
+    backupGameState = null; saveGame();
+    ui.mainDevBtn.classList.add('hidden'); updateStatsUI(); updateInventory(); updateCraftUI(); ui.devModal.classList.add('hidden'); alert("🚪 개발자 모드를 종료하고 복구했습니다!");
 }
 
 function getTotalMultBonus() {
@@ -1287,7 +1340,6 @@ async function loadRankingList(tabType) {
             else if (tabType === 'jc') displayValue = `🪙 ${(data.jc || 0).toLocaleString()} JC`;
             else if (tabType === 'aura') displayValue = `👑 ${data.bestAura || '없음'}`;
 
-            // 👑 랭킹 보드 교정: 닉네임 아래에 대표 칭호 대신 상태메세지가 뜨도록 설정!
             card.innerHTML = `
                 <div class="rank-badge ${rankBadgeClass}">${rank}</div>
                 <img src="${data.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0;">
@@ -1454,8 +1506,7 @@ async function loadMarketList() {
                 `<button class="action-btn" style="background:#888;" onclick="cancelMarketListing('${itemId}', '${item.auraId}')">취소하기</button>` :
                 `<button class="action-btn buy" onclick="buyMarketItem('${itemId}', '${item.sellerUid}', '${item.auraId}', ${item.price})">구매하기</button>`;
 
-            let devDeleteBtn = disableSave ? 
-                `<button class="action-btn" style="background:#e74c3c; margin-top:5px; font-size:10px;" onclick="forceDeleteMarketItem('${itemId}')">🗑️ 강제 삭제</button>` : '';
+            let devDeleteBtn = `<button class="action-btn" style="background:#e74c3c; margin-top:5px; font-size:10px;" onclick="forceDeleteMarketItem('${itemId}')">🗑️ 강제 삭제</button>`;
 
             tile.innerHTML = `
                 <div style="font-size: 11px; color:#aaa;">판매자: ${item.sellerName}</div>
@@ -1559,55 +1610,6 @@ ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
         alert(`🎉 성공적으로 칭호 ${count}개를 각각의 매물로 연달아 등록했습니다!`);
     } catch(e) { alert("등록 실패: " + e.message); }
 });
-
-// 🏪 취소 시 파이어베이스 DB 매물 완전 삭제
-window.cancelMarketListing = async function(listingId, auraId) {
-    if (!confirm("정말 매물 등록을 취소하고 칭호를 회수하시겠습니까?")) return;
-    try {
-        await deleteDoc(doc(db, "market", listingId));
-        gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
-        saveGame(); updateInventory(); await loadMarketList();
-        alert("🔄 매물이 취소되고 칭호가 인벤토리로 반환되었습니다.");
-    } catch(e) { alert("취소 실패: " + e.message); }
-};
-
-window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
-    if (gameState.jc < price) { alert("❌ JC가 부족합니다!"); return; }
-    const auraInfo = AURA_DATA.find(a => a.id === auraId);
-
-    try {
-        await runTransaction(db, async (transaction) => {
-            const marketRef = doc(db, "market", listingId);
-            const sellerRef = doc(db, "users", sellerUid);
-            const marketDoc = await transaction.get(marketRef);
-
-            if (!marketDoc.exists()) throw "이미 판매되었거나 취소된 매물입니다!";
-
-            const sellerDoc = await transaction.get(sellerRef);
-            let sellerJC = sellerDoc.exists() ? (sellerDoc.data().jc || 0) : 0;
-
-            transaction.update(sellerRef, { jc: sellerJC + price });
-            transaction.delete(marketRef);
-        });
-
-        gameState.jc -= price;
-        gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
-        if (!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId);
-
-        saveGame(); updateStatsUI(); updateInventory();
-        await loadMarketList();
-    } catch(e) { alert("구매 실패: " + e); }
-};
-
-// 🛠️ 개발자 권한 강제 삭제 (DB 매물 완전 삭제)
-window.forceDeleteMarketItem = async function(listingId) {
-    if (!confirm("🛠️ [개발자 권한] 해당 매물을 강제 삭제하시겠습니까?")) return;
-    try {
-        await deleteDoc(doc(db, "market", listingId));
-        await loadMarketList();
-        alert("🗑️ 매물이 즉시 DB에서 강제 삭제되었습니다.");
-    } catch(e) { alert("삭제 실패: " + e.message); }
-};
 
 ui.btn.addEventListener('click', startRoll);
 ui.inventoryBtn.addEventListener('click', () => { updateInventory(); ui.inventoryModal.classList.remove('hidden'); }); ui.closeInventory.addEventListener('click', () => { ui.inventoryModal.classList.add('hidden'); });
