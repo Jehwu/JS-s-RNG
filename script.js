@@ -1,24 +1,13 @@
 import { AURA_DATA } from './auras.js';
 import { CRAFT_ITEMS } from './craftItems.js';
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, limit, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// ⚡ Supabase 클라이언트 설정
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const firebaseConfig = {
-    apiKey: "AIzaSyBnkRDIJtAiIkPOTLwbi0YvaBGO7wl0UxA",
-    authDomain: "jssrng.firebaseapp.com",
-    projectId: "jssrng",
-    storageBucket: "jssrng.firebasestorage.app",
-    messagingSenderId: "557587020425",
-    appId: "1:557587020425:web:fd72864840b0ecc4046458",
-    measurementId: "G-WKJB7L00ML"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
+// ⚙️ 프로젝트의 Supabase URL과 Anon Key로 변경하세요.
+const SUPABASE_URL = "https://jsexzvxgrzbrdsvxxfwc.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzZXh6dnhncnpicmRzdnh4ZndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODk0MzMsImV4cCI6MjEwMDQ2NTQzM30.YhEOoLgy50lJe1wdO7uJ7ZyIxTe56xxKDeJCGsF7Zu8";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
 
@@ -308,29 +297,36 @@ loadSoundSettings();
 applySoundSettingsToUI();
 playBgm('lobby');
 
+// ⚡ Supabase 구글 로그인
 document.querySelectorAll('.google-login-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        signInWithPopup(auth, provider).then((result) => {
-            alert(`🎉 로그인 성공! 환영합니다, ${result.user.displayName}님!`);
-        }).catch((err) => { alert("로그인 실패: " + err.message); });
+    btn.addEventListener('click', async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: window.location.href }
+        });
+        if (error) alert("로그인 실패: " + error.message);
     });
 });
 
+// ⚡ Supabase 로그아웃
 document.querySelectorAll('.google-logout-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        signOut(auth).then(() => { alert("로그아웃 되었습니다."); });
+    btn.addEventListener('click', async () => {
+        const { error } = await supabase.auth.signOut();
+        if (!error) alert("로그아웃 되었습니다.");
     });
 });
 
-onAuthStateChanged(auth, async (user) => {
+// ⚡ Supabase 인증 상태 감지
+supabase.auth.onAuthStateChange(async (event, session) => {
     const statusText = document.getElementById('user-status-text');
     const statusTextSettings = document.getElementById('user-status-text-settings');
     const loginBtns = document.querySelectorAll('.google-login-btn');
     const logoutBtns = document.querySelectorAll('.google-logout-btn');
 
-    if (user) {
-        currentUser = user;
-        const txt = `🟢 로그인됨: ${user.displayName}`;
+    if (session?.user) {
+        currentUser = session.user;
+        const userName = currentUser.user_metadata?.full_name || currentUser.email;
+        const txt = `🟢 로그인됨: ${userName}`;
         if (statusText) statusText.innerText = txt;
         if (statusTextSettings) statusTextSettings.innerText = txt;
         loginBtns.forEach(b => b.classList.add('hidden'));
@@ -348,25 +344,38 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+// ⚡ Supabase 데이터 저장
 async function saveGameToCloud() {
     if (!currentUser || backupGameState !== null) return;
-    try { await setDoc(doc(db, "users", currentUser.uid), gameState); } catch (e) { console.error("클라우드 저장 실패:", e); }
+    try {
+        const { error } = await supabase
+            .from('users')
+            .upsert({ id: currentUser.id, game_state: gameState, updated_at: new Date() });
+        if (error) console.error("클라우드 저장 실패:", error.message);
+    } catch (e) { console.error("클라우드 저장 실패:", e); }
 }
 
+// ⚡ Supabase 데이터 로드
 async function loadGameFromCloud() {
     if (!currentUser) return;
     try {
-        const docRef = doc(db, "users", currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            gameState = { ...createInitialGameState(), ...docSnap.data() };
+        const { data, error } = await supabase
+            .from('users')
+            .select('game_state')
+            .eq('id', currentUser.id)
+            .single();
+
+        if (data && data.game_state) {
+            gameState = { ...createInitialGameState(), ...data.game_state };
             updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
-        } else { await saveGameToCloud(); }
+        } else {
+            await saveGameToCloud();
+        }
     } catch (e) { console.error("클라우드 로드 실패:", e); }
 }
 
 function saveGame() { 
-    if (backupGameState !== null) return; // 개발자 모드 시 세이브 안함
+    if (backupGameState !== null) return;
     localStorage.setItem('js_rng_save', JSON.stringify(gameState)); 
 }
 
@@ -381,7 +390,6 @@ function loadGame() {
     updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
 }
 
-// 🛑 개발자 모드 중 페이지 닫기/새로고침 시 치명적 버그 방지 (원래 상태 복구)
 window.addEventListener('beforeunload', () => {
     if (backupGameState !== null) {
         gameState = JSON.parse(JSON.stringify(backupGameState));
@@ -392,7 +400,7 @@ window.addEventListener('beforeunload', () => {
         const savedData = localStorage.getItem('js_rng_save');
         if (savedData) {
             const finalState = JSON.parse(savedData);
-            setDoc(doc(db, "users", currentUser.uid), finalState).catch(err => console.error("종료 시 저장 실패:", err));
+            supabase.from('users').upsert({ id: currentUser.id, game_state: finalState }).catch(err => console.error("종료 시 저장 실패:", err));
         }
     }
 });
@@ -432,34 +440,35 @@ ui.submitCodeBtn.addEventListener('click', () => {
     } else { alert("❌ 존재하지 않거나 잘못된 코드입니다."); }
 });
 
+// ⚡ Supabase 매물 삭제 취소
 window.cancelMarketListing = async function(listingId, auraId) {
     if (!confirm("정말 매물 등록을 취소하고 칭호를 회수하시겠습니까?")) return;
     try {
-        await deleteDoc(doc(db, "market", listingId));
+        const { error } = await supabase.from('market').delete().eq('id', listingId);
+        if (error) throw error;
+
         gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
         saveGame(); saveGameToCloud(); updateInventory(); await loadMarketList();
         alert("🔄 매물이 취소되고 칭호가 인벤토리로 반환되었습니다.");
     } catch(e) { alert("취소 실패: " + e.message); }
 };
 
+// ⚡ Supabase 장터 구매
 window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
     if (gameState.jc < price) { alert("❌ JC가 부족합니다!"); return; }
 
     try {
-        await runTransaction(db, async (transaction) => {
-            const marketRef = doc(db, "market", listingId);
-            const sellerRef = doc(db, "users", sellerUid);
-            const marketDoc = await transaction.get(marketRef);
+        // 1. 판매자 JC 획득 처리
+        const { data: sellerData } = await supabase.from('users').select('game_state').eq('id', sellerUid).single();
+        let sellerState = sellerData?.game_state || {};
+        sellerState.jc = (sellerState.jc || 0) + price;
 
-            if (!marketDoc.exists()) throw "이미 판매되었거나 취소된 매물입니다!";
+        await supabase.from('users').update({ game_state: sellerState }).eq('id', sellerUid);
 
-            const sellerDoc = await transaction.get(sellerRef);
-            let sellerJC = sellerDoc.exists() ? (sellerDoc.data().jc || 0) : 0;
+        // 2. 매물 삭제
+        await supabase.from('market').delete().eq('id', listingId);
 
-            transaction.update(sellerRef, { jc: sellerJC + price });
-            transaction.delete(marketRef);
-        });
-
+        // 3. 구매자 보상 지급
         gameState.jc -= price;
         gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
         if (!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId);
@@ -467,13 +476,13 @@ window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
         saveGame(); saveGameToCloud(); updateStatsUI(); updateInventory();
         await loadMarketList();
         alert("🎉 구매를 완료했습니다!");
-    } catch(e) { alert("구매 실패: " + e); }
+    } catch(e) { alert("구매 실패: " + e.message); }
 };
 
 window.forceDeleteMarketItem = async function(listingId) {
     if (!confirm("🛠️ [개발자 권한] 해당 매물을 강제 삭제하시겠습니까?")) return;
     try {
-        await deleteDoc(doc(db, "market", listingId));
+        await supabase.from('market').delete().eq('id', listingId);
         await loadMarketList();
         alert("🗑️ 매물이 즉시 DB에서 강제 삭제되었습니다.");
     } catch(e) { alert("삭제 실패: " + e.message); }
@@ -497,6 +506,7 @@ function getBestAuraInfo() {
     return best;
 }
 
+// ⚡ Supabase 랭킹 데이터 업데이트
 async function updateRankData() {
     if (!currentUser) return;
     try {
@@ -504,25 +514,24 @@ async function updateRankData() {
         const amuletItem = gameState.amulet ? CRAFT_ITEMS.find(a => a.id === gameState.amulet) : null;
         const best = getBestAuraInfo();
         
-        const finalName = gameState.customNickname || currentUser.displayName || "무명 유저";
-        const finalPhoto = gameState.customPhoto || currentUser.photoURL || "https://via.placeholder.com/80";
+        const finalName = gameState.customNickname || currentUser.user_metadata?.full_name || "무명 유저";
+        const finalPhoto = gameState.customPhoto || currentUser.user_metadata?.avatar_url || "https://via.placeholder.com/80";
         const finalTitleId = gameState.selectedTitleAuraId || best.id || "";
 
-        const rankRef = doc(db, "rankings", currentUser.uid);
-        await setDoc(rankRef, {
-            uid: currentUser.uid,
+        await supabase.from('rankings').upsert({
+            uid: currentUser.id,
             name: finalName,
             photo: finalPhoto,
             rolls: gameState.rolls || 0,
             jc: gameState.jc || 0,
-            bestAura: best.name,
-            bestAuraIn: best.in,
-            selectedTitleAuraId: finalTitleId,
-            gearName: gearItem ? gearItem.name : "없음",
-            amuletName: amuletItem ? amuletItem.name : "없음",
-            statusMsg: gameState.statusMsg || "운빨 최강 도전 중!",
-            lastUpdated: Date.now()
-        }, { merge: true });
+            best_aura: best.name,
+            best_aura_in: best.in,
+            selected_title_aura_id: finalTitleId,
+            gear_name: gearItem ? gearItem.name : "없음",
+            amulet_name: amuletItem ? amuletItem.name : "없음",
+            status_msg: gameState.statusMsg || "운빨 최강 도전 중!",
+            last_updated: Date.now()
+        });
     } catch(e) { console.error("랭킹 데이터 업데이트 실패:", e); }
 }
 
@@ -614,7 +623,7 @@ window.exitDevMode = function() {
     if (backupGameState) gameState = JSON.parse(JSON.stringify(backupGameState));
     backupGameState = null; 
     localStorage.setItem('js_rng_save', JSON.stringify(gameState));
-    if (currentUser) setDoc(doc(db, "users", currentUser.uid), gameState);
+    if (currentUser) saveGameToCloud();
     
     ui.mainDevBtn.classList.add('hidden'); 
     updateStatsUI(); updateInventory(); updateCraftUI(); updateQuestUI(); updateQuickRollUI();
@@ -797,7 +806,7 @@ async function playStarCutscene(rolled) {
         } else if (rolled.id === "js_monkey_liberator") {
             ui.starOverlay.classList.add('cutscene-bg-monkey');
             soundKey = 'js_all';
-        } else if (rolled.id === "js_demon_minchae") { // 😈 격노와 정욕의 마신 김민채 전용 핫핑크/보라 컷씬
+        } else if (rolled.id === "js_demon_minchae") {
             ui.starOverlay.classList.add('cutscene-bg-demon');
             soundKey = 'js_all';
         } else {
@@ -1389,6 +1398,7 @@ function buildAutoDeleteUI() {
     } 
 }
 
+// ⚡ Supabase 랭킹 목록 로드
 async function loadRankingList(tabType) {
     currentRankTab = tabType;
     ui.rankingListGrid.innerHTML = `<p style="color:#aaa; text-align:center;">⏳ 랭킹 데이터 불러오는 중...</p>`;
@@ -1406,20 +1416,24 @@ async function loadRankingList(tabType) {
         field = "jc";
     } else if (tabType === 'aura') {
         ui.rankTabAura.classList.add('active');
-        field = "bestAuraIn";
+        field = "best_aura_in";
     }
 
     try {
-        const rankQuery = query(collection(db, "rankings"), orderBy(field, "desc"), limit(50));
-        const querySnapshot = await getDocs(rankQuery);
+        const { data, error } = await supabase
+            .from('rankings')
+            .select('*')
+            .order(field, { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
         ui.rankingListGrid.innerHTML = '';
 
         let rank = 1;
-        querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
+        data.forEach((row) => {
             const card = document.createElement('div');
             card.className = 'ranking-card';
-            card.onclick = () => openUserProfileModal(data.uid);
+            card.onclick = () => openUserProfileModal(row.uid);
 
             let rankBadgeClass = "rank-normal";
             if (rank === 1) rankBadgeClass = "rank-1";
@@ -1427,16 +1441,16 @@ async function loadRankingList(tabType) {
             else if (rank === 3) rankBadgeClass = "rank-3";
 
             let displayValue = "";
-            if (tabType === 'rolls') displayValue = `🎲 ${(data.rolls || 0).toLocaleString()}회`;
-            else if (tabType === 'jc') displayValue = `🪙 ${(data.jc || 0).toLocaleString()} JC`;
-            else if (tabType === 'aura') displayValue = `👑 ${data.bestAura || '없음'}`;
+            if (tabType === 'rolls') displayValue = `🎲 ${(row.rolls || 0).toLocaleString()}회`;
+            else if (tabType === 'jc') displayValue = `🪙 ${(row.jc || 0).toLocaleString()} JC`;
+            else if (tabType === 'aura') displayValue = `👑 ${row.best_aura || '없음'}`;
 
             card.innerHTML = `
                 <div class="rank-badge ${rankBadgeClass}">${rank}</div>
-                <img src="${data.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                <img src="${row.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0;">
                 <div class="ranking-user-info">
-                    <div style="font-weight:bold; font-size:14px; color:white;">${data.name}</div>
-                    <div style="font-size:11px; color:#f39c12; margin-top:2px;">"${data.statusMsg || '운빨 최강 도전 중!'}"</div>
+                    <div style="font-weight:bold; font-size:14px; color:white;">${row.name}</div>
+                    <div style="font-size:11px; color:#f39c12; margin-top:2px;">"${row.status_msg || '운빨 최강 도전 중!'}"</div>
                 </div>
                 <div style="text-align: right; flex-shrink:0;">
                     <div style="font-size:12px; font-weight:bold; color:#f1c40f;">${displayValue}</div>
@@ -1446,7 +1460,7 @@ async function loadRankingList(tabType) {
             rank++;
         });
 
-        if (querySnapshot.empty) {
+        if (!data || data.length === 0) {
             ui.rankingListGrid.innerHTML = `<p style="color:#aaa; text-align:center;">등록된 랭킹 데이터가 없습니다.</p>`;
         }
     } catch(e) {
@@ -1482,7 +1496,7 @@ function getAuraCardHtml(auraId) {
 
 ui.profileBtn.addEventListener('click', () => {
     if (!currentUser) { alert("❌ 로그인이 필요한 기능입니다!"); return; }
-    openUserProfileModal(currentUser.uid);
+    openUserProfileModal(currentUser.id);
 });
 
 ui.editFileInput.addEventListener('change', (e) => {
@@ -1496,33 +1510,32 @@ ui.editFileInput.addEventListener('change', (e) => {
     }
 });
 
+// ⚡ Supabase 유저 프로필 조회
 async function openUserProfileModal(targetUid) {
     ui.profileModal.classList.remove('hidden');
-    const isMe = currentUser && (currentUser.uid === targetUid);
+    const isMe = currentUser && (currentUser.id === targetUid);
     const editBox = document.getElementById('my-profile-edit-box');
 
     if (isMe) editBox.classList.remove('hidden');
     else editBox.classList.add('hidden');
 
     try {
-        const rankSnap = await getDoc(doc(db, "rankings", targetUid));
-        if (rankSnap.exists()) {
-            const data = rankSnap.data();
-            
+        const { data, error } = await supabase.from('rankings').select('*').eq('uid', targetUid).single();
+        if (data) {
             document.getElementById('profile-user-img').src = data.photo || 'https://via.placeholder.com/80';
             document.getElementById('profile-user-name').innerText = data.name || "무명 유저";
-            document.getElementById('profile-user-status').innerText = `"${data.statusMsg || '운빨 최강 도전 중!'}"`;
+            document.getElementById('profile-user-status').innerText = `"${data.status_msg || '운빨 최강 도전 중!'}"`;
             document.getElementById('profile-rolls').innerText = (data.rolls || 0).toLocaleString();
             document.getElementById('profile-jc').innerText = (data.jc || 0).toLocaleString();
-            document.getElementById('profile-gauntlet').innerText = data.gearName || '없음';
-            document.getElementById('profile-amulet').innerText = data.amuletName || '없음';
+            document.getElementById('profile-gauntlet').innerText = data.gear_name || '없음';
+            document.getElementById('profile-amulet').innerText = data.amulet_name || '없음';
 
-            document.getElementById('profile-title-card-slot').innerHTML = getAuraCardHtml(data.selectedTitleAuraId);
+            document.getElementById('profile-title-card-slot').innerHTML = getAuraCardHtml(data.selected_title_aura_id);
 
             if (isMe) {
                 ui.editNicknameInput.value = gameState.customNickname || data.name;
                 ui.editPhotoInput.value = gameState.customPhoto || data.photo;
-                document.getElementById('status-msg-input').value = gameState.statusMsg || data.statusMsg;
+                document.getElementById('status-msg-input').value = gameState.statusMsg || data.status_msg;
 
                 ui.editTitleSelect.innerHTML = `<option value="">-- 선택 안함 --</option>`;
                 if (gameState.discoveredAuras) {
@@ -1563,7 +1576,7 @@ ui.saveProfileAllBtn.addEventListener('click', async () => {
 
     saveGame(); saveGameToCloud();
     await updateRankData();
-    await openUserProfileModal(currentUser.uid);
+    await openUserProfileModal(currentUser.id);
     alert("✨ 프로필 설정이 업데이트 되었습니다!");
 });
 
@@ -1576,31 +1589,35 @@ ui.marketBtn.addEventListener('click', async () => {
 });
 ui.closeMarket.addEventListener('click', () => { ui.marketModal.classList.add('hidden'); });
 
+// ⚡ Supabase 장터 목록 조회
 async function loadMarketList() {
     ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">⏳ 장터 매물 불러오는 중...</p>`;
     try {
-        const marketQuery = query(collection(db, "market"), orderBy("createdAt", "desc"), limit(50));
-        const querySnapshot = await getDocs(marketQuery);
+        const { data, error } = await supabase
+            .from('market')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
         ui.marketItemGrid.innerHTML = '';
 
-        querySnapshot.forEach((docSnap) => {
-            const item = docSnap.data();
-            const itemId = docSnap.id;
-            const auraInfo = AURA_DATA.find(a => a.id === item.auraId);
+        data.forEach((item) => {
+            const auraInfo = AURA_DATA.find(a => a.id === item.aura_id);
             if (!auraInfo) return;
 
             const tile = document.createElement('div');
             tile.className = 'market-item-card';
 
-            const isMine = currentUser && (currentUser.uid === item.sellerUid);
+            const isMine = currentUser && (currentUser.id === item.seller_uid);
             let actionBtnHtml = isMine ? 
-                `<button class="action-btn" style="background:#888;" onclick="cancelMarketListing('${itemId}', '${item.auraId}')">취소하기</button>` :
-                `<button class="action-btn buy" onclick="buyMarketItem('${itemId}', '${item.sellerUid}', '${item.auraId}', ${item.price})">구매하기</button>`;
+                `<button class="action-btn" style="background:#888;" onclick="cancelMarketListing('${item.id}', '${item.aura_id}')">취소하기</button>` :
+                `<button class="action-btn buy" onclick="buyMarketItem('${item.id}', '${item.seller_uid}', '${item.aura_id}', ${item.price})">구매하기</button>`;
 
-            let devDeleteBtn = `<button class="action-btn" style="background:#e74c3c; margin-top:5px; font-size:10px;" onclick="forceDeleteMarketItem('${itemId}')">🗑️ 강제 삭제</button>`;
+            let devDeleteBtn = `<button class="action-btn" style="background:#e74c3c; margin-top:5px; font-size:10px;" onclick="forceDeleteMarketItem('${item.id}')">🗑️ 강제 삭제</button>`;
 
             tile.innerHTML = `
-                <div style="font-size: 11px; color:#aaa;">판매자: ${item.sellerName}</div>
+                <div style="font-size: 11px; color:#aaa;">판매자: ${item.seller_name}</div>
                 <div style="font-size: 14px; font-weight: bold; color:${auraInfo.color}; margin: 6px 0;">[${auraInfo.grade}] ${auraInfo.name}</div>
                 <div style="font-size: 13px; font-weight: bold; color:#f1c40f; margin-bottom: 8px;">🪙 ${item.price.toLocaleString()} JC</div>
                 ${actionBtnHtml}
@@ -1609,7 +1626,7 @@ async function loadMarketList() {
             ui.marketItemGrid.appendChild(tile);
         });
 
-        if (querySnapshot.empty) {
+        if (!data || data.length === 0) {
             ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">현재 장터에 등록된 칭호가 없습니다.</p>`;
         }
     } catch(e) { console.error("장터 로드 오류:", e); }
@@ -1658,6 +1675,7 @@ function updatePriceLimitUI() {
 ui.marketSellAuraSelect.addEventListener('change', updatePriceLimitUI);
 ui.closeRegisterMarket.addEventListener('click', () => { ui.registerMarketModal.classList.add('hidden'); });
 
+// ⚡ Supabase 매물 등록
 ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
     const auraId = ui.marketSellAuraSelect.value;
     const count = parseInt(ui.marketSellCount.value);
@@ -1685,17 +1703,19 @@ ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
     saveGame(); saveGameToCloud(); updateInventory();
 
     try {
-        const name = gameState.customNickname || currentUser.displayName || "무명 유저";
+        const name = gameState.customNickname || currentUser.user_metadata?.full_name || "무명 유저";
+        const insertRows = [];
         for (let i = 0; i < count; i++) {
-            const marketRef = doc(collection(db, "market"));
-            await setDoc(marketRef, {
-                sellerUid: currentUser.uid,
-                sellerName: name,
-                auraId: auraId,
-                price: price,
-                createdAt: Date.now() + i
+            insertRows.push({
+                seller_uid: currentUser.id,
+                seller_name: name,
+                aura_id: auraId,
+                price: price
             });
         }
+        const { error } = await supabase.from('market').insert(insertRows);
+        if (error) throw error;
+
         ui.registerMarketModal.classList.add('hidden');
         await loadMarketList();
         alert(`🎉 성공적으로 칭호 ${count}개를 각각의 매물로 연달아 등록했습니다!`);
