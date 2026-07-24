@@ -314,38 +314,15 @@ onAuthStateChanged(auth, async (user) => {
         const txt = "🔴 로그인 필요 (로컬 데이터 사용 중)";
         if (statusText) statusText.innerText = txt;
         if (statusTextSettings) statusTextSettings.innerText = txt;
-        loginBtns.forEach(b => b.classList.add('hidden'));
-        logoutBtns.forEach(b => b.classList.remove('hidden'));
+        loginBtns.forEach(b => b.classList.remove('hidden'));
+        logoutBtns.forEach(b => b.classList.add('hidden'));
         loadGame();
     }
 });
 
-async function saveGameToCloud() {
-    if (!currentUser) return;
-    try { 
-        await setDoc(doc(db, "users", currentUser.uid), gameState); 
-    } catch (e) { 
-        console.warn("클라우드 저장 실패 (한도 초과/네트워크 대기 중):", e); 
-    }
-}
-
-async function loadGameFromCloud() {
-    if (!currentUser) return;
-    try {
-        const docRef = doc(db, "users", currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            gameState = { ...gameState, ...docSnap.data() };
-            updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
-        } else { await saveGameToCloud(); }
-    } catch (e) { console.error("클라우드 로드 실패:", e); }
-}
-
 function saveGame() { 
     // 🛡️ 로그인 여부와 상관없이 무조건 로컬에 먼저 안전하게 저장!
     localStorage.setItem('js_rng_save', JSON.stringify(gameState)); 
-    
-    // 로그인 상태라면 클라우드 저장도 백그라운드에서 시도
     if (currentUser) {
         saveGameToCloud();
     }
@@ -360,6 +337,17 @@ async function saveGameToCloud() {
     }
 }
 
+async function loadGameFromCloud() {
+    if (!currentUser) return;
+    try {
+        const docRef = doc(db, "users", currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            gameState = { ...gameState, ...docSnap.data() };
+            updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
+        } else { await saveGameToCloud(); }
+    } catch (e) { console.error("클라우드 로드 실패:", e); }
+}
 
 window.addEventListener('beforeunload', () => {
     if (currentUser) {
@@ -1533,7 +1521,7 @@ ui.marketBtn.addEventListener('click', async () => {
 
 ui.closeMarket.addEventListener('click', () => { ui.marketModal.classList.add('hidden'); });
 
-// 🛡️ 장터 매물 로드 및 DB 상태 체크
+// 🛡️ 장터 매물 로드 및 DB 상태 체크 (에러 발생 시 즉시 장터 잠금)
 async function loadMarketList() {
     ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">⏳ 장터 매물 불러오는 중...</p>`;
     try {
@@ -1585,66 +1573,6 @@ async function loadMarketList() {
         if (ui.openSellMarketBtn) ui.openSellMarketBtn.disabled = true;
         
         alert("⚠️ DB 서버 장애/용량 초과가 감지되어 유저장터가 안전하게 차단되었습니다.");
-    }
-}
-
-
-    ui.marketModal.classList.remove('hidden');
-    await loadMarketList();
-});
-
-ui.closeMarket.addEventListener('click', () => { ui.marketModal.classList.add('hidden'); });
-
-// 🛡️ 장터 매물 로드 및 DB 상태 체크 (에러 발생 시 즉시 장터 잠금)
-async function loadMarketList() {
-    ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">⏳ 장터 매물 불러오는 중...</p>`;
-    try {
-        const marketQuery = query(collection(db, "market"), orderBy("createdAt", "desc"), limit(50));
-        const querySnapshot = await getDocs(marketQuery);
-        
-        // 정상 연결 성공
-        setMarketButtonState(true);
-        ui.marketItemGrid.innerHTML = '';
-
-        if (ui.openSellMarketBtn) ui.openSellMarketBtn.disabled = false;
-
-        querySnapshot.forEach((docSnap) => {
-            const item = docSnap.data();
-            const itemId = docSnap.id;
-            const auraInfo = AURA_DATA.find(a => a.id === item.auraId);
-            if (!auraInfo) return;
-
-            const tile = document.createElement('div');
-            tile.className = 'market-item-card';
-
-            const isMine = currentUser && (currentUser.uid === item.sellerUid);
-            let actionBtnHtml = isMine ? 
-                `<button class="action-btn" style="background:#888;" onclick="cancelMarketListing('${itemId}', '${item.auraId}')">취소하기</button>` :
-                `<button class="action-btn buy" onclick="buyMarketItem('${itemId}', '${item.sellerUid}', '${item.auraId}', ${item.price})">구매하기</button>`;
-
-            let devDeleteBtn = disableSave ? 
-                `<button class="action-btn" style="background:#e74c3c; margin-top:5px; font-size:10px;" onclick="forceDeleteMarketItem('${itemId}')">🗑️ 강제 삭제</button>` : '';
-
-            tile.innerHTML = `
-                <div style="font-size: 11px; color:#aaa;">판매자: ${item.sellerName}</div>
-                <div style="font-size: 14px; font-weight: bold; color:${auraInfo.color}; margin: 6px 0;">[${auraInfo.grade}] ${auraInfo.name}</div>
-                <div style="font-size: 13px; font-weight: bold; color:#f1c40f; margin-bottom: 8px;">🪙 ${item.price.toLocaleString()} JC</div>
-                ${actionBtnHtml}
-                ${devDeleteBtn}
-            `;
-            ui.marketItemGrid.appendChild(tile);
-        });
-
-        if (querySnapshot.empty) {
-            ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">현재 장터에 등록된 칭호가 없습니다.</p>`;
-        }
-    } catch(e) { 
-        console.error("장터 로드 오류 (DB 한도 초과/오류 발생):", e); 
-        // ❌ 에러 발생 시 즉시 장터 버튼 잠금 및 창 닫기
-        setMarketButtonState(false);
-        ui.marketModal.classList.add('hidden');
-        if (ui.openSellMarketBtn) ui.openSellMarketBtn.disabled = true;
-        alert("⚠️ DB 서버 장애/용량 초과가 감지되어 유저장터가 안전하게 잠겼습니다.");
     }
 }
 
