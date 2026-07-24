@@ -83,6 +83,7 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .quest-badge { font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
 .quest-badge.ing { background: #e67e22; color: white; }
 .quest-badge.done { background: #27ae60; color: white; }
+.quest-badge.repeat { background: #3498db; color: white; }
 .quest-desc { font-size: 12px; color: #aaa; margin-bottom: 12px; }
 .quest-target-list { display: flex; flex-direction: column; gap: 4px; font-size: 13px; margin-bottom: 12px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; }
 .quest-target { color: #e74c3c; font-weight: bold; }
@@ -237,21 +238,11 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     100% { border-color: #00ff88; box-shadow: 0 0 28px #00ff88, inset 0 0 20px #8b0000; }
 }
 
-/* ─────────────────────────────────────────────────────────
-   🌊 오른쪽에서 왼쪽으로 흘러가는 그라데이션 애니메이션 (Right to Left)
-───────────────────────────────────────────────────────── */
 @keyframes flow-right-to-left {
-    0% {
-        background-position: 200% center;
-    }
-    100% {
-        background-position: -200% center;
-    }
+    0% { background-position: 200% center; }
+    100% { background-position: -200% center; }
 }
 
-/* ---------------------------------------------------------
-   DIVINE / COSMIC / JS 공통 애니메이션 속성 일괄 적용
---------------------------------------------------------- */
 .aura-pacifist-king,
 .aura-doomsday-voice,
 .aura-gemini-pro,
@@ -298,23 +289,9 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     animation: flow-right-to-left 2s linear infinite !important;
 }
 
-/* ---------------------------------------------------------
-   개별 칭호 색상 조합 정의 (270deg: 우측➔좌측 방향)
---------------------------------------------------------- */
+.aura-pacifist-king { background-image: linear-gradient(270deg, #00ff7f, #2ecc71, #00b894, #55efc4, #00ff7f) !important; text-shadow: 0 0 15px rgba(0, 255, 127, 0.7); }
+.aura-heinous-criminal { background-image: linear-gradient(270deg, #ff0055, #004d40, #ff1744, #1b5e20, #ff0055) !important; text-shadow: 0 0 20px rgba(255, 0, 85, 0.9), 0 0 10px rgba(0, 77, 64, 0.8) !important; }
 
-/* 🌿 불살의 왕 박지성 (초록빛 계열) */
-.aura-pacifist-king {
-    background-image: linear-gradient(270deg, #00ff7f, #2ecc71, #00b894, #55efc4, #00ff7f) !important;
-    text-shadow: 0 0 15px rgba(0, 255, 127, 0.7);
-}
-
-/* 🌹 JS: 흉악범 (붉은 장미 x 다크 그린 선명 교차) */
-.aura-heinous-criminal {
-    background-image: linear-gradient(270deg, #ff0055, #004d40, #ff1744, #1b5e20, #ff0055) !important;
-    text-shadow: 0 0 20px rgba(255, 0, 85, 0.9), 0 0 10px rgba(0, 77, 64, 0.8) !important;
-}
-
-/* JS 칭호 모음 */
 .aura-170kg-minchae { background-image: linear-gradient(270deg, #00e676, #1b5e20, #00b0ff, #004d40, #00e676) !important; text-shadow: 0 0 25px rgba(0, 230, 118, 0.95); }
 .aura-js-void { background-image: linear-gradient(270deg, #2b00ff, #ff0055, #0a0a0a, #8a0000, #2b00ff) !important; text-shadow: 0 0 25px rgba(43, 0, 255, 0.95); }
 .aura-holy-angel { background-image: linear-gradient(270deg, #fff176, #ffeb3b, #ffa000, #ffffff, #fff176) !important; text-shadow: 0 0 22px rgba(255, 235, 59, 0.95); }
@@ -323,7 +300,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .aura-demon-minchae { background-image: linear-gradient(270deg, #ff007f, #8a00e6, #ff1493, #4a0050, #ff007f) !important; text-shadow: 0 0 25px rgba(255, 0, 127, 0.95); }
 .aura-monkey-liberator { background-image: linear-gradient(270deg, #f1c40f, #e74c3c, #ffaa00, #b80f0a, #f1c40f) !important; text-shadow: 0 0 22px rgba(241, 196, 15, 0.95); }
 
-/* DIVINE 칭호 모음 */
 .aura-doomsday-voice { background-image: linear-gradient(270deg, #ff69b4, #8d6e63, #ff1493, #a1887f, #ff69b4) !important; text-shadow: 0 0 10px rgba(255, 105, 180, 0.4); }
 .aura-gemini-pro { background-image: linear-gradient(270deg, #4285f4, #9b59b6, #ea4335, #fbbc05, #34a853, #4285f4) !important; text-shadow: 0 0 10px rgba(66, 133, 244, 0.4); }
 .aura-divine-gaen { background-image: linear-gradient(270deg, #a55fea, #ff69b4, #8e44ad, #ff1493, #a55fea) !important; text-shadow: 0 0 12px rgba(165, 95, 234, 0.5); }
@@ -339,7 +315,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .aura-monkey-prisoner { background-image: linear-gradient(270deg, #ffd700, #8d6e63, #d4ac0d, #5d4037, #ffd700) !important; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
 .aura-170kg-heavy { background-image: linear-gradient(270deg, #a1887f, #212121, #d7ccc8, #000000, #a1887f) !important; text-shadow: 0 0 8px rgba(161, 136, 127, 0.4); }
 
-/* COSMIC 칭호 모음 */
 .aura-queen-table { background-image: linear-gradient(270deg, #ff4081, #ff80ab, #f48fb1, #ff1744, #ff4081) !important; text-shadow: 0 0 20px rgba(255, 64, 129, 0.9); }
 .aura-hidden-power { background-image: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #ff0000) !important; text-shadow: 0 0 22px rgba(255, 255, 255, 0.9); }
 .aura-steel-emperor { background-image: linear-gradient(270deg, #b0bec5, #00b0ff, #37474f, #80d8ff, #b0bec5) !important; text-shadow: 0 0 20px rgba(0, 176, 255, 0.9); }
@@ -353,7 +328,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .aura-primeval-sage { background-image: linear-gradient(270deg, #00e5ff, #0070f3, #7928ca, #00ffff, #00e5ff) !important; text-shadow: 0 0 22px rgba(0, 229, 255, 0.9); }
 .aura-lord-slayer { background-image: linear-gradient(270deg, #ff0000, #8b0000, #ff1744, #3a0000, #ff0000) !important; text-shadow: 0 0 22px rgba(255, 0, 0, 0.9); }
 
-/* 기본 서브 클래스 */
 .aura-cosmic-1 { background-image: linear-gradient(270deg, #ff0055, #aa00ff, #ff0055) !important; }
 .aura-cosmic-2 { background-image: linear-gradient(270deg, #ffaa00, #ff4500, #ffaa00) !important; }
 .aura-cosmic-3 { background-image: linear-gradient(270deg, #ff1493, #00ffff, #ff1493) !important; }
@@ -430,6 +404,94 @@ input[type="number"] { background: #222; color: white; border: 1px solid #555; b
 .cutscene-bg-js::before { content: ''; position: absolute; inset: -50%; background: repeating-conic-gradient(from 0deg, transparent 0deg, var(--js-ray-col, rgba(255,0,0,0.15)) 15deg, transparent 30deg); animation: js-bg-spin 20s linear infinite; }
 @keyframes js-bg-spin { 100% { transform: rotate(360deg); } }
 @keyframes majestic-pulse-upgraded { 0%, 100% { box-shadow: inset 0 0 100px #000; filter: brightness(1); } 50% { box-shadow: inset 0 0 250px var(--js-glow-col, #ff0000); filter: brightness(1.3); } }
+
+/* 🎬 개별 JS 컷씬 배경 및 눈부심 완화/색상 보정 */
+
+/* 1. 거짓 종막의 연출가 김티비 */
+.cutscene-bg-false-theatre {
+    position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important;
+    background: radial-gradient(circle at center, #002266 0%, #000a24 50%, #000000 100%) !important;
+    animation: blue-theatre-pulse 2.5s infinite alternate !important;
+    overflow: hidden;
+}
+.cutscene-bg-false-theatre::before {
+    content: ''; position: absolute; inset: -50%;
+    background: repeating-conic-gradient(from 0deg, transparent 0deg, rgba(0, 110, 255, 0.25) 15deg, transparent 30deg);
+    animation: js-bg-spin 12s linear infinite;
+}
+@keyframes blue-theatre-pulse {
+    0% { box-shadow: inset 0 0 80px rgba(0, 85, 255, 0.4); filter: brightness(1); }
+    100% { box-shadow: inset 0 0 200px rgba(0, 170, 255, 0.9); filter: brightness(1.3); }
+}
+
+/* 2. 환희의 대천사 김가은 (눈부심 저감 조치 완료) */
+.cutscene-bg-angel {
+    position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important;
+    background: radial-gradient(circle at center, #fff9c4 0%, #fbc02d 40%, #e65100 75%, #1a0c00 100%) !important;
+    animation: holy-angel-soft-pulse 2.5s infinite alternate !important;
+    overflow: hidden;
+}
+.cutscene-bg-angel::before {
+    content: ''; position: absolute; inset: -50%;
+    background: repeating-conic-gradient(from 0deg, transparent 0deg, rgba(255, 224, 130, 0.3) 10deg, transparent 20deg);
+    animation: js-bg-spin 22s linear infinite;
+}
+@keyframes holy-angel-soft-pulse {
+    0% { box-shadow: inset 0 0 60px rgba(255, 193, 7, 0.4); filter: brightness(0.95); }
+    100% { box-shadow: inset 0 0 160px rgba(255, 235, 59, 0.75); filter: brightness(1.15); }
+}
+
+/* 3. 번개의 좌 박지성 */
+.cutscene-bg-lightning {
+    position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important;
+    background: radial-gradient(circle at center, #004d61 0%, #001f29 50%, #000508 100%) !important;
+    animation: lightning-strike-pulse 0.8s infinite alternate !important;
+    overflow: hidden;
+}
+.cutscene-bg-lightning::before {
+    content: ''; position: absolute; inset: -50%;
+    background: repeating-conic-gradient(from 0deg, transparent 0deg, rgba(0, 255, 255, 0.35) 12deg, transparent 24deg);
+    animation: js-bg-spin 6s linear infinite;
+}
+@keyframes lightning-strike-pulse {
+    0% { box-shadow: inset 0 0 60px rgba(0, 255, 255, 0.4); filter: brightness(0.9); }
+    50% { filter: brightness(1.5); }
+    100% { box-shadow: inset 0 0 220px rgba(0, 255, 255, 1); filter: brightness(1.1); }
+}
+
+/* 4. 건숭이 : 가장 오래된 해방자 */
+.cutscene-bg-monkey {
+    position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important;
+    background: radial-gradient(circle at center, #800000 0%, #4a0000 45%, #1a0000 80%, #000000 100%) !important;
+    animation: royal-chinese-red-pulse 2.0s infinite alternate !important;
+    overflow: hidden;
+}
+.cutscene-bg-monkey::before {
+    content: ''; position: absolute; inset: -50%;
+    background: repeating-conic-gradient(from 0deg, transparent 0deg, rgba(255, 215, 0, 0.3) 15deg, transparent 30deg);
+    animation: js-bg-spin 15s linear infinite;
+}
+@keyframes royal-chinese-red-pulse {
+    0% { box-shadow: inset 0 0 80px rgba(184, 15, 10, 0.6); filter: brightness(1); }
+    100% { box-shadow: inset 0 0 230px rgba(255, 215, 0, 0.9); filter: brightness(1.35); }
+}
+
+/* 5. 😈 [신규] 격노와 정욕의 마신 김민채 (핫핑크 & 보라색 컷씬) */
+.cutscene-bg-demon {
+    position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important;
+    background: radial-gradient(circle at center, #8a00e6 0%, #4a0050 45%, #15001a 80%, #000000 100%) !important;
+    animation: demon-hotpink-pulse 1.8s infinite alternate !important;
+    overflow: hidden;
+}
+.cutscene-bg-demon::before {
+    content: ''; position: absolute; inset: -50%;
+    background: repeating-conic-gradient(from 0deg, transparent 0deg, rgba(255, 0, 127, 0.4) 15deg, transparent 30deg);
+    animation: js-bg-spin 10s linear infinite;
+}
+@keyframes demon-hotpink-pulse {
+    0% { box-shadow: inset 0 0 90px rgba(255, 0, 127, 0.5); filter: brightness(1); }
+    100% { box-shadow: inset 0 0 240px rgba(138, 0, 230, 0.95); filter: brightness(1.3); }
+}
 
 .star-beam { position: absolute; border-radius: 50%; background: currentColor; box-shadow: 0 0 30px currentColor, 0 0 60px currentColor; }
 .star-beam.vertical { width: 12px; height: 350px; transform: translateY(-50%); top: 50%; }

@@ -22,13 +22,15 @@ const provider = new GoogleAuthProvider();
 
 let currentUser = null;
 
-// ⚡ 백그라운드 웹워커 오토롤 (개선된 버전)
+// 백그라운드 오토롤 웹워커
 const workerCode = `
     let timer = null;
     self.onmessage = function(e) {
         if (e.data.command === 'start') {
             if (timer) clearInterval(timer);
-            timer = setInterval(() => { self.postMessage('tick'); }, e.data.interval || 100);
+            timer = setInterval(() => { 
+                self.postMessage('tick'); 
+            }, e.data.interval || 100);
         } else if (e.data.command === 'stop') {
             if (timer) clearInterval(timer);
             timer = null;
@@ -43,6 +45,12 @@ autoWorker.onmessage = function(e) {
         startRoll();
     }
 };
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && isAutoRolling && !isRolling) {
+        startRoll();
+    }
+});
 
 let soundSettings = { 
     enabled: true, master: 1.0, bgm: 0.7, cutscene: 0.5, drop: 0.5, click: 1.0, roll: 1.0 
@@ -198,19 +206,36 @@ const SHOP_ITEMS = [
     { id: "speed_1", name: "속도의 물약 1", price: 500, type: "speed", level: 1, value: 0.15, duration: 180, desc: "+15% 속도 (3분)", border: "border-blue" },
     { id: "speed_2", name: "속도의 물약 2", price: 1200, type: "speed", level: 2, value: 0.30, duration: 180, desc: "+30% 속도 (3분)", border: "border-blue" },
     { id: "speed_3", name: "속도의 물약 3", price: 3000, type: "speed", level: 3, value: 0.55, duration: 180, desc: "+55% 속도 (3분)", border: "border-blue" },
-    { id: "limit_potion", name: "한계의 물약", price: 43333, type: "luck_mult", value: 5000, maxUses: 3, desc: "×5000배 행운 (3회 소모)", border: "border-limit" },
-    { id: "overcome_potion", name: "극복의 물약", price: 195000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×50000배 행운 (2회 소모)", border: "border-overcome" },
-    { id: "heaven_potion", name: "천상의 물약", price: 300000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150000배 행운 (1회 소모)", border: "border-heaven" },
-    { id: "void_potion", name: "공허의 물약", price: 1100000, type: "luck_mult", value: 700000, maxUses: 1, desc: "×700000배 행운 (1회 소모)", border: "border-void" }
+    { id: "limit_potion", name: "한계의 물약", price: 40000, type: "luck_mult", value: 5000, maxUses: 3, desc: "×5000배 행운 (3회 소모)", border: "border-limit" },
+    { id: "overcome_potion", name: "극복의 물약", price: 250000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×50000배 행운 (2회 소모)", border: "border-overcome" },
+    { id: "heaven_potion", name: "천상의 물약", price: 400000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150000배 행운 (1회 소모)", border: "border-heaven" },
+    { id: "void_potion", name: "공허의 물약", price: 2000000, type: "luck_mult", value: 700000, maxUses: 1, desc: "×700000배 행운 (1회 소모)", border: "border-void" }
 ];
 
 const QUEST_DATA = [
     {
         id: "quest_swift",
         name: "신속하게",
+        repeatable: false,
         desc: "빠른 롤 시스템을 사용하기 위한 신속함 증명하기",
         rewardDesc: "⚡ 빠른 롤 기능 해금 + 🧪 천상의 물약 5개",
-        targets: { rolls: 5000, divine: 15, cosmic: 5, jc: 3000000, shopPurchases: 20 }
+        targets: { rolls: 5000, legend: 0, mythic: 0, divine: 15, cosmic: 5, jc: 3000000, shopPurchases: 20 }
+    },
+    {
+        id: "quest_repeat_overcome",
+        name: "극복의 시련",
+        repeatable: true,
+        desc: "지속적인 시련을 극복하고 성장의 기반을 다지세요.",
+        rewardDesc: "🧪 극복의 물약 1개 + 🪙 100,000 JC",
+        targets: { rolls: 500, legend: 5, mythic: 3, divine: 0, cosmic: 0, jc: 0, shopPurchases: 0 }
+    },
+    {
+        id: "quest_repeat_heaven",
+        name: "천상의 시련",
+        repeatable: true,
+        desc: "천상에 도달하기 위한 극한의 운명을 테스트하세요.",
+        rewardDesc: "🧪 천상의 물약 1개 + 🪙 200,000 JC",
+        targets: { rolls: 1000, legend: 7, mythic: 5, divine: 0, cosmic: 0, jc: 0, shopPurchases: 0 }
     }
 ];
 
@@ -222,17 +247,21 @@ for (let i = 0; i < AURA_DATA.length; i++) {
     AURA_DATA[i].jcValue = Math.max(1, baseJc);
 }
 
-let gameState = { 
-    rolls: 0, luck: 1, jc: 0, 
-    inventory: {}, itemInventory: {}, discoveredAuras: [], 
-    autoDelete: {}, activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0, luckLevel: 0, speedLevel: 0 }, 
-    activeMultBuffs: [], gear: null, amulet: null, amuletStack: 0, craftedGears: [], usedCodes: [],
-    completedQuests: [], activeQuest: null, questProgress: {}, quickRollUnlocked: false,
-    customNickname: "", customPhoto: "", selectedTitleAuraId: "", statusMsg: "운빨 최강 도전 중!"
-};
+function createInitialGameState() {
+    return {
+        rolls: 0, luck: 1, jc: 0, 
+        inventory: {}, itemInventory: {}, discoveredAuras: [], 
+        autoDelete: {}, activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0, luckLevel: 0, speedLevel: 0 }, 
+        activeMultBuffs: [], gear: null, amulet: null, amuletStack: 0, craftedGears: [], usedCodes: [],
+        completedQuests: [], activeQuest: null, questProgress: {}, quickRollUnlocked: false,
+        customNickname: "", customPhoto: "", selectedTitleAuraId: "", statusMsg: "운빨 최강 도전 중!"
+    };
+}
+
+let gameState = createInitialGameState();
 
 let isRolling = false; let isAutoRolling = false; let isQuickRollActive = false;
-let disableSave = false; let backupGameState = null; let nextRollOverride = null;
+let backupGameState = null; let nextRollOverride = null;
 let currentCraftTab = "gauntlet";
 let currentRankTab = "rolls";
 
@@ -310,17 +339,17 @@ onAuthStateChanged(auth, async (user) => {
         await updateRankData();
     } else {
         currentUser = null;
-        const txt = "🔴 로그인 필요 (로컬 데이터 사용 중)";
+        const txt = "🔴 로그인 필요 (로그인이 필요합니다)";
         if (statusText) statusText.innerText = txt;
         if (statusTextSettings) statusTextSettings.innerText = txt;
-        loginBtns.forEach(b => b.classList.add('hidden'));
-        logoutBtns.forEach(b => b.classList.remove('hidden'));
+        loginBtns.forEach(b => b.classList.remove('hidden'));
+        logoutBtns.forEach(b => b.classList.add('hidden'));
         loadGame();
     }
 });
 
 async function saveGameToCloud() {
-    if (!currentUser) return;
+    if (!currentUser || backupGameState !== null) return;
     try { await setDoc(doc(db, "users", currentUser.uid), gameState); } catch (e) { console.error("클라우드 저장 실패:", e); }
 }
 
@@ -330,37 +359,35 @@ async function loadGameFromCloud() {
         const docRef = doc(db, "users", currentUser.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            gameState = { ...gameState, ...docSnap.data() };
+            gameState = { ...createInitialGameState(), ...docSnap.data() };
             updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
         } else { await saveGameToCloud(); }
     } catch (e) { console.error("클라우드 로드 실패:", e); }
 }
 
 function saveGame() { 
+    if (backupGameState !== null) return; // 개발자 모드 시 세이브 안함
     localStorage.setItem('js_rng_save', JSON.stringify(gameState)); 
 }
 
 function loadGame() {
     const savedData = localStorage.getItem('js_rng_save');
     if (savedData) { 
-        gameState = { ...gameState, ...JSON.parse(savedData) }; 
-        if(!gameState.craftedGears) gameState.craftedGears = []; 
-        if(!gameState.usedCodes) gameState.usedCodes = [];
-        if(!gameState.activeMultBuffs) gameState.activeMultBuffs = [];
-        if(!gameState.discoveredAuras) gameState.discoveredAuras = [];
-        if(!gameState.completedQuests) gameState.completedQuests = [];
-        if(!gameState.questProgress) gameState.questProgress = {};
-        if(gameState.amuletStack === undefined) gameState.amuletStack = 0;
-        if(!gameState.statusMsg) gameState.statusMsg = "운빨 최강 도전 중!";
-        if(!gameState.customNickname) gameState.customNickname = "";
-        if(!gameState.customPhoto) gameState.customPhoto = "";
-        if(!gameState.selectedTitleAuraId) gameState.selectedTitleAuraId = "";
+        gameState = { ...createInitialGameState(), ...JSON.parse(savedData) }; 
         for(let auraId in gameState.inventory) { if(!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId); }
+    } else {
+        gameState = createInitialGameState();
     }
     updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
 }
 
+// 🛑 개발자 모드 중 페이지 닫기/새로고침 시 치명적 버그 방지 (원래 상태 복구)
 window.addEventListener('beforeunload', () => {
+    if (backupGameState !== null) {
+        gameState = JSON.parse(JSON.stringify(backupGameState));
+        backupGameState = null;
+        localStorage.setItem('js_rng_save', JSON.stringify(gameState));
+    }
     if (currentUser) {
         const savedData = localStorage.getItem('js_rng_save');
         if (savedData) {
@@ -542,12 +569,20 @@ window.cheatItems = function() { AURA_DATA.forEach(a => { gameState.inventory[a.
 
 window.cheatCompleteQuests = function() {
     QUEST_DATA.forEach(q => {
-        if (!gameState.completedQuests) gameState.completedQuests = [];
-        if (!gameState.completedQuests.includes(q.id)) gameState.completedQuests.push(q.id);
+        if (!gameState.questProgress[q.id]) {
+            gameState.questProgress[q.id] = { rolls: 0, legend: 0, mythic: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
+        }
+        gameState.questProgress[q.id].rolls = q.targets.rolls || 0;
+        gameState.questProgress[q.id].legend = q.targets.legend || 0;
+        gameState.questProgress[q.id].mythic = q.targets.mythic || 0;
+        gameState.questProgress[q.id].divine = q.targets.divine || 0;
+        gameState.questProgress[q.id].cosmic = q.targets.cosmic || 0;
+        gameState.questProgress[q.id].shopPurchases = q.targets.shopPurchases || 0;
     });
+
     gameState.quickRollUnlocked = true;
     saveGame(); saveGameToCloud(); updateQuestUI(); updateQuickRollUI();
-    alert("📜 모든 퀘스트 완료 및 빠른 롤 기능이 해금되었습니다!");
+    alert("📜 모든 퀘스트 조건이 달성되었습니다! 즉시 보상을 받을 수 있습니다.");
 };
 
 window.cheatAllCraftItems = function() {
@@ -565,7 +600,7 @@ ui.devBtn.addEventListener('click', () => {
     if (pwd === "로블록스33") {
         backupGameState = JSON.parse(JSON.stringify(gameState));
         ui.mainDevBtn.classList.remove('hidden'); ui.settingsHubModal.classList.add('hidden');
-        alert("✅ [개발자 모드 ON] 메인 화면에 '개발자 패널' 버튼이 추가되었으며, 유저장터 강제 삭제 기능이 활성화됩니다.");
+        alert("✅ [개발자 모드 ON] 임시 테스트 모드입니다. '개발자 모드 종료' 버튼을 눌러야 원래 게임으로 안전 복구됩니다.");
         const select = document.getElementById('dev-aura-select');
         if (select.children.length === 0) { AURA_DATA.forEach(a => { const opt = document.createElement('option'); opt.value = a.id; opt.innerText = `[${a.grade}] ${a.name}`; select.appendChild(opt); }); }
         ui.devModal.classList.remove('hidden');
@@ -577,8 +612,14 @@ ui.closeDev.addEventListener('click', () => { ui.devModal.classList.add('hidden'
 
 window.exitDevMode = function() {
     if (backupGameState) gameState = JSON.parse(JSON.stringify(backupGameState));
-    backupGameState = null; saveGame(); saveGameToCloud();
-    ui.mainDevBtn.classList.add('hidden'); updateStatsUI(); updateInventory(); updateCraftUI(); ui.devModal.classList.add('hidden'); alert("🚪 개발자 모드를 종료하고 복구했습니다!");
+    backupGameState = null; 
+    localStorage.setItem('js_rng_save', JSON.stringify(gameState));
+    if (currentUser) setDoc(doc(db, "users", currentUser.uid), gameState);
+    
+    ui.mainDevBtn.classList.add('hidden'); 
+    updateStatsUI(); updateInventory(); updateCraftUI(); updateQuestUI(); updateQuickRollUI();
+    ui.devModal.classList.add('hidden'); 
+    alert("🚪 개발자 모드를 안전하게 종료하고 본계정 데이터를 복구했습니다!");
 }
 
 function getTotalMultBonus() {
@@ -684,7 +725,7 @@ ui.autoRollBtn.addEventListener('click', () => {
 function trackQuestProgress(type, amount = 1) {
     if (!gameState.activeQuest) return;
     const qId = gameState.activeQuest;
-    if (!gameState.questProgress[qId]) gameState.questProgress[qId] = { rolls: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
+    if (!gameState.questProgress[qId]) gameState.questProgress[qId] = { rolls: 0, legend: 0, mythic: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
     if (type in gameState.questProgress[qId]) gameState.questProgress[qId][type] += amount;
 }
 
@@ -721,7 +762,7 @@ function playShakeGlowEffect(rolled) {
 async function playStarCutscene(rolled) { 
     ui.display.innerHTML = ''; 
     ui.starOverlay.classList.remove('hidden'); 
-    ui.starOverlay.classList.remove('cutscene-bg-cosmic', 'cutscene-bg-js');
+    ui.starOverlay.classList.remove('cutscene-bg-cosmic', 'cutscene-bg-js', 'cutscene-bg-angel', 'cutscene-bg-false-theatre', 'cutscene-bg-lightning', 'cutscene-bg-monkey', 'cutscene-bg-demon');
 
     if (currentBgm) currentBgm.pause();
 
@@ -735,21 +776,38 @@ async function playStarCutscene(rolled) {
             ui.starOverlay.style.setProperty('--js-mid-col', '#1b5e20');
             ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(0, 230, 118, 0.3)');
             ui.starOverlay.style.setProperty('--js-glow-col', '#00e676');
+            ui.starOverlay.classList.add('cutscene-bg-js');
             soundKey = 'js_all';
         } else if (rolled.id === "js_heinous_criminal") {
             ui.starOverlay.style.setProperty('--js-center-col', '#8b0000'); 
             ui.starOverlay.style.setProperty('--js-mid-col', '#004d40'); 
             ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(139, 0, 0, 0.3)'); 
             ui.starOverlay.style.setProperty('--js-glow-col', '#ff0033'); 
+            ui.starOverlay.classList.add('cutscene-bg-js');
+            soundKey = 'js_all';
+        } else if (rolled.id === "js_false_theatre_tv") {
+            ui.starOverlay.classList.add('cutscene-bg-false-theatre');
+            soundKey = 'js_all';
+        } else if (rolled.id === "divine_angel_gaen") {
+            ui.starOverlay.classList.add('cutscene-bg-angel');
+            soundKey = 'js_all';
+        } else if (rolled.id === "js_lightning_jisung") {
+            ui.starOverlay.classList.add('cutscene-bg-lightning');
+            soundKey = 'js_all';
+        } else if (rolled.id === "js_monkey_liberator") {
+            ui.starOverlay.classList.add('cutscene-bg-monkey');
+            soundKey = 'js_all';
+        } else if (rolled.id === "js_demon_minchae") { // 😈 격노와 정욕의 마신 김민채 전용 핫핑크/보라 컷씬
+            ui.starOverlay.classList.add('cutscene-bg-demon');
             soundKey = 'js_all';
         } else {
             ui.starOverlay.style.setProperty('--js-center-col', '#6a0000');
             ui.starOverlay.style.setProperty('--js-mid-col', '#200000');
             ui.starOverlay.style.setProperty('--js-ray-col', 'rgba(255,0,0,0.15)');
             ui.starOverlay.style.setProperty('--js-glow-col', '#ff0000');
+            ui.starOverlay.classList.add('cutscene-bg-js');
             soundKey = 'js_all';
         }
-        ui.starOverlay.classList.add('cutscene-bg-js');
     } else if (rolled.grade === "COSMIC") {
         ui.starOverlay.classList.add('cutscene-bg-cosmic');
         soundKey = 'cosmic_all';
@@ -772,7 +830,7 @@ async function playStarCutscene(rolled) {
             setTimeout(() => {
                 ui.starOverlay.classList.remove('flash-white');
                 ui.starOverlay.classList.add('hidden');
-                ui.starOverlay.classList.remove('cutscene-bg-cosmic', 'cutscene-bg-js');
+                ui.starOverlay.classList.remove('cutscene-bg-cosmic', 'cutscene-bg-js', 'cutscene-bg-angel', 'cutscene-bg-false-theatre', 'cutscene-bg-lightning', 'cutscene-bg-monkey', 'cutscene-bg-demon');
                 ui.cutsceneStarContainer.className = '';
                 resolve();
             }, 500);
@@ -821,7 +879,9 @@ async function finishRoll() {
         if (!found) rolled = pool[0];
     }
 
-    if (rolled.grade === "DIVINE") trackQuestProgress("divine", 1);
+    if (rolled.grade === "LEGEND") trackQuestProgress("legend", 1);
+    else if (rolled.grade === "MYTHIC") trackQuestProgress("mythic", 1);
+    else if (rolled.grade === "DIVINE") trackQuestProgress("divine", 1);
     else if (rolled.grade === "COSMIC") trackQuestProgress("cosmic", 1);
 
     if (gameState.activeMultBuffs && gameState.activeMultBuffs.length > 0) {
@@ -949,7 +1009,7 @@ document.getElementById('confirm-buy-btn').addEventListener('click', () => {
 
     trackQuestProgress("shopPurchases", buyAmount);
 
-    saveGame(); saveGameToCloud();
+    saveGame();
     updateStatsUI(); buildShopUI();
     ui.buyModal.classList.add('hidden');
     alert(`🎉 '${item.name}' ${buyAmount}개 구매 완료!`);
@@ -1037,74 +1097,98 @@ document.getElementById('confirm-use-btn').addEventListener('click', () => {
 });
 
 window.startQuest = function(qId) {
-    if (gameState.activeQuest) { alert("⚠️ 이미 진행 중인 퀘스트가 있습니다!"); return; }
     gameState.activeQuest = qId;
-    if (!gameState.questProgress[qId]) gameState.questProgress[qId] = { rolls: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
-    saveGame(); saveGameToCloud(); updateQuestUI(); alert("📜 퀘스트를 시작했습니다!");
+    if (!gameState.questProgress[qId]) {
+        gameState.questProgress[qId] = { rolls: 0, legend: 0, mythic: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
+    }
+    saveGame(); saveGameToCloud(); updateQuestUI();
+    const quest = QUEST_DATA.find(q => q.id === qId);
+    alert(`📜 '${quest ? quest.name : ''}' 퀘스트로 변경되었습니다! (이전 진행도 유지됨)`);
 };
 
 window.claimQuestReward = function(qId) {
     const quest = QUEST_DATA.find(q => q.id === qId);
     if (!quest) return;
 
-    if (!gameState.completedQuests) gameState.completedQuests = [];
-    gameState.completedQuests.push(qId);
+    if (!quest.repeatable) {
+        if (!gameState.completedQuests) gameState.completedQuests = [];
+        gameState.completedQuests.push(qId);
+    }
     gameState.activeQuest = null;
 
     if (qId === "quest_swift") {
         gameState.quickRollUnlocked = true;
         gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 5;
+    } else if (qId === "quest_repeat_overcome") {
+        gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 1;
+        gameState.jc += 100000;
+    } else if (qId === "quest_repeat_heaven") {
+        gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 1;
+        gameState.jc += 200000;
     }
 
-    saveGame(); saveGameToCloud(); updateQuestUI(); updateQuickRollUI();
+    delete gameState.questProgress[qId];
+
+    saveGame(); saveGameToCloud(); updateQuestUI(); updateQuickRollUI(); updateStatsUI();
     alert(`🎉 퀘스트 완료! 보상이 지급되었습니다:\n${quest.rewardDesc}`);
 };
 
 function updateQuestUI() {
     ui.questListGrid.innerHTML = '';
     QUEST_DATA.forEach(quest => {
-        const isCompleted = gameState.completedQuests && gameState.completedQuests.includes(quest.id);
+        const isCompleted = !quest.repeatable && gameState.completedQuests && gameState.completedQuests.includes(quest.id);
         const isActive = gameState.activeQuest === quest.id;
-        const p = (gameState.questProgress && gameState.questProgress[quest.id]) ? gameState.questProgress[quest.id] : { rolls: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
+        const p = (gameState.questProgress && gameState.questProgress[quest.id]) ? gameState.questProgress[quest.id] : { rolls: 0, legend: 0, mythic: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
 
-        const curRolls = Math.min(quest.targets.rolls, p.rolls || 0);
-        const curDivine = Math.min(quest.targets.divine, p.divine || 0);
-        const curCosmic = Math.min(quest.targets.cosmic, p.cosmic || 0);
-        const curJC = Math.min(quest.targets.jc, gameState.jc);
-        const curShop = Math.min(quest.targets.shopPurchases, p.shopPurchases || 0);
+        const curRolls = Math.min(quest.targets.rolls || 0, p.rolls || 0);
+        const curLegend = Math.min(quest.targets.legend || 0, p.legend || 0);
+        const curMythic = Math.min(quest.targets.mythic || 0, p.mythic || 0);
+        const curDivine = Math.min(quest.targets.divine || 0, p.divine || 0);
+        const curCosmic = Math.min(quest.targets.cosmic || 0, p.cosmic || 0);
+        const curJC = Math.min(quest.targets.jc || 0, gameState.jc);
+        const curShop = Math.min(quest.targets.shopPurchases || 0, p.shopPurchases || 0);
 
-        const isRollsMet = curRolls >= quest.targets.rolls;
-        const isDivineMet = curDivine >= quest.targets.divine;
-        const isCosmicMet = curCosmic >= quest.targets.cosmic;
-        const isJCMet = curJC >= quest.targets.jc;
-        const isShopMet = curShop >= quest.targets.shopPurchases;
+        const isRollsMet = curRolls >= (quest.targets.rolls || 0);
+        const isLegendMet = curLegend >= (quest.targets.legend || 0);
+        const isMythicMet = curMythic >= (quest.targets.mythic || 0);
+        const isDivineMet = curDivine >= (quest.targets.divine || 0);
+        const isCosmicMet = curCosmic >= (quest.targets.cosmic || 0);
+        const isJCMet = curJC >= (quest.targets.jc || 0);
+        const isShopMet = curShop >= (quest.targets.shopPurchases || 0);
 
-        const canClaim = isActive && isRollsMet && isDivineMet && isCosmicMet && isJCMet && isShopMet;
+        const canClaim = isRollsMet && isLegendMet && isMythicMet && isDivineMet && isCosmicMet && isJCMet && isShopMet;
 
         const card = document.createElement('div');
         card.className = `quest-card ${isCompleted ? 'completed' : (isActive ? 'active-quest' : '')}`;
 
         let btnHtml = '';
-        if (isCompleted) { btnHtml = `<button class="action-btn" disabled style="background:#555;">✅ 완료됨</button>`; } 
-        else if (canClaim) { btnHtml = `<button class="action-btn use" onclick="claimQuestReward('${quest.id}')">🎉 보상 받기</button>`; } 
-        else if (isActive) { btnHtml = `<button class="action-btn" disabled style="background:#e67e22;">⏳ 진행 중</button>`; } 
-        else {
-            const hasOtherActive = !!gameState.activeQuest;
-            btnHtml = `<button class="action-btn buy" onclick="startQuest('${quest.id}')" ${hasOtherActive ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>▶️ 시작하기</button>`;
+        if (isCompleted) { 
+            btnHtml = `<button class="action-btn" disabled style="background:#555;">✅ 완료됨</button>`; 
+        } else if (canClaim) { 
+            btnHtml = `<button class="action-btn use" onclick="claimQuestReward('${quest.id}')">🎉 보상 받기</button>`; 
+        } else if (isActive) { 
+            btnHtml = `<button class="action-btn" disabled style="background:#e67e22;">⏳ 진행 중</button>`; 
+        } else {
+            btnHtml = `<button class="action-btn buy" onclick="startQuest('${quest.id}')">🔄 이 퀘스트로 변경</button>`;
         }
+
+        let targetListHtml = '';
+        if (quest.targets.rolls > 0) targetListHtml += `<div class="quest-target ${isRollsMet ? 'met' : ''}">• 롤 ${quest.targets.rolls.toLocaleString()}번 하기 (${curRolls.toLocaleString()} / ${quest.targets.rolls.toLocaleString()})</div>`;
+        if (quest.targets.legend > 0) targetListHtml += `<div class="quest-target ${isLegendMet ? 'met' : ''}">• 레전드 ${quest.targets.legend}개 뽑기 (${curLegend} / ${quest.targets.legend})</div>`;
+        if (quest.targets.mythic > 0) targetListHtml += `<div class="quest-target ${isMythicMet ? 'met' : ''}">• 미스틱 ${quest.targets.mythic}개 뽑기 (${curMythic} / ${quest.targets.mythic})</div>`;
+        if (quest.targets.divine > 0) targetListHtml += `<div class="quest-target ${isDivineMet ? 'met' : ''}">• 디바인 ${quest.targets.divine}개 뽑기 (${curDivine} / ${quest.targets.divine})</div>`;
+        if (quest.targets.cosmic > 0) targetListHtml += `<div class="quest-target ${isCosmicMet ? 'met' : ''}">• 코스믹 ${quest.targets.cosmic}개 뽑기 (${curCosmic} / ${quest.targets.cosmic})</div>`;
+        if (quest.targets.jc > 0) targetListHtml += `<div class="quest-target ${isJCMet ? 'met' : ''}">• ${quest.targets.jc.toLocaleString()} JC 모으기 (${curJC.toLocaleString()} / ${quest.targets.jc.toLocaleString()})</div>`;
+        if (quest.targets.shopPurchases > 0) targetListHtml += `<div class="quest-target ${isShopMet ? 'met' : ''}">• 상점 아이템 ${quest.targets.shopPurchases}개 구매 (${curShop} / ${quest.targets.shopPurchases})</div>`;
 
         card.innerHTML = `
             <div class="quest-header">
                 <span class="quest-title">'${quest.name}'</span>
-                ${isCompleted ? '<span class="quest-badge done">완료</span>' : (isActive ? '<span class="quest-badge ing">진행중</span>' : '')}
+                ${isCompleted ? '<span class="quest-badge done">완료</span>' : (isActive ? '<span class="quest-badge ing">진행중</span>' : (quest.repeatable ? '<span class="quest-badge repeat">반복</span>' : ''))}
             </div>
             <div class="quest-desc">${quest.desc}</div>
             <div class="quest-target-list">
-                <div class="quest-target ${isRollsMet ? 'met' : ''}">• 롤 5000번 하기 (${curRolls.toLocaleString()} / 5,000)</div>
-                <div class="quest-target ${isDivineMet ? 'met' : ''}">• 디바인 15개 뽑기 (${curDivine} / 15)</div>
-                <div class="quest-target ${isCosmicMet ? 'met' : ''}">• 코스믹 5개 뽑기 (${curCosmic} / 5)</div>
-                <div class="quest-target ${isJCMet ? 'met' : ''}">• 3,000,000 JC 모으기 (${curJC.toLocaleString()} / 3,000,000)</div>
-                <div class="quest-target ${isShopMet ? 'met' : ''}">• 상점 아이템 20개 구매 (${curShop} / 20)</div>
+                ${targetListHtml}
             </div>
             <div class="quest-reward">🎁 보상: ${quest.rewardDesc}</div>
             ${btnHtml}

@@ -63,6 +63,38 @@ export const CRAFT_ITEMS = [
         speedBonus: 0.2, 
         req: { "mythic_pacifist_jisung": 3, "com_steel_gaen": 10, "unc_hospital": 20, "com_drum": 300 } 
     },
+    // ✨ [신규 1] 대천사의 신성한 건틀렛 (디바인 등급 재료)
+    { 
+        id: "gear_sacred_angel", 
+        category: "gauntlet", 
+        name: "대천사의 신성한 건틀렛", 
+        desc: "영구적으로 행운 180%, 속도 30%가 증가합니다.", 
+        luckBonus: 1.8, 
+        speedBonus: 0.3, 
+        req: { 
+            "divine_knight_gaen_sword": 5, 
+            "mythic_heaven_gaen": 10, 
+            "leg_gold_sujeo": 20, 
+            "rare_new_gaen": 150, 
+            "com_drum": 500 
+        } 
+    },
+    // 💥 [신규 2] 초월 패왕의 건틀렛 (디바인 등급 최상위)
+    { 
+        id: "gear_transcendent_overlord", 
+        category: "gauntlet", 
+        name: "초월 패왕의 건틀렛", 
+        desc: "영구적으로 행운 300%, 속도 30%가 증가합니다.", 
+        luckBonus: 3.0, 
+        speedBonus: 0.3, 
+        req: { 
+            "divine_god": 5, 
+            "mythic_pacifist_jisung": 8, 
+            "mythic_overlord_gunwoo": 10, 
+            "legend_wizard": 25, 
+            "unc_angry": 400 
+        } 
+    },
 
     // 📜 부적 아이템
     { 
