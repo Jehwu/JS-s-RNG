@@ -1282,19 +1282,18 @@ async function loadRankingList(tabType) {
             else if (rank === 2) rankBadgeClass = "rank-2";
             else if (rank === 3) rankBadgeClass = "rank-3";
 
-            let titleCardHtml = getAuraCardHtml(data.selectedTitleAuraId);
-
             let displayValue = "";
             if (tabType === 'rolls') displayValue = `🎲 ${(data.rolls || 0).toLocaleString()}회`;
             else if (tabType === 'jc') displayValue = `🪙 ${(data.jc || 0).toLocaleString()} JC`;
             else if (tabType === 'aura') displayValue = `👑 ${data.bestAura || '없음'}`;
 
+            // 👑 랭킹 보드 교정: 닉네임 아래에 대표 칭호 대신 상태메세지가 뜨도록 설정!
             card.innerHTML = `
                 <div class="rank-badge ${rankBadgeClass}">${rank}</div>
                 <img src="${data.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0;">
                 <div class="ranking-user-info">
                     <div style="font-weight:bold; font-size:14px; color:white;">${data.name}</div>
-                    <div style="margin-top: 2px;">${titleCardHtml}</div>
+                    <div style="font-size:11px; color:#f39c12; margin-top:2px;">"${data.statusMsg || '운빨 최강 도전 중!'}"</div>
                 </div>
                 <div style="text-align: right; flex-shrink:0;">
                     <div style="font-size:12px; font-weight:bold; color:#f1c40f;">${displayValue}</div>
@@ -1343,7 +1342,6 @@ ui.profileBtn.addEventListener('click', () => {
     openUserProfileModal(currentUser.uid);
 });
 
-// 📱 내 기기 사진 파일 변환 처리
 ui.editFileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1385,7 +1383,6 @@ async function openUserProfileModal(targetUid) {
 
                 ui.editTitleSelect.innerHTML = `<option value="">-- 선택 안함 --</option>`;
                 if (gameState.discoveredAuras) {
-                    // 📊 등급순 정렬 후 옵션 생성
                     const userDiscovered = gameState.discoveredAuras
                         .map(id => AURA_DATA.find(a => a.id === id))
                         .filter(Boolean)
@@ -1494,7 +1491,6 @@ ui.openSellMarketBtn.addEventListener('click', () => {
         return;
     }
 
-    // 📊 보유 칭호 등급순 정렬
     userAuras.sort((a, b) => GRADES.indexOf(a.grade) - GRADES.indexOf(b.grade) || a.in - b.in);
 
     userAuras.forEach(aura => {
@@ -1564,6 +1560,7 @@ ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
     } catch(e) { alert("등록 실패: " + e.message); }
 });
 
+// 🏪 취소 시 파이어베이스 DB 매물 완전 삭제
 window.cancelMarketListing = async function(listingId, auraId) {
     if (!confirm("정말 매물 등록을 취소하고 칭호를 회수하시겠습니까?")) return;
     try {
@@ -1602,12 +1599,13 @@ window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
     } catch(e) { alert("구매 실패: " + e); }
 };
 
+// 🛠️ 개발자 권한 강제 삭제 (DB 매물 완전 삭제)
 window.forceDeleteMarketItem = async function(listingId) {
     if (!confirm("🛠️ [개발자 권한] 해당 매물을 강제 삭제하시겠습니까?")) return;
     try {
         await deleteDoc(doc(db, "market", listingId));
         await loadMarketList();
-        alert("🗑️ 매물이 즉시 강제 삭제되었습니다.");
+        alert("🗑️ 매물이 즉시 DB에서 강제 삭제되었습니다.");
     } catch(e) { alert("삭제 실패: " + e.message); }
 };
 

@@ -15,107 +15,33 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .secret-btn { background: transparent; border: 1px solid #444; color: #666; border-radius: 5px; padding: 6px; cursor: pointer; font-size: 16px; margin: 0; }
 .secret-btn:hover { background: #333; color: white; }
 
-/* 🔲 새로 추가: 상단 미니 정사각형 아이콘 버튼 모음 */
-.top-quick-btns {
-    display: flex;
-    gap: 6px;
-    margin-top: 6px;
-}
-.icon-square-btn {
-    width: 32px;
-    height: 32px;
-    background: #2a2a2a;
-    border: 1px solid #444;
-    border-radius: 6px;
-    font-size: 15px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: 0.2s;
-    color: white;
-}
-.icon-square-btn:hover {
-    background: #3a3a3a;
-    transform: scale(1.05);
-}
+.top-quick-btns { display: flex; gap: 6px; margin-top: 6px; }
+.icon-square-btn { width: 32px; height: 32px; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; font-size: 15px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; color: white; }
+.icon-square-btn:hover { background: #3a3a3a; transform: scale(1.05); }
 
 #aura-display { margin: auto 0; min-height: 140px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5; position: relative; width: 100%; }
 .result-grade { font-size: 20px; font-weight: bold; margin-bottom: 5px; opacity: 0.9; }
-.result-name { font-size: 38px; font-weight: bold; margin: 5px 0; word-break: keep-all; }
+.result-name { font-size: 38px; font-weight: bold; margin: 5px 0; word-break: keep-all; display: inline-block; }
 .result-chance { font-size: 16px; margin-top: 8px; opacity: 0.8; }
 
 .roll-controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; width: 100%; }
 
-#roll-btn { 
-    position: relative; 
-    overflow: hidden; 
-    background: linear-gradient(135deg, #8e44ad, #3498db); 
-    color: white; 
-    border: 2px solid #a29bfe; 
-    padding: 10px 30px; 
-    border-radius: 12px; 
-    cursor: pointer; 
-    user-select: none; 
-    z-index: 5; 
-    flex-grow: 1; 
-    min-height: 65px;
-    box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4);
-    transition: transform 0.1s, box-shadow 0.2s;
-}
+#roll-btn { position: relative; overflow: hidden; background: linear-gradient(135deg, #8e44ad, #3498db); color: white; border: 2px solid #a29bfe; padding: 10px 30px; border-radius: 12px; cursor: pointer; user-select: none; z-index: 5; flex-grow: 1; min-height: 65px; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4); transition: transform 0.1s, box-shadow 0.2s; }
 #roll-btn:hover { box-shadow: 0 6px 20px rgba(142, 68, 173, 0.6); }
 #roll-btn:active { transform: scale(0.97); }
 #roll-btn:disabled { background: #2a2a2a; border-color: #444; cursor: not-allowed; opacity: 0.8; box-shadow: none; }
 
-.roll-btn-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    z-index: 2;
-}
-
-#btn-main-text {
-    font-size: 24px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    color: #ffffff;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-}
-
-#btn-sub-text {
-    font-size: 13px;
-    font-weight: bold;
-    color: #e0e0e0;
-    margin-top: 2px;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-}
+.roll-btn-content { display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; z-index: 2; }
+#btn-main-text { font-size: 24px; font-weight: 900; letter-spacing: 1px; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+#btn-sub-text { font-size: 13px; font-weight: bold; color: #e0e0e0; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
 
 #cooldown-bar { position: absolute; bottom: 0; left: 0; height: 100%; width: 100%; background-color: rgba(255, 255, 255, 0.2); transform-origin: left; transform: scaleX(0); z-index: 1; }
 .cooldown-active #cooldown-bar { animation-name: cooldown-shrink; animation-timing-function: linear; animation-fill-mode: forwards; }
 @keyframes cooldown-shrink { 0% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
 
-.auto-roll-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    z-index: 5;
-}
+.auto-roll-group { display: flex; flex-direction: column; gap: 5px; z-index: 5; }
 
-#quick-roll-btn, #auto-roll-btn { 
-    background-color: #333; 
-    color: white; 
-    border: 1px solid #555; 
-    padding: 8px 12px; 
-    font-size: 13px; 
-    font-weight: bold; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    transition: 0.3s; 
-    flex: 1;
-}
-
+#quick-roll-btn, #auto-roll-btn { background-color: #333; color: white; border: 1px solid #555; padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.3s; flex: 1; }
 #quick-roll-btn.active { background-color: #e67e22; border-color: #d35400; }
 #quick-roll-btn:disabled { background-color: #222; color: #666; border-color: #333; cursor: not-allowed; }
 #auto-roll-btn.active { background-color: #2ecc71; border-color: #27ae60; }
@@ -134,7 +60,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .close-btn { position: absolute; top: 15px; right: 18px; font-size: 22px; cursor: pointer; color: #888; transition: color 0.2s; }
 .close-btn:hover { color: white; }
 
-/* 🏆 랭킹 카드 (세로 깨짐 방지 교정) */
 .ranking-card { display: flex; align-items: center; gap: 12px; background: #2b2b2b; padding: 10px 15px; border-radius: 8px; border: 1px solid #444; cursor: pointer; transition: 0.2s; text-align: left; }
 .ranking-card:hover { background: #3a3a3a; transform: translateX(3px); }
 .rank-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; background: #555; color: white; flex-shrink: 0; }
@@ -142,29 +67,9 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 .rank-2 { background: #bdc3c7; color: black; }
 .rank-3 { background: #e67e22; color: white; }
 
-.ranking-user-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
+.ranking-user-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
 
-/* 👑 대표 칭호 미니 카드 태그 */
-.title-card-mini {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-size: 11px;
-    background: rgba(0,0,0,0.5);
-    border: 1px solid #555;
-    white-space: nowrap;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+.title-card-mini { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 11px; background: rgba(0,0,0,0.5); border: 1px solid #555; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 
 #market-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
 .market-item-card { background: #2a2a2a; border: 2px solid #555; padding: 12px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
@@ -219,7 +124,7 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
 #inventory-grid, #item-inven-grid, #shop-grid, #index-grid, #craft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
 .inventory-tile, .item-tile, .shop-tile, .index-item { background-color: #333; padding: 12px 8px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; border: 2px solid #555; text-align: center; position: relative; min-height: 120px; }
 .tile-grade { font-size: 11px; font-weight: bold; opacity: 0.8; margin-bottom: 2px; }
-.tile-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; word-break: keep-all; }
+.tile-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; word-break: keep-all; display: inline-block; }
 .tile-desc { font-size: 11px; color: #bbb; margin-bottom: 6px; }
 .tile-count { font-size: 12px; color: #ccc; margin-bottom: 6px; }
 .index-chance { font-size: 10px; color: #aaa; margin-top: 4px; }
@@ -269,20 +174,6 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     100% { box-shadow: 0 0 35px #341f97, inset 0 0 25px #0f051d; border-color: #9b59b6; }
 }
 
-.aura-170kg-heavy {
-    background: linear-gradient(90deg, #4a3b32, #8d6e63, #212121, #5d4037);
-    -webkit-background-clip: text; color: transparent !important;
-    font-weight: 900; text-shadow: 0 0 15px rgba(141, 110, 99, 0.8);
-}
-
-.aura-170kg-minchae {
-    background: linear-gradient(90deg, #00e676, #1b5e20, #00b0ff, #004d40);
-    -webkit-background-clip: text; color: transparent !important;
-    font-weight: 900; background-size: 200% auto; animation: shine-anim 1.2s linear infinite;
-    text-shadow: 0 0 25px rgba(0, 230, 118, 0.9), 0 0 12px rgba(0, 176, 255, 0.8);
-}
-
-/* 🟢 170kg OOO : 김민채 전용 초록빛 네온 반짝임 테두리 애니메이션 */
 .border-170kg-minchae {
     border-color: #00e676 !important;
     box-shadow: 0 0 18px rgba(0, 230, 118, 0.95), inset 0 0 12px rgba(27, 94, 32, 0.9);
@@ -319,31 +210,12 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     box-shadow: 0 0 15px rgba(0, 85, 255, 0.9), inset 0 0 10px rgba(0, 0, 0, 0.8);
     animation: false-theatre-neon 1.5s infinite alternate;
 }
-.aura-false-theatre {
-    background: linear-gradient(90deg, #0055ff, #00051a, #0088ff);
-    -webkit-background-clip: text; color: transparent !important;
-    animation: shine-anim 2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(0, 85, 255, 0.8);
-}
 
 .border-demon-minchae {
     border-color: #ff007f !important;
     box-shadow: 0 0 15px rgba(255, 0, 127, 0.9), inset 0 0 10px rgba(138, 0, 230, 0.7);
     animation: demon-minchae-neon 0.8s infinite alternate;
 }
-.aura-demon-minchae {
-    background: linear-gradient(90deg, #ff007f, #8a00e6, #ff1493, #4a0050);
-    -webkit-background-clip: text; color: transparent !important;
-    animation: shine-anim 1.2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    font-weight: 900; background-size: 200% auto; text-shadow: 0 0 25px rgba(255, 0, 127, 0.9);
-}
-
-.aura-lord-slayer { background: linear-gradient(90deg, #ff0000, #111111, #8b0000); -webkit-background-clip: text; color: transparent !important; font-weight: 900; text-shadow: 0 0 20px rgba(255, 0, 0, 0.8); }
-.aura-pacifist-king { background: linear-gradient(90deg, #00ff7f, #00fa9a, #2ecc71); -webkit-background-clip: text; color: transparent !important; font-weight: bold; text-shadow: 0 0 15px #00ff7f; }
-
-.aura-holy-sword { background: linear-gradient(90deg, #fff176, #ffffff, #f39c12); -webkit-background-clip: text; color: transparent !important; font-weight: 900; text-shadow: 0 0 15px #fff176; }
-.aura-steel-sword { background: linear-gradient(90deg, #dcdde1, #718093, #2f3640); -webkit-background-clip: text; color: transparent !important; font-weight: bold; text-shadow: 0 0 10px #718093; }
-.aura-monkey-prisoner { background: linear-gradient(90deg, #f1c40f, #8d6e63, #d4ac0d); -webkit-background-clip: text; color: transparent !important; font-weight: bold; text-shadow: 0 0 12px #f1c40f; }
 
 .border-monkey-liberator {
     border-color: #f39c12 !important;
@@ -354,89 +226,157 @@ body { background-color: #121212; color: white; font-family: sans-serif; text-al
     0% { box-shadow: 0 0 10px rgba(243, 156, 18, 0.7), inset 0 0 8px rgba(184, 15, 10, 0.6); border-color: #f39c12; }
     100% { box-shadow: 0 0 25px rgba(255, 215, 0, 1), inset 0 0 18px rgba(184, 15, 10, 1); border-color: #ffaa00; }
 }
-.aura-monkey-liberator {
-    background: linear-gradient(90deg, #f1c40f, #e74c3c, #ffaa00, #b80f0a);
-    -webkit-background-clip: text; color: transparent !important;
-    animation: shine-anim 1.5s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    font-weight: 900; background-size: 200% auto;
-    text-shadow: 0 0 20px rgba(241, 196, 15, 0.9), 0 0 10px rgba(231, 76, 60, 0.8);
-}
-
-.aura-burning-wings {
-    background: linear-gradient(90deg, #ff4500, #ff8c00, #ff0000, #f1c40f);
-    -webkit-background-clip: text; color: transparent !important;
-    animation: shine-anim 1.2s linear infinite, pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    font-weight: 900; background-size: 200% auto;
-    text-shadow: 0 0 20px rgba(255, 69, 0, 0.9), 0 0 10px rgba(255, 140, 0, 0.7);
-}
-
-.aura-indomitable-gaen {
-    background: linear-gradient(90deg, #e74c3c, #c0392b, #8e44ad, #d35400);
-    -webkit-background-clip: text; color: transparent !important;
-    animation: shine-anim 1.5s linear infinite;
-    font-weight: 900; background-size: 200% auto;
-    text-shadow: 0 0 22px rgba(231, 76, 60, 0.9), 0 0 12px rgba(142, 68, 173, 0.8);
-}
-
-.aura-vampire-hunter {
-    background: linear-gradient(90deg, #c0392b, #8b0000, #2c3e50, #e74c3c);
-    -webkit-background-clip: text; color: transparent !important;
-    font-weight: 900; background-size: 200% auto; animation: shine-anim 2s linear infinite;
-    text-shadow: 0 0 18px rgba(192, 57, 43, 0.9), 0 0 8px rgba(0, 0, 0, 0.9);
-}
-
-.aura-primeval-sage {
-    background: linear-gradient(90deg, #00e5ff, #0070f3, #7928ca, #00ffff);
-    -webkit-background-clip: text; color: transparent !important;
-    animation: shine-anim 1.8s linear infinite;
-    font-weight: 900; background-size: 200% auto;
-    text-shadow: 0 0 22px rgba(0, 229, 255, 0.9), 0 0 12px rgba(121, 40, 202, 0.7);
-}
-
-.aura-doomsday-voice {
-    background: linear-gradient(90deg, #8d6e63, #ff69b4, #795548, #ff1493);
-    -webkit-background-clip: text; color: transparent !important;
-    font-weight: 900; background-size: 1.5s linear infinite; animation: shine-anim 1.5s linear infinite;
-    text-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
-}
-
-.aura-queen-table {
-    background: linear-gradient(90deg, #ff4081, #ff80ab, #f48fb1, #ff1744);
-    -webkit-background-clip: text; color: transparent !important;
-    font-weight: 900; background-size: 200% auto; animation: shine-anim 1.2s linear infinite;
-    text-shadow: 0 0 20px rgba(255, 64, 129, 0.9);
-}
-
-.aura-hidden-power {
-    background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
-    -webkit-background-clip: text; color: transparent !important;
-    font-weight: 900; background-size: 300% auto; animation: shine-anim 2s linear infinite;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.9);
-}
-
-.aura-steel-emperor {
-    background: linear-gradient(90deg, #00b0ff, #b0bec5, #0288d1, #eceff1);
-    -webkit-background-clip: text; color: transparent !important;
-    font-weight: 900; background-size: 200% auto; animation: shine-anim 1.8s linear infinite;
-    text-shadow: 0 0 22px rgba(0, 176, 255, 0.9);
-}
 
 .border-heinous-criminal {
-    border-color: #8b0000 !important;
-    box-shadow: 0 0 18px rgba(139, 0, 0, 0.95), inset 0 0 12px rgba(0, 77, 64, 0.9);
+    border-color: #ff0055 !important;
+    box-shadow: 0 0 18px rgba(255, 0, 85, 0.95), inset 0 0 12px rgba(0, 77, 64, 0.9);
     animation: heinous-neon 1.0s infinite alternate !important;
 }
 @keyframes heinous-neon {
-    0% { border-color: #8b0000; box-shadow: 0 0 12px #8b0000, inset 0 0 8px #004d40; }
-    100% { border-color: #ff0033; box-shadow: 0 0 28px #ff0033, inset 0 0 20px #00796b; }
+    0% { border-color: #ff0055; box-shadow: 0 0 12px #ff0055, inset 0 0 8px #004d40; }
+    100% { border-color: #00ff88; box-shadow: 0 0 28px #00ff88, inset 0 0 20px #8b0000; }
 }
 
-.aura-heinous-criminal {
-    background: linear-gradient(90deg, #8b0000, #004d40, #ff0033, #00796b);
-    -webkit-background-clip: text; color: transparent !important;
-    font-weight: 900; background-size: 200% auto; animation: shine-anim 1.2s linear infinite;
-    text-shadow: 0 0 25px rgba(255, 0, 51, 0.9), 0 0 10px rgba(0, 77, 64, 0.8);
+/* ─────────────────────────────────────────────────────────
+   🌊 오른쪽에서 왼쪽으로 흘러가는 그라데이션 애니메이션 (Right to Left)
+───────────────────────────────────────────────────────── */
+@keyframes flow-right-to-left {
+    0% {
+        background-position: 200% center;
+    }
+    100% {
+        background-position: -200% center;
+    }
 }
+
+/* ---------------------------------------------------------
+   DIVINE / COSMIC / JS 공통 애니메이션 속성 일괄 적용
+--------------------------------------------------------- */
+.aura-pacifist-king,
+.aura-doomsday-voice,
+.aura-gemini-pro,
+.aura-divine-gaen,
+.aura-virtual-mode,
+.aura-indescribable-grey,
+.aura-emotionless-mode,
+.aura-transcendent-gunwoo,
+.aura-holy-sword,
+.aura-stage-light,
+.aura-steel-sword,
+.aura-portal-color,
+.aura-vampire-hunter,
+.aura-monkey-prisoner,
+.aura-170kg-heavy,
+.aura-queen-table,
+.aura-hidden-power,
+.aura-steel-emperor,
+.aura-manu-colors,
+.aura-gonjiam-spooky,
+.aura-pink-blue,
+.aura-burning-wings,
+.aura-cosmic-dark-minchae,
+.aura-indomitable-gaen,
+.aura-poop-diarrhea,
+.aura-primeval-sage,
+.aura-lord-slayer,
+.aura-heinous-criminal,
+.aura-170kg-minchae,
+.aura-js-void,
+.aura-holy-angel,
+.aura-lightning,
+.aura-false-theatre,
+.aura-demon-minchae,
+.aura-monkey-liberator,
+.aura-cosmic-1, .aura-cosmic-2, .aura-cosmic-3, .aura-cosmic-4,
+.aura-divine-1, .aura-divine-2, .aura-divine-3, .aura-divine-4, .aura-divine-5 {
+    background-size: 200% auto !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    color: transparent !important;
+    font-weight: 900 !important;
+    display: inline-block !important;
+    animation: flow-right-to-left 2s linear infinite !important;
+}
+
+/* ---------------------------------------------------------
+   개별 칭호 색상 조합 정의 (270deg: 우측➔좌측 방향)
+--------------------------------------------------------- */
+
+/* 🌿 불살의 왕 박지성 (초록빛 계열) */
+.aura-pacifist-king {
+    background-image: linear-gradient(270deg, #00ff7f, #2ecc71, #00b894, #55efc4, #00ff7f) !important;
+    text-shadow: 0 0 15px rgba(0, 255, 127, 0.7);
+}
+
+/* 🌹 JS: 흉악범 (붉은 장미 x 다크 그린 선명 교차) */
+.aura-heinous-criminal {
+    background-image: linear-gradient(270deg, #ff0055, #004d40, #ff1744, #1b5e20, #ff0055) !important;
+    text-shadow: 0 0 20px rgba(255, 0, 85, 0.9), 0 0 10px rgba(0, 77, 64, 0.8) !important;
+}
+
+/* JS 칭호 모음 */
+.aura-170kg-minchae { background-image: linear-gradient(270deg, #00e676, #1b5e20, #00b0ff, #004d40, #00e676) !important; text-shadow: 0 0 25px rgba(0, 230, 118, 0.95); }
+.aura-js-void { background-image: linear-gradient(270deg, #2b00ff, #ff0055, #0a0a0a, #8a0000, #2b00ff) !important; text-shadow: 0 0 25px rgba(43, 0, 255, 0.95); }
+.aura-holy-angel { background-image: linear-gradient(270deg, #fff176, #ffeb3b, #ffa000, #ffffff, #fff176) !important; text-shadow: 0 0 22px rgba(255, 235, 59, 0.95); }
+.aura-lightning { background-image: linear-gradient(270deg, #00ffff, #7c4dff, #ffffff, #00ffff) !important; text-shadow: 0 0 25px rgba(0, 255, 255, 0.95); }
+.aura-false-theatre { background-image: linear-gradient(270deg, #0055ff, #00051a, #0088ff, #0055ff) !important; text-shadow: 0 0 22px rgba(0, 85, 255, 0.95); }
+.aura-demon-minchae { background-image: linear-gradient(270deg, #ff007f, #8a00e6, #ff1493, #4a0050, #ff007f) !important; text-shadow: 0 0 25px rgba(255, 0, 127, 0.95); }
+.aura-monkey-liberator { background-image: linear-gradient(270deg, #f1c40f, #e74c3c, #ffaa00, #b80f0a, #f1c40f) !important; text-shadow: 0 0 22px rgba(241, 196, 15, 0.95); }
+
+/* DIVINE 칭호 모음 */
+.aura-doomsday-voice { background-image: linear-gradient(270deg, #ff69b4, #8d6e63, #ff1493, #a1887f, #ff69b4) !important; text-shadow: 0 0 10px rgba(255, 105, 180, 0.4); }
+.aura-gemini-pro { background-image: linear-gradient(270deg, #4285f4, #9b59b6, #ea4335, #fbbc05, #34a853, #4285f4) !important; text-shadow: 0 0 10px rgba(66, 133, 244, 0.4); }
+.aura-divine-gaen { background-image: linear-gradient(270deg, #a55fea, #ff69b4, #8e44ad, #ff1493, #a55fea) !important; text-shadow: 0 0 12px rgba(165, 95, 234, 0.5); }
+.aura-virtual-mode { background-image: linear-gradient(270deg, #ffd700, #e0e0e0, #ffaa00, #ffffff, #ffd700) !important; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+.aura-indescribable-grey { background-image: linear-gradient(270deg, #d6d6d6, #4a4a4a, #999999, #2b2b2b, #d6d6d6) !important; text-shadow: 0 0 8px rgba(200, 200, 200, 0.3); }
+.aura-emotionless-mode { background-image: linear-gradient(270deg, #dc143c, #b39ddb, #800020, #9575cd, #dc143c) !important; text-shadow: 0 0 10px rgba(220, 20, 60, 0.4); }
+.aura-transcendent-gunwoo { background-image: linear-gradient(270deg, #ffea00, #ffff8d, #f57f17, #fff59d, #ffea00) !important; text-shadow: 0 0 12px rgba(255, 234, 0, 0.5); }
+.aura-holy-sword { background-image: linear-gradient(270deg, #fff176, #ffffff, #ffe082, #e0f7fa, #fff176) !important; text-shadow: 0 0 12px rgba(255, 241, 118, 0.5); }
+.aura-stage-light { background-image: linear-gradient(270deg, #ff007f, #00ffff, #ffeb3b, #7000ff, #ff007f) !important; text-shadow: 0 0 12px rgba(0, 255, 255, 0.5); }
+.aura-steel-sword { background-image: linear-gradient(270deg, #ffffff, #718093, #2f3640, #dcdde1, #ffffff) !important; text-shadow: 0 0 10px rgba(113, 128, 147, 0.4); }
+.aura-portal-color { background-image: linear-gradient(270deg, #00c6ff, #0072ff, #7f00ff, #e100ff, #00c6ff) !important; text-shadow: 0 0 12px rgba(0, 198, 255, 0.5); }
+.aura-vampire-hunter { background-image: linear-gradient(270deg, #8b0000, #ff4d4d, #4a0000, #ff8080, #8b0000) !important; text-shadow: 0 0 12px rgba(255, 77, 77, 0.5); }
+.aura-monkey-prisoner { background-image: linear-gradient(270deg, #ffd700, #8d6e63, #d4ac0d, #5d4037, #ffd700) !important; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+.aura-170kg-heavy { background-image: linear-gradient(270deg, #a1887f, #212121, #d7ccc8, #000000, #a1887f) !important; text-shadow: 0 0 8px rgba(161, 136, 127, 0.4); }
+
+/* COSMIC 칭호 모음 */
+.aura-queen-table { background-image: linear-gradient(270deg, #ff4081, #ff80ab, #f48fb1, #ff1744, #ff4081) !important; text-shadow: 0 0 20px rgba(255, 64, 129, 0.9); }
+.aura-hidden-power { background-image: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #ff0000) !important; text-shadow: 0 0 22px rgba(255, 255, 255, 0.9); }
+.aura-steel-emperor { background-image: linear-gradient(270deg, #b0bec5, #00b0ff, #37474f, #80d8ff, #b0bec5) !important; text-shadow: 0 0 20px rgba(0, 176, 255, 0.9); }
+.aura-manu-colors { background-image: linear-gradient(270deg, #da291c, #ffe600, #ff2222, #da291c) !important; text-shadow: 0 0 20px rgba(218, 41, 28, 0.9); }
+.aura-gonjiam-spooky { background-image: linear-gradient(270deg, #00e676, #004d40, #1b5e20, #00b0ff, #00e676) !important; text-shadow: 0 0 18px rgba(0, 230, 118, 0.9); }
+.aura-pink-blue { background-image: linear-gradient(270deg, #ff77ff, #00ffff, #ff1493, #0088ff, #ff77ff) !important; text-shadow: 0 0 22px rgba(255, 119, 255, 0.9); }
+.aura-burning-wings { background-image: linear-gradient(270deg, #ff4500, #ff8c00, #ff0000, #f1c40f, #ff4500) !important; text-shadow: 0 0 22px rgba(255, 69, 0, 0.9); }
+.aura-cosmic-dark-minchae { background-image: linear-gradient(270deg, #880e4f, #4a148c, #1a237e, #e91e63, #880e4f) !important; text-shadow: 0 0 22px rgba(233, 30, 99, 0.9); }
+.aura-indomitable-gaen { background-image: linear-gradient(270deg, #e74c3c, #c0392b, #8e44ad, #d35400, #e74c3c) !important; text-shadow: 0 0 20px rgba(231, 76, 60, 0.9); }
+.aura-poop-diarrhea { background-image: linear-gradient(270deg, #a1887f, #5d4037, #8d6e63, #d7ccc8, #a1887f) !important; text-shadow: 0 0 16px rgba(161, 136, 127, 0.85); }
+.aura-primeval-sage { background-image: linear-gradient(270deg, #00e5ff, #0070f3, #7928ca, #00ffff, #00e5ff) !important; text-shadow: 0 0 22px rgba(0, 229, 255, 0.9); }
+.aura-lord-slayer { background-image: linear-gradient(270deg, #ff0000, #8b0000, #ff1744, #3a0000, #ff0000) !important; text-shadow: 0 0 22px rgba(255, 0, 0, 0.9); }
+
+/* 기본 서브 클래스 */
+.aura-cosmic-1 { background-image: linear-gradient(270deg, #ff0055, #aa00ff, #ff0055) !important; }
+.aura-cosmic-2 { background-image: linear-gradient(270deg, #ffaa00, #ff4500, #ffaa00) !important; }
+.aura-cosmic-3 { background-image: linear-gradient(270deg, #ff1493, #00ffff, #ff1493) !important; }
+.aura-cosmic-4 { background-image: linear-gradient(270deg, #ff8c00, #f1c40f, #ff8c00) !important; }
+
+.aura-divine-1 { background-image: linear-gradient(270deg, #00c6ff, #0072ff, #00c6ff) !important; }
+.aura-divine-2 { background-image: linear-gradient(270deg, #9b59b6, #ff69b4, #9b59b6) !important; }
+.aura-divine-3 { background-image: linear-gradient(270deg, #3498db, #8e44ad, #3498db) !important; }
+.aura-divine-4 { background-image: linear-gradient(270deg, #bdc3c7, #34495e, #bdc3c7) !important; }
+.aura-divine-5 { background-image: linear-gradient(270deg, #2ecc71, #1abc9c, #2ecc71) !important; }
+
+.aura-mythic-1 { background: linear-gradient(90deg, #00ffff, #2980b9); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-mythic-2 { background: linear-gradient(90deg, #e74c3c, #e67e22); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-mythic-3 { background: linear-gradient(90deg, #00bcd4, #3f51b5); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-mythic-4 { background: linear-gradient(90deg, #cd853f, #d35400); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-mythic-5 { background: linear-gradient(90deg, #ff69b4, #8a2be2); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-mythic-6 { background: linear-gradient(90deg, #ba55d3, #9b59b6); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+
+.aura-legend-1 { background: linear-gradient(90deg, #ff4500, #f1c40f); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-legend-2 { background: linear-gradient(90deg, #f1c40f, #2ecc71); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-legend-3 { background: linear-gradient(90deg, #ff0000, #c0392b); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-legend-4 { background: linear-gradient(90deg, #9370db, #da70d6); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
+.aura-legend-5 { background: linear-gradient(90deg, #dc143c, #ff8c00); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
 
 input[type="range"] { -webkit-appearance: none; width: 100%; background: #555; height: 6px; border-radius: 3px; outline: none; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #f1c40f; cursor: pointer; }
@@ -468,36 +408,6 @@ input[type="number"] { background: #222; color: white; border: 1px solid #555; b
 @keyframes fast-flash { 0% { opacity: 1; transform: translateY(0); } 50% { opacity: 0.5; transform: translateY(-2px); } 100% { opacity: 1; transform: translateY(0); } }
 .result-pop { animation: pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 @keyframes pop-in { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
-
-.aura-js-void { background: linear-gradient(90deg, #2b00ff, #0a0a0a, #8a0000); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 3s linear infinite; font-weight: 900; background-size: 200% auto; text-shadow: 0 0 25px rgba(43, 0, 255, 0.8); }
-.aura-holy-angel { background: linear-gradient(90deg, #fff176, #ffeb3b, #ffa000); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite; font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 235, 59, 0.8); }
-.aura-lightning { background: linear-gradient(90deg, #00ffff, #7c4dff, #ffffff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 1.5s linear infinite; font-weight: 900; background-size: 200% auto; text-shadow: 0 0 25px rgba(0, 255, 255, 0.8); }
-
-.aura-cosmic-1 { background: linear-gradient(90deg, #ff0055, #aa00ff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite; font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 0, 85, 0.5); }
-.aura-cosmic-2 { background: linear-gradient(90deg, #ffaa00, #ff4500); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite; font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 170, 0, 0.5); }
-.aura-cosmic-3 { background: linear-gradient(90deg, #ff1493, #00ffff); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite; font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 20, 147, 0.5); }
-.aura-cosmic-4 { background: linear-gradient(90deg, #ff8c00, #f1c40f); -webkit-background-clip: text; color: transparent !important; animation: shine-anim 2s linear infinite; font-weight: 900; background-size: 200% auto; text-shadow: 0 0 20px rgba(255, 140, 0, 0.5); }
-
-.aura-divine-1 { background: linear-gradient(90deg, #00c6ff, #0072ff); -webkit-background-clip: text; color: transparent !important; font-weight: 900; }
-.aura-divine-2 { background: linear-gradient(90deg, #9b59b6, #ff69b4); -webkit-background-clip: text; color: transparent !important; font-weight: 900; }
-.aura-divine-3 { background: linear-gradient(90deg, #3498db, #8e44ad); -webkit-background-clip: text; color: transparent !important; font-weight: 900; }
-.aura-divine-4 { background: linear-gradient(90deg, #bdc3c7, #34495e); -webkit-background-clip: text; color: transparent !important; font-weight: 900; }
-.aura-divine-5 { background: linear-gradient(90deg, #2ecc71, #1abc9c); -webkit-background-clip: text; color: transparent !important; font-weight: 900; }
-
-.aura-mythic-1 { background: linear-gradient(90deg, #00ffff, #2980b9); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-.aura-mythic-2 { background: linear-gradient(90deg, #e74c3c, #e67e22); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-.aura-mythic-3 { background: linear-gradient(90deg, #00bcd4, #3f51b5); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-.aura-mythic-4 { background: linear-gradient(90deg, #cd853f, #d35400); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-.aura-mythic-5 { background: linear-gradient(90deg, #ff69b4, #8a2be2); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-.aura-mythic-6 { background: linear-gradient(90deg, #ba55d3, #9b59b6); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-
-.aura-legend-1 { background: linear-gradient(90deg, #ff4500, #f1c40f); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-.aura-legend-2 { background: linear-gradient(90deg, #f1c40f, #2ecc71); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-.aura-legend-3 { background: linear-gradient(90deg, #ff0000, #c0392b); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-.aura-legend-4 { background: linear-gradient(90deg, #9370db, #da70d6); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-.aura-legend-5 { background: linear-gradient(90deg, #dc143c, #ff8c00); -webkit-background-clip: text; color: transparent !important; font-weight: bold; }
-
-@keyframes shine-anim { to { background-position: 200% center; } }
 
 .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; opacity: 1; transition: opacity 0.5s ease-out; }
 #border-glow-overlay { transition: box-shadow 0.2s ease-out, opacity 0.5s ease-out; }
@@ -531,17 +441,5 @@ input[type="number"] { background: #222; color: white; border: 1px solid #555; b
 .flash-white { animation: flashWhite 0.5s ease-out forwards; }
 @keyframes flashWhite { 0% { background-color: black; } 50% { background-color: white; } 100% { background-color: transparent; } }
 
-.grade-section-header {
-    grid-column: 1 / -1;
-    font-size: 15px;
-    font-weight: 800;
-    color: #666;
-    text-align: center;
-    margin-top: 18px;
-    margin-bottom: 8px;
-    padding-bottom: 4px;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
-}
-.grade-section-header:first-child {
-    margin-top: 5px;
-}
+.grade-section-header { grid-column: 1 / -1; font-size: 15px; font-weight: 800; color: #666; text-align: center; margin-top: 18px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed rgba(255, 255, 255, 0.15); }
+.grade-section-header:first-child { margin-top: 5px; }
