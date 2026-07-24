@@ -22,13 +22,13 @@ const provider = new GoogleAuthProvider();
 
 let currentUser = null;
 
-// ⚡ 백그라운드 웹워커 오토롤
+// ⚡ 백그라운드 웹워커 오토롤 (개선된 버전)
 const workerCode = `
     let timer = null;
     self.onmessage = function(e) {
         if (e.data.command === 'start') {
             if (timer) clearInterval(timer);
-            timer = setInterval(() => { self.postMessage('tick'); }, e.data.interval || 200);
+            timer = setInterval(() => { self.postMessage('tick'); }, e.data.interval || 100);
         } else if (e.data.command === 'stop') {
             if (timer) clearInterval(timer);
             timer = null;
@@ -672,7 +672,7 @@ ui.autoRollBtn.addEventListener('click', () => {
     if (isAutoRolling) { 
         ui.autoRollBtn.innerText = "오토: ON"; 
         ui.autoRollBtn.classList.add('active'); 
-        autoWorker.postMessage({ command: 'start', interval: 250 });
+        autoWorker.postMessage({ command: 'start', interval: 100 });
         if (!isRolling) startRoll(); 
     } else { 
         ui.autoRollBtn.innerText = "오토: OFF"; 
