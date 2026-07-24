@@ -21,7 +21,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 let currentUser = null;
-let isDbHealthy = true; // 🛡️ DB 상태 플래그 (장애 발생 시 유저장터 차단용)
+let isDbHealthy = true; // 🛡️ DB 상태 플래그 (장애 발생 시 유저장터 완전 차단용)
 
 // ⚡ 백그라운드 웹워커 오토롤
 const workerCode = `
@@ -314,8 +314,8 @@ onAuthStateChanged(auth, async (user) => {
         const txt = "🔴 로그인 필요 (로컬 데이터 사용 중)";
         if (statusText) statusText.innerText = txt;
         if (statusTextSettings) statusTextSettings.innerText = txt;
-        loginBtns.forEach(b => b.classList.remove('hidden'));
-        logoutBtns.forEach(b => b.classList.add('hidden'));
+        loginBtns.forEach(b => b.classList.add('hidden'));
+        logoutBtns.forEach(b => b.classList.remove('hidden'));
         loadGame();
     }
 });
@@ -408,7 +408,7 @@ ui.submitCodeBtn.addEventListener('click', () => {
     } else { alert("❌ 존재하지 않거나 잘못된 코드입니다."); }
 });
 
-// 🏪 매물 취소 (안전 장치 포함)
+// 🏪 매물 취소
 window.cancelMarketListing = async function(listingId, auraId) {
     if (!isDbHealthy) { alert("⚠️ 서버 제한 상태입니다. 나중에 다시 시도해주세요."); return; }
     if (!confirm("정말 매물 등록을 취소하고 칭호를 회수하시겠습니까?")) return;
@@ -420,7 +420,7 @@ window.cancelMarketListing = async function(listingId, auraId) {
     } catch(e) { alert("취소 실패: " + e.message); }
 };
 
-// 🛒 장터 구매 (DB 트랜잭션 성공 후 로컬 차감 처리하여 무결성 보장)
+// 🛒 장터 구매
 window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
     if (!isDbHealthy) { alert("⚠️ 서버 데이터 보호를 위해 장터 구매가 임시 차단되었습니다."); return; }
     if (gameState.jc < price) { alert("❌ JC가 부족합니다!"); return; }
@@ -440,7 +440,6 @@ window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
             transaction.delete(marketRef);
         });
 
-        // DB 구매 성공 후에만 내 재화 및 인벤토리 업데이트
         gameState.jc -= price;
         gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
         if (!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId);
@@ -1485,21 +1484,46 @@ ui.saveProfileAllBtn.addEventListener('click', async () => {
 
 ui.closeProfile.addEventListener('click', () => { ui.profileModal.classList.add('hidden'); });
 
+// 🛡️ 장터 버튼 활성/비활성화 상태 제어 함수
+function setMarketButtonState(healthy) {
+    isDbHealthy = healthy;
+    if (!healthy) {
+        ui.marketBtn.style.opacity = "0.5";
+        ui.marketBtn.style.cursor = "not-allowed";
+        ui.marketBtn.title = "서버 장애/한도 초과로 일시 중지됨";
+    } else {
+        ui.marketBtn.style.opacity = "1.0";
+        ui.marketBtn.style.cursor = "pointer";
+        ui.marketBtn.title = "";
+    }
+}
+
+// 🛡️ 메인 화면의 [거래 장터] 버튼 클릭 시 차단 로직
 ui.marketBtn.addEventListener('click', async () => {
     if (!currentUser) { alert("❌ 거래 장터는 로그인 후 이용 가능합니다!"); return; }
+    
+    // DB가 비정상 상태면 장터 창을 절대 열지 않고 즉시 차단
+    if (!isDbHealthy) {
+        alert("⚠️ DB 서버 한도 초과 또는 연결 오류로 인해 현재 거래 장터를 이용할 수 없습니다.");
+        return;
+    }
+
     ui.marketModal.classList.remove('hidden');
     await loadMarketList();
 });
+
 ui.closeMarket.addEventListener('click', () => { ui.marketModal.classList.add('hidden'); });
 
-// 🛡️ DB 용량 제한 감지 및 안전 차단 조치 추가
+// 🛡️ 장터 매물 로드 및 DB 상태 체크 (에러 발생 시 즉시 장터 잠금)
 async function loadMarketList() {
     ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">⏳ 장터 매물 불러오는 중...</p>`;
     try {
         const marketQuery = query(collection(db, "market"), orderBy("createdAt", "desc"), limit(50));
         const querySnapshot = await getDocs(marketQuery);
+        
+        // 정상 연결 성공
+        setMarketButtonState(true);
         ui.marketItemGrid.innerHTML = '';
-        isDbHealthy = true; // DB 정상
 
         if (ui.openSellMarketBtn) ui.openSellMarketBtn.disabled = false;
 
@@ -1535,9 +1559,11 @@ async function loadMarketList() {
         }
     } catch(e) { 
         console.error("장터 로드 오류 (DB 한도 초과/오류 발생):", e); 
-        isDbHealthy = false; // DB 비정상 플래그 설정
-        if (ui.openSellMarketBtn) ui.openSellMarketBtn.disabled = true; // 등록 차단
-        ui.marketItemGrid.innerHTML = `<p style="color:#e74c3c; text-align:center; grid-column: 1 / -1;">⚠️ 서버 일일 용량이 초과되어 거래 기능이 안전하게 일시 중지되었습니다.<br>(오후 4시 자동 초기화)</p>`;
+        // ❌ 에러 발생 시 즉시 장터 버튼 잠금 및 창 닫기
+        setMarketButtonState(false);
+        ui.marketModal.classList.add('hidden');
+        if (ui.openSellMarketBtn) ui.openSellMarketBtn.disabled = true;
+        alert("⚠️ DB 서버 장애/용량 초과가 감지되어 유저장터가 안전하게 잠겼습니다.");
     }
 }
 
@@ -1586,7 +1612,6 @@ function updatePriceLimitUI() {
 ui.marketSellAuraSelect.addEventListener('change', updatePriceLimitUI);
 ui.closeRegisterMarket.addEventListener('click', () => { ui.registerMarketModal.classList.add('hidden'); });
 
-// 🛡️ 매물 등록 시 DB 쓰기 성공 확인 후 내 로컬 재화/인벤토리 차감 (롤백 보호)
 ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
     if (!isDbHealthy) { alert("⚠️ 서버 한도 초과 상태입니다."); return; }
     
@@ -1623,7 +1648,6 @@ ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
             });
         }
 
-        // DB에 쓰기 성공했을 때만 로컬 차감!
         gameState.inventory[auraId] -= count;
         if (gameState.inventory[auraId] === 0) delete gameState.inventory[auraId];
         saveGame(); updateInventory();
