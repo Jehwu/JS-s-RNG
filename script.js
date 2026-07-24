@@ -314,8 +314,11 @@ onAuthStateChanged(auth, async (user) => {
         const txt = "🔴 로그인 필요 (로컬 데이터 사용 중)";
         if (statusText) statusText.innerText = txt;
         if (statusTextSettings) statusTextSettings.innerText = txt;
+        
+        // 🛠️ 이 부분이 잘못 되어있던 곳입니다 (로그아웃 상태이므로 로그인 버튼을 보여주고 로그아웃 버튼을 숨김)
         loginBtns.forEach(b => b.classList.remove('hidden'));
         logoutBtns.forEach(b => b.classList.add('hidden'));
+        
         loadGame();
     }
 });
