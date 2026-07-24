@@ -5,8 +5,8 @@ import { CRAFT_ITEMS } from './craftItems.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 // ⚙️ 프로젝트의 Supabase URL과 Anon Key로 변경하세요.
-const SUPABASE_URL = "https://jsexzvxgrzbrdsvxxfwc.supabase.co/rest/v1/";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzZXh6dnhncnpicmRzdnh4ZndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODk0MzMsImV4cCI6MjEwMDQ2NTQzM30.YhEOoLgy50lJe1wdO7uJ7ZyIxTe56xxKDeJCGsF7Zu8";
+const SUPABASE_URL = "https://jsexzvxgrzbrdsvxxfwc.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_mKL_punb-wQOxbTsfFdUjA_DARRiphP";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
