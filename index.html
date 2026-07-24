@@ -104,11 +104,11 @@
             <div class="tab-group" style="display: flex; gap: 5px; margin: 15px 0 10px 0;">
                 <button id="rank-tab-rolls" class="action-btn craft-tab active" style="flex: 1; padding: 10px; font-weight: bold;">🎲 롤 횟수</button>
                 <button id="rank-tab-jc" class="action-btn craft-tab" style="flex: 1; padding: 10px; font-weight: bold;">🪙 JC 보유량</button>
-                <!-- 👑 명칭 변경: BEST 칭호 -->
                 <button id="rank-tab-aura" class="action-btn craft-tab" style="flex: 1; padding: 10px; font-weight: bold; background: #8e44ad;">👑 BEST 칭호</button>
             </div>
 
-            <div id="ranking-list-grid" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;"></div>
+            <div style="font-size: 11px; color: #888; text-align: right; margin-bottom: 8px;">* 랭킹은 15분마다 갱신됩니다.</div>
+            <div id="ranking-list-grid" style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;"></div>
         </div>
     </div>
 
@@ -154,7 +154,6 @@
                 <h2 id="profile-user-name" style="margin: 0; font-size: 20px;">유저 이름</h2>
                 <div id="profile-user-status" style="font-size: 13px; color: #f39c12; margin: 6px 0;">"한 줄 상태 메시지"</div>
                 
-                <!-- 👑 대표 칭호 카드 -->
                 <div style="margin: 10px 0;">
                     <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">👑 대표 칭호</div>
                     <div id="profile-title-card-slot"></div>
@@ -177,9 +176,7 @@
 
                     <label style="font-size: 11px; color: #ccc;">프로필 이미지 (파일 선택 / 아바타 / URL):</label>
                     <div style="display: flex; flex-direction: column; gap: 5px; margin: 3px 0 8px 0;">
-                        <!-- 📱 기기 파일 직접 업로드 버튼 추가 -->
                         <input type="file" id="edit-file-input" accept="image/*" style="font-size: 11px; color: #ccc;">
-                        
                         <div style="display: flex; gap: 5px;">
                             <input type="text" id="edit-photo-input" placeholder="https://... 또는 파일 선택" style="flex:1; padding: 6px; background: #111; color: white; border: 1px solid #555; border-radius: 5px; font-size:11px;">
                             <select id="edit-avatar-select" style="padding: 6px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; font-size:11px;">
@@ -236,12 +233,10 @@
         <div class="modal-content large">
             <span id="close-craft" class="close-btn">&times;</span>
             <h2>🔨 아이템 제작소</h2>
-            
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button id="craft-tab-gauntlet" class="action-btn craft-tab active" style="flex: 1; padding: 10px; font-weight: bold;">🥊 건틀렛</button>
                 <button id="craft-tab-amulet" class="action-btn craft-tab" style="flex: 1; padding: 10px; font-weight: bold; background: #8e44ad;">📜 부적</button>
             </div>
-
             <div id="craft-grid"></div>
         </div>
     </div>
@@ -270,18 +265,14 @@
             <span id="close-settings-hub" class="close-btn">&times;</span>
             <h2>⚙️ 설정 및 메뉴</h2>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                
                 <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
                     <p id="user-status-text-settings" style="color: #bbb; font-size: 12px; margin-bottom: 8px;">🟢 로그인 확인 중...</p>
                     <button class="google-login-btn" style="background: #4285F4; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;">🌐 Google 계정 로그인</button>
                     <button class="google-logout-btn hidden" style="background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;">로그아웃</button>
                 </div>
-
                 <button id="sound-settings-btn" class="main-menu-btn" style="padding: 12px;">🔊 사운드 설정</button>
                 <button id="grade-table-btn" class="main-menu-btn" style="padding: 12px;">📊 등급 및 확률 안내</button>
-                
                 <hr style="border: 0.5px solid #444; width: 100%; margin: 5px 0;">
-
                 <div style="text-align: left;">
                     <label style="font-size: 13px; font-weight: bold; color: #ccc;">🎁 쿠폰 입력</label>
                     <div style="display: flex; gap: 5px; margin-top: 5px;">
@@ -289,12 +280,9 @@
                         <button id="submit-code-btn" style="background: #27ae60; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; cursor: pointer;">확인</button>
                     </div>
                 </div>
-
                 <hr style="border: 0.5px solid #444; width: 100%; margin: 5px 0;">
-
                 <h3 style="margin: 0; font-size: 14px;">🗑️ 자동 판매 설정</h3>
                 <div id="auto-delete-options"></div>
-
                 <button id="dev-btn" style="background: transparent; border: none; color: #333; margin-top: 15px; cursor: pointer;">🛠️ 개발자 접근</button>
             </div>
         </div>

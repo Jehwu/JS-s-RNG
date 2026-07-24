@@ -21,8 +21,6 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 let currentUser = null;
-let isDbHealthy = true; 
-let needsCloudSync = false; 
 
 // ⚡ 백그라운드 웹워커 오토롤
 const workerCode = `
@@ -289,7 +287,6 @@ document.querySelectorAll('.google-login-btn').forEach(btn => {
     });
 });
 
-// 🛠️ 로그아웃 버튼 가시성 버그 수정 완료
 document.querySelectorAll('.google-logout-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         signOut(auth).then(() => { alert("로그아웃 되었습니다."); });
@@ -316,111 +313,32 @@ onAuthStateChanged(auth, async (user) => {
         const txt = "🔴 로그인 필요 (로컬 데이터 사용 중)";
         if (statusText) statusText.innerText = txt;
         if (statusTextSettings) statusTextSettings.innerText = txt;
-        loginBtns.forEach(b => b.classList.remove('hidden'));
-        logoutBtns.forEach(b => b.classList.add('hidden'));
+        loginBtns.forEach(b => b.classList.add('hidden'));
+        logoutBtns.forEach(b => b.classList.remove('hidden'));
         loadGame();
     }
 });
 
-// 🔄 [스마트 로컬/클라우드 저장 및 타임아웃 감지 시스템]
-function saveGame() { 
-    // 1. 무조건 로컬스토리지에 먼저 안전하게 저장
-    localStorage.setItem('js_rng_save', JSON.stringify(gameState)); 
-    
-    // 2. 로그인 상태이고 DB가 정상이면 클라우드 저장 시도
-    if (currentUser) {
-        if (isDbHealthy) {
-            saveGameToCloud();
-        } else {
-            needsCloudSync = true; // DB 차단 중이므로 로컬에 쌓아둠
-        }
-    }
-}
-
-// ⏱️ 타임아웃(3초)을 활용하여 에러를 확실히 잡아내는 클라우드 저장 함수
 async function saveGameToCloud() {
     if (!currentUser) return;
-    try {
-        const cloudPromise = setDoc(doc(db, "users", currentUser.uid), gameState);
-        
-        // 3초 동안 응답이 없거나 터지면 쿼타 초과로 간주
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("TIMEOUT_QUOTA_EXCEEDED")), 3000)
-        );
-
-        await Promise.race([cloudPromise, timeoutPromise]);
-
-        isDbHealthy = true;
-        setMarketButtonState(true);
-        needsCloudSync = false;
-    } catch (e) {
-        // 에러 코드나 타임아웃 발생 시 즉시 DB 차단 및 로컬 모드 전환
-        isDbHealthy = false;
-        setMarketButtonState(false);
-        needsCloudSync = true;
-        console.warn("⚠️ DB 응답 지연/할당량 초과 감지: 로컬 저장 모드로 전환합니다.");
-    }
+    try { await setDoc(doc(db, "users", currentUser.uid), gameState); } catch (e) { console.error("클라우드 저장 실패:", e); }
 }
 
 async function loadGameFromCloud() {
     if (!currentUser) return;
     try {
         const docRef = doc(db, "users", currentUser.uid);
-        const loadPromise = getDoc(docRef);
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("TIMEOUT_QUOTA_EXCEEDED")), 3000)
-        );
-
-        const docSnap = await Promise.race([loadPromise, timeoutPromise]);
-
+        const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             gameState = { ...gameState, ...docSnap.data() };
-            isDbHealthy = true;
-            setMarketButtonState(true);
             updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
-        } else { 
-            await saveGameToCloud(); 
-        }
-    } catch (e) { 
-        isDbHealthy = false;
-        setMarketButtonState(false);
-        loadGame(); // 서버 로드 실패 시 로컬 데이터 사용
-    }
+        } else { await saveGameToCloud(); }
+    } catch (e) { console.error("클라우드 로드 실패:", e); }
 }
 
-// 🔄 주기적으로(30초마다) DB가 살아났는지 핑(Ping)을 날리고, 살아나면 로컬 데이터를 자동 동기화!
-setInterval(async () => {
-    if (!currentUser) return;
-    try {
-        const docRef = doc(db, "users", currentUser.uid);
-        const pingPromise = getDoc(docRef);
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("TIMEOUT")), 3000)
-        );
-
-        await Promise.race([pingPromise, timeoutPromise]);
-
-        // 무사히 응답이 오면 DB 정상 복구 완료!
-        if (!isDbHealthy || needsCloudSync) {
-            isDbHealthy = true;
-            setMarketButtonState(true);
-            if (needsCloudSync) {
-                await saveGameToCloud(); // 🔄 로컬에 쌓아둔 데이터를 클라우드로 자동 동기화
-                console.log("✨ DB 한도가 풀려 로컬 데이터가 클라우드에 성공적으로 동기화되었습니다.");
-            }
-        }
-    } catch (e) {
-        isDbHealthy = false;
-        setMarketButtonState(false);
-    }
-}, 30000);
-
-window.addEventListener('beforeunload', () => {
-    if (currentUser) {
-        saveGameToCloud();
-        updateRankData();
-    }
-});
+function saveGame() { 
+    localStorage.setItem('js_rng_save', JSON.stringify(gameState)); 
+}
 
 function loadGame() {
     const savedData = localStorage.getItem('js_rng_save');
@@ -442,7 +360,16 @@ function loadGame() {
     updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
 }
 
-// 🔒 쿠폰 처리
+window.addEventListener('beforeunload', () => {
+    if (currentUser) {
+        const savedData = localStorage.getItem('js_rng_save');
+        if (savedData) {
+            const finalState = JSON.parse(savedData);
+            setDoc(doc(db, "users", currentUser.uid), finalState).catch(err => console.error("종료 시 저장 실패:", err));
+        }
+    }
+});
+
 ui.submitCodeBtn.addEventListener('click', () => {
     const codeVal = ui.codeInput.value.trim().toUpperCase();
     if (!gameState.usedCodes) gameState.usedCodes = [];
@@ -455,44 +382,40 @@ ui.submitCodeBtn.addEventListener('click', () => {
     if (codeVal === "RANKING") {
         gameState.usedCodes.push("RANKING");
         gameState.itemInventory["void_potion"] = (gameState.itemInventory["void_potion"] || 0) + 1;
-        saveGame(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        saveGame(); saveGameToCloud(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
         alert("🎉 [RANKING 쿠폰 성공!] 🧪 공허의 물약 1개가 지급되었습니다!");
     } else if (codeVal === "PROFILE") {
         gameState.usedCodes.push("PROFILE");
         gameState.jc += 1000000;
         gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 2;
-        saveGame(); updateStatsUI(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        saveGame(); saveGameToCloud(); updateStatsUI(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
         alert("🎉 [PROFILE 쿠폰 성공!] 🪙 100만 JC & 🧪 극복의 물약 2개가 지급되었습니다!");
     } else if (codeVal === "QUEST1") {
         gameState.usedCodes.push("QUEST1");
         gameState.jc += 1000000;
         gameState.itemInventory["limit_potion"] = (gameState.itemInventory["limit_potion"] || 0) + 5;
         gameState.itemInventory["overcome_potion"] = (gameState.itemInventory["overcome_potion"] || 0) + 1;
-        saveGame(); updateStatsUI(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        saveGame(); saveGameToCloud(); updateStatsUI(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
         alert("🎉 [QUEST1 쿠폰 성공!] 100만 JC, 한계의 물약 5개, 극복의 물약 1개가 지급되었습니다!");
     } else if (codeVal === "SPEEEED") {
         gameState.usedCodes.push("SPEEEED");
         gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 3;
-        saveGame(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
+        saveGame(); saveGameToCloud(); updateItemInventory(); ui.codeInput.value = ''; ui.settingsHubModal.classList.add('hidden');
         alert("🎉 [SPEEEED 쿠폰 성공!] 천상의 물약 3개가 지급되었습니다!");
     } else { alert("❌ 존재하지 않거나 잘못된 코드입니다."); }
 });
 
-// 🏪 매물 취소
 window.cancelMarketListing = async function(listingId, auraId) {
-    if (!isDbHealthy) { alert("⚠️ 서버 제한 상태입니다. 나중에 다시 시도해주세요."); return; }
     if (!confirm("정말 매물 등록을 취소하고 칭호를 회수하시겠습니까?")) return;
     try {
         await deleteDoc(doc(db, "market", listingId));
         gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
-        saveGame(); updateInventory(); await loadMarketList();
+        saveGame(); saveGameToCloud(); updateInventory(); await loadMarketList();
         alert("🔄 매물이 취소되고 칭호가 인벤토리로 반환되었습니다.");
     } catch(e) { alert("취소 실패: " + e.message); }
 };
 
-// 🛒 장터 구매
 window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
-    if (!isDbHealthy) { alert("⚠️ 서버 데이터 보호를 위해 장터 구매가 임시 차단되었습니다."); return; }
     if (gameState.jc < price) { alert("❌ JC가 부족합니다!"); return; }
 
     try {
@@ -514,7 +437,7 @@ window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
         gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
         if (!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId);
 
-        saveGame(); updateStatsUI(); updateInventory();
+        saveGame(); saveGameToCloud(); updateStatsUI(); updateInventory();
         await loadMarketList();
         alert("🎉 구매를 완료했습니다!");
     } catch(e) { alert("구매 실패: " + e); }
@@ -529,6 +452,12 @@ window.forceDeleteMarketItem = async function(listingId) {
     } catch(e) { alert("삭제 실패: " + e.message); }
 };
 
+setInterval(async () => {
+    if (currentUser) {
+        await updateRankData();
+    }
+}, 15 * 60 * 1000);
+
 function getBestAuraInfo() {
     if (!gameState.discoveredAuras || gameState.discoveredAuras.length === 0) return { name: "없음", in: 0 };
     let best = { name: "없음", in: 0 };
@@ -542,7 +471,7 @@ function getBestAuraInfo() {
 }
 
 async function updateRankData() {
-    if (!currentUser || !isDbHealthy) return;
+    if (!currentUser) return;
     try {
         const gearItem = gameState.gear ? CRAFT_ITEMS.find(g => g.id === gameState.gear) : null;
         const amuletItem = gameState.amulet ? CRAFT_ITEMS.find(a => a.id === gameState.amulet) : null;
@@ -567,9 +496,7 @@ async function updateRankData() {
             statusMsg: gameState.statusMsg || "운빨 최강 도전 중!",
             lastUpdated: Date.now()
         }, { merge: true });
-    } catch(e) { 
-        isDbHealthy = false;
-    }
+    } catch(e) { console.error("랭킹 데이터 업데이트 실패:", e); }
 }
 
 document.getElementById('game-start-btn').addEventListener('click', () => {
@@ -609,9 +536,9 @@ ui.soundToggleBtn.addEventListener('click', () => {
     if (!soundSettings.enabled) stopBgm(); else playBgm(document.getElementById('lobby-screen').classList.contains('hidden') ? 'main' : 'lobby');
 });
 
-window.cheatJC = function() { gameState.jc += 1000000; updateStatsUI(); saveGame(); alert("100만 JC 지급!"); }
-window.cheatLuck = function() { gameState.luck = 10000; updateStatsUI(); saveGame(); alert("운 10,000배!"); }
-window.cheatItems = function() { AURA_DATA.forEach(a => { gameState.inventory[a.id] = (gameState.inventory[a.id] || 0) + 50; if(!gameState.discoveredAuras.includes(a.id)) gameState.discoveredAuras.push(a.id); }); saveGame(); updateInventory(); updateCraftUI(); alert("칭호 50개씩 지급 및 도감 등록!"); }
+window.cheatJC = function() { gameState.jc += 1000000; updateStatsUI(); saveGame(); saveGameToCloud(); alert("100만 JC 지급!"); }
+window.cheatLuck = function() { gameState.luck = 10000; updateStatsUI(); saveGame(); saveGameToCloud(); alert("운 10,000배!"); }
+window.cheatItems = function() { AURA_DATA.forEach(a => { gameState.inventory[a.id] = (gameState.inventory[a.id] || 0) + 50; if(!gameState.discoveredAuras.includes(a.id)) gameState.discoveredAuras.push(a.id); }); saveGame(); saveGameToCloud(); updateInventory(); updateCraftUI(); alert("칭호 50개씩 지급 및 도감 등록!"); }
 
 window.cheatCompleteQuests = function() {
     QUEST_DATA.forEach(q => {
@@ -619,7 +546,7 @@ window.cheatCompleteQuests = function() {
         if (!gameState.completedQuests.includes(q.id)) gameState.completedQuests.push(q.id);
     });
     gameState.quickRollUnlocked = true;
-    saveGame(); updateQuestUI(); updateQuickRollUI();
+    saveGame(); saveGameToCloud(); updateQuestUI(); updateQuickRollUI();
     alert("📜 모든 퀘스트 완료 및 빠른 롤 기능이 해금되었습니다!");
 };
 
@@ -627,7 +554,7 @@ window.cheatAllCraftItems = function() {
     CRAFT_ITEMS.forEach(item => {
         if (!gameState.craftedGears.includes(item.id)) gameState.craftedGears.push(item.id);
     });
-    saveGame(); updateCraftUI();
+    saveGame(); saveGameToCloud(); updateCraftUI();
     alert("🔨 모든 제작 아이템을 해금 및 획득했습니다!");
 };
 
@@ -637,7 +564,6 @@ ui.devBtn.addEventListener('click', () => {
     const pwd = prompt("🛠️ 개발자 모드 접근\n비밀번호를 입력하세요:");
     if (pwd === "로블록스33") {
         backupGameState = JSON.parse(JSON.stringify(gameState));
-        disableSave = true;
         ui.mainDevBtn.classList.remove('hidden'); ui.settingsHubModal.classList.add('hidden');
         alert("✅ [개발자 모드 ON] 메인 화면에 '개발자 패널' 버튼이 추가되었으며, 유저장터 강제 삭제 기능이 활성화됩니다.");
         const select = document.getElementById('dev-aura-select');
@@ -651,9 +577,7 @@ ui.closeDev.addEventListener('click', () => { ui.devModal.classList.add('hidden'
 
 window.exitDevMode = function() {
     if (backupGameState) gameState = JSON.parse(JSON.stringify(backupGameState));
-    backupGameState = null; 
-    disableSave = false;
-    saveGame();
+    backupGameState = null; saveGame(); saveGameToCloud();
     ui.mainDevBtn.classList.add('hidden'); updateStatsUI(); updateInventory(); updateCraftUI(); ui.devModal.classList.add('hidden'); alert("🚪 개발자 모드를 종료하고 복구했습니다!");
 }
 
@@ -983,7 +907,9 @@ document.getElementById('confirm-sell-btn').addEventListener('click', () => {
     const highGrades = ["LEGEND", "MYTHIC", "DIVINE", "COSMIC", "JS"];
     if (highGrades.includes(auraInfo.grade)) { if (!window.confirm(`⚠️ [경고] ${auraInfo.grade} 등급 칭호입니다!\n정말로 ${sellAmount}개를 판매하시겠습니까?`)) return; } 
     gameState.inventory[currentSellId] -= sellAmount; if (gameState.inventory[currentSellId] === 0) delete gameState.inventory[currentSellId]; 
-    const earnedJC = auraInfo.jcValue * sellAmount; gameState.jc += earnedJC; saveGame(); updateStatsUI(); updateInventory(); updateCraftUI(); 
+    const earnedJC = auraInfo.jcValue * sellAmount; gameState.jc += earnedJC; 
+    saveGame(); saveGameToCloud();
+    updateStatsUI(); updateInventory(); updateCraftUI(); 
     ui.sellModal.classList.add('hidden');
 });
 
@@ -1023,7 +949,8 @@ document.getElementById('confirm-buy-btn').addEventListener('click', () => {
 
     trackQuestProgress("shopPurchases", buyAmount);
 
-    saveGame(); updateStatsUI(); buildShopUI();
+    saveGame(); saveGameToCloud();
+    updateStatsUI(); buildShopUI();
     ui.buyModal.classList.add('hidden');
     alert(`🎉 '${item.name}' ${buyAmount}개 구매 완료!`);
 });
@@ -1103,7 +1030,8 @@ document.getElementById('confirm-use-btn').addEventListener('click', () => {
         gameState.activeMultBuffs.push({ name: item.name, bonus: item.value, uses: item.maxUses * amount });
     }
 
-    saveGame(); updateStatsUI(); updateItemInventory();
+    saveGame(); saveGameToCloud();
+    updateStatsUI(); updateItemInventory();
     ui.usePotionModal.classList.add('hidden');
     alert(`✨ '${item.name}' ${amount}개 사용 완료!`);
 });
@@ -1112,7 +1040,7 @@ window.startQuest = function(qId) {
     if (gameState.activeQuest) { alert("⚠️ 이미 진행 중인 퀘스트가 있습니다!"); return; }
     gameState.activeQuest = qId;
     if (!gameState.questProgress[qId]) gameState.questProgress[qId] = { rolls: 0, divine: 0, cosmic: 0, shopPurchases: 0 };
-    saveGame(); updateQuestUI(); alert("📜 퀘스트를 시작했습니다!");
+    saveGame(); saveGameToCloud(); updateQuestUI(); alert("📜 퀘스트를 시작했습니다!");
 };
 
 window.claimQuestReward = function(qId) {
@@ -1128,7 +1056,7 @@ window.claimQuestReward = function(qId) {
         gameState.itemInventory["heaven_potion"] = (gameState.itemInventory["heaven_potion"] || 0) + 5;
     }
 
-    saveGame(); updateQuestUI(); updateQuickRollUI();
+    saveGame(); saveGameToCloud(); updateQuestUI(); updateQuickRollUI();
     alert(`🎉 퀘스트 완료! 보상이 지급되었습니다:\n${quest.rewardDesc}`);
 };
 
@@ -1249,7 +1177,8 @@ window.craftGear = function(gearId) {
     gameState.craftedGears.push(gearId); 
     if (gear.category === "amulet") { gameState.amulet = gearId; gameState.amuletStack = 0; } 
     else { gameState.gear = gearId; }
-    saveGame(); updateStatsUI(); updateInventory(); updateCraftUI(); 
+    saveGame(); saveGameToCloud();
+    updateStatsUI(); updateInventory(); updateCraftUI(); 
     alert(`🎉 '${gear.name}' 제작 완료!`); 
 }
 
@@ -1257,14 +1186,14 @@ window.equipGear = function(gearId) {
     const item = CRAFT_ITEMS.find(g => g.id === gearId);
     if (item.category === "amulet") { gameState.amulet = gearId; gameState.amuletStack = 0; } 
     else { gameState.gear = gearId; }
-    saveGame(); updateStatsUI(); updateCraftUI(); 
+    saveGame(); saveGameToCloud(); updateStatsUI(); updateCraftUI(); 
 }
 
 window.unequipGear = function(gearId) { 
     const item = CRAFT_ITEMS.find(g => g.id === gearId);
     if (item.category === "amulet") { gameState.amulet = null; gameState.amuletStack = 0; } 
     else { gameState.gear = null; }
-    saveGame(); updateStatsUI(); updateCraftUI(); 
+    saveGame(); saveGameToCloud(); updateStatsUI(); updateCraftUI(); 
 }
 
 ui.craftTabGauntlet.addEventListener('click', () => {
@@ -1371,7 +1300,7 @@ function buildAutoDeleteUI() {
         ui.autoDeleteOptions.appendChild(row); 
         document.getElementById(`auto-del-${grade}`).addEventListener('change', (e) => { 
             gameState.autoDelete[grade] = e.target.checked; 
-            saveGame(); 
+            saveGame(); saveGameToCloud();
         }); 
     } 
 }
@@ -1438,7 +1367,7 @@ async function loadRankingList(tabType) {
         }
     } catch(e) {
         console.error("랭킹 로드 오류:", e);
-        ui.rankingListGrid.innerHTML = `<p style="color:#e74c3c; text-align:center;">⚠️ 서버 연결 대기 중입니다.</p>`;
+        ui.rankingListGrid.innerHTML = `<p style="color:#e74c3c; text-align:center;">랭킹을 불러올 수 없습니다.</p>`;
     }
 }
 
@@ -1548,7 +1477,7 @@ ui.saveProfileAllBtn.addEventListener('click', async () => {
     gameState.selectedTitleAuraId = titleId;
     gameState.statusMsg = msg;
 
-    saveGame();
+    saveGame(); saveGameToCloud();
     await updateRankData();
     await openUserProfileModal(currentUser.uid);
     alert("✨ 프로필 설정이 업데이트 되었습니다!");
@@ -1556,58 +1485,19 @@ ui.saveProfileAllBtn.addEventListener('click', async () => {
 
 ui.closeProfile.addEventListener('click', () => { ui.profileModal.classList.add('hidden'); });
 
-// 🛡️ 장터 버튼 활성/비활성화 상태 제어 함수
-function setMarketButtonState(healthy) {
-    isDbHealthy = healthy;
-    if (!healthy) {
-        ui.marketBtn.style.opacity = "0.5";
-        ui.marketBtn.style.cursor = "not-allowed";
-        ui.marketBtn.title = "서버 한도 초과로 일시 중지됨";
-    } else {
-        ui.marketBtn.style.opacity = "1.0";
-        ui.marketBtn.style.cursor = "pointer";
-        ui.marketBtn.title = "";
-    }
-}
-
-// 🛡️ 메인 화면의 [거래 장터] 버튼 클릭 시 차단 로직
 ui.marketBtn.addEventListener('click', async () => {
     if (!currentUser) { alert("❌ 거래 장터는 로그인 후 이용 가능합니다!"); return; }
-    
-    // DB가 비정상(할당량 초과)일 때만 장터 차단
-    if (!isDbHealthy) {
-        alert("⚠️ DB 서버 한도 초과(Quota exceeded)로 인해 현재 거래 장터를 이용할 수 없습니다. (정상화되면 자동 개방)");
-        return;
-    }
-
     ui.marketModal.classList.remove('hidden');
     await loadMarketList();
 });
-
 ui.closeMarket.addEventListener('click', () => { ui.marketModal.classList.add('hidden'); });
 
-// 🛡️ 장터 매물 로드 (타임아웃 감지 적용)
 async function loadMarketList() {
-    if (!isDbHealthy) {
-        ui.marketModal.classList.add('hidden');
-        alert("⚠️ 현재 서버 할당량 초과 상태입니다.");
-        return;
-    }
-
     ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">⏳ 장터 매물 불러오는 중...</p>`;
     try {
         const marketQuery = query(collection(db, "market"), orderBy("createdAt", "desc"), limit(50));
-        const loadPromise = getDocs(marketQuery);
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("TIMEOUT")), 3000)
-        );
-
-        const querySnapshot = await Promise.race([loadPromise, timeoutPromise]);
-        
-        setMarketButtonState(true);
+        const querySnapshot = await getDocs(marketQuery);
         ui.marketItemGrid.innerHTML = '';
-
-        if (ui.openSellMarketBtn) ui.openSellMarketBtn.disabled = false;
 
         querySnapshot.forEach((docSnap) => {
             const item = docSnap.data();
@@ -1623,8 +1513,7 @@ async function loadMarketList() {
                 `<button class="action-btn" style="background:#888;" onclick="cancelMarketListing('${itemId}', '${item.auraId}')">취소하기</button>` :
                 `<button class="action-btn buy" onclick="buyMarketItem('${itemId}', '${item.sellerUid}', '${item.auraId}', ${item.price})">구매하기</button>`;
 
-            let devDeleteBtn = disableSave ? 
-                `<button class="action-btn" style="background:#e74c3c; margin-top:5px; font-size:10px;" onclick="forceDeleteMarketItem('${itemId}')">🗑️ 강제 삭제</button>` : '';
+            let devDeleteBtn = `<button class="action-btn" style="background:#e74c3c; margin-top:5px; font-size:10px;" onclick="forceDeleteMarketItem('${itemId}')">🗑️ 강제 삭제</button>`;
 
             tile.innerHTML = `
                 <div style="font-size: 11px; color:#aaa;">판매자: ${item.sellerName}</div>
@@ -1639,20 +1528,11 @@ async function loadMarketList() {
         if (querySnapshot.empty) {
             ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">현재 장터에 등록된 칭호가 없습니다.</p>`;
         }
-    } catch(e) { 
-        console.error("장터 로드 오류:", e);
-        isDbHealthy = false;
-        setMarketButtonState(false);
-        ui.marketModal.classList.add('hidden');
-        if (ui.openSellMarketBtn) ui.openSellMarketBtn.disabled = true;
-        alert("⚠️ 파이어베이스 무료 용량 초과로 장터가 일시 중지되었습니다.");
-    }
+    } catch(e) { console.error("장터 로드 오류:", e); }
 }
 
 ui.openSellMarketBtn.addEventListener('click', () => {
     if (!currentUser) return;
-    if (!isDbHealthy) { alert("⚠️ 현재 서버 용량 제한으로 매물 등록이 불가능합니다."); return; }
-    
     const select = ui.marketSellAuraSelect;
     select.innerHTML = '';
     
@@ -1695,8 +1575,6 @@ ui.marketSellAuraSelect.addEventListener('change', updatePriceLimitUI);
 ui.closeRegisterMarket.addEventListener('click', () => { ui.registerMarketModal.classList.add('hidden'); });
 
 ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
-    if (!isDbHealthy) { alert("⚠️ 서버 한도 초과 상태입니다."); return; }
-    
     const auraId = ui.marketSellAuraSelect.value;
     const count = parseInt(ui.marketSellCount.value);
     const price = parseInt(ui.marketSellPrice.value);
@@ -1717,6 +1595,11 @@ ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
         return;
     }
 
+    gameState.inventory[auraId] -= count;
+    if (gameState.inventory[auraId] === 0) delete gameState.inventory[auraId];
+
+    saveGame(); saveGameToCloud(); updateInventory();
+
     try {
         const name = gameState.customNickname || currentUser.displayName || "무명 유저";
         for (let i = 0; i < count; i++) {
@@ -1729,19 +1612,10 @@ ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
                 createdAt: Date.now() + i
             });
         }
-
-        gameState.inventory[auraId] -= count;
-        if (gameState.inventory[auraId] === 0) delete gameState.inventory[auraId];
-        saveGame(); updateInventory();
-
         ui.registerMarketModal.classList.add('hidden');
         await loadMarketList();
-        alert(`🎉 성공적으로 칭호 ${count}개를 거래소에 등록했습니다!`);
-    } catch(e) { 
-        isDbHealthy = false;
-        setMarketButtonState(false);
-        alert("❌ 등록 실패 (DB 서버 응답 없음/용량 초과): 아이템이 차감되지 않았습니다."); 
-    }
+        alert(`🎉 성공적으로 칭호 ${count}개를 각각의 매물로 연달아 등록했습니다!`);
+    } catch(e) { alert("등록 실패: " + e.message); }
 });
 
 ui.btn.addEventListener('click', startRoll);
@@ -1750,6 +1624,6 @@ ui.itemInvenBtn.addEventListener('click', () => { updateItemInventory(); ui.item
 ui.shopBtn.addEventListener('click', () => { ui.shopModal.classList.remove('hidden'); }); ui.closeShop.addEventListener('click', () => { ui.shopModal.classList.add('hidden'); });
 ui.indexBtn.addEventListener('click', () => { updateIndex(); ui.indexModal.classList.remove('hidden'); }); ui.closeIndex.addEventListener('click', () => { ui.indexModal.classList.add('hidden'); });
 ui.questBtn.addEventListener('click', () => { updateQuestUI(); ui.questModal.classList.remove('hidden'); }); ui.closeQuest.addEventListener('click', () => { ui.questModal.classList.add('hidden'); });
-ui.craftBtn.addEventListener('click', () => { updateCraftUI(); ui.craftModal.classList.remove('hidden'); }); ui.closeCraft.addEventListener('click', () => { ui.closeCraft.classList.add('hidden'); });
+ui.craftBtn.addEventListener('click', () => { updateCraftUI(); ui.craftModal.classList.remove('hidden'); }); ui.closeCraft.addEventListener('click', () => { ui.craftModal.classList.add('hidden'); });
 
 loadGame();
