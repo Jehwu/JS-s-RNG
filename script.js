@@ -21,7 +21,8 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 let currentUser = null;
-let isDbHealthy = true; // 🛡️ DB 상태 플래그 (장애 발생 시 유저장터 완전 차단용)
+let isDbHealthy = true; // 🛡️ DB 상태 플래그 (true: 정상, false: 용량 초과로 장터 차단 & 로컬 모드)
+let needsCloudSync = false; // 🔄 로컬에 변경사항이 있어 나중에 DB 복구 시 동기화 필요 여부
 
 // ⚡ 백그라운드 웹워커 오토롤
 const workerCode = `
@@ -314,29 +315,42 @@ onAuthStateChanged(auth, async (user) => {
         const txt = "🔴 로그인 필요 (로컬 데이터 사용 중)";
         if (statusText) statusText.innerText = txt;
         if (statusTextSettings) statusTextSettings.innerText = txt;
-        
-        // 🛠️ 이 부분이 잘못 되어있던 곳입니다 (로그아웃 상태이므로 로그인 버튼을 보여주고 로그아웃 버튼을 숨김)
         loginBtns.forEach(b => b.classList.remove('hidden'));
         logoutBtns.forEach(b => b.classList.add('hidden'));
-        
         loadGame();
     }
 });
 
+// 🔄 [핵심 저장 및 스마트 동기화 시스템]
 function saveGame() { 
-    // 🛡️ 로그인 여부와 상관없이 무조건 로컬에 먼저 안전하게 저장!
+    // 1. 무조건 로컬에 먼저 안전하게 저장
     localStorage.setItem('js_rng_save', JSON.stringify(gameState)); 
+    
+    // 2. 로그인 상태라면 DB 저장 시도
     if (currentUser) {
-        saveGameToCloud();
+        if (isDbHealthy) {
+            saveGameToCloud();
+        } else {
+            // DB가 막혀있는 동안에는 로컬에 쌓아두고 나중에 풀리면 동기화하도록 체크
+            needsCloudSync = true;
+        }
     }
 }
 
 async function saveGameToCloud() {
     if (!currentUser) return;
     try { 
-        await setDoc(doc(db, "users", currentUser.uid), gameState); 
+        await setDoc(doc(db, "users", currentUser.uid), gameState);
+        isDbHealthy = true; // 성공하면 DB 상태 정상으로 확정
+        setMarketButtonState(true);
+        needsCloudSync = false; // 동기화 완료
     } catch (e) { 
-        console.warn("클라우드 저장 실패 (로컬 데이터로 안전하게 보호됨):", e); 
+        if (e.code === 'resource-exhausted' || (e.message && e.message.includes('Quota exceeded'))) {
+            isDbHealthy = false; // 🛑 DB 용량 초과 감지! 장터 잠금 및 로컬 모드 전환
+            setMarketButtonState(false);
+            needsCloudSync = true;
+        }
+        console.warn("클라우드 저장 대기 중 (로컬에 안전 저장됨):", e); 
     }
 }
 
@@ -347,10 +361,43 @@ async function loadGameFromCloud() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             gameState = { ...gameState, ...docSnap.data() };
+            isDbHealthy = true;
+            setMarketButtonState(true);
             updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
         } else { await saveGameToCloud(); }
-    } catch (e) { console.error("클라우드 로드 실패:", e); }
+    } catch (e) { 
+        if (e.code === 'resource-exhausted' || (e.message && e.message.includes('Quota exceeded'))) {
+            isDbHealthy = false;
+            setMarketButtonState(false);
+        }
+        loadGame(); // 서버 로드 실패 시 로컬 데이터로 대체
+    }
 }
+
+// 주기적으로(30초마다) DB 상태를 체크하여 풀렸는지 확인하고, 풀렸다면 로컬 데이터를 클라우드로 자동 동기화!
+setInterval(async () => {
+    if (!currentUser) return;
+    try {
+        // 가벼운 읽기 테스트로 DB가 살아났는지 확인
+        const docRef = doc(db, "users", currentUser.uid);
+        await getDoc(docRef);
+        
+        // 여기까지 에러 없이 도달했다면 DB가 정상 복구된 것임!
+        if (!isDbHealthy || needsCloudSync) {
+            isDbHealthy = true;
+            setMarketButtonState(true);
+            if (needsCloudSync) {
+                await saveGameToCloud(); // 🔄 로컬에 쌓아둔 데이터를 클라우드로 자동 동기화!
+                console.log("✨ DB 한도가 풀려 로컬 데이터가 클라우드에 성공적으로 동기화되었습니다.");
+            }
+        }
+    } catch (e) {
+        if (e.code === 'resource-exhausted' || (e.message && e.message.includes('Quota exceeded'))) {
+            isDbHealthy = false;
+            setMarketButtonState(false);
+        }
+    }
+}, 30000);
 
 window.addEventListener('beforeunload', () => {
     if (currentUser) {
@@ -479,7 +526,7 @@ function getBestAuraInfo() {
 }
 
 async function updateRankData() {
-    if (!currentUser) return;
+    if (!currentUser || !isDbHealthy) return;
     try {
         const gearItem = gameState.gear ? CRAFT_ITEMS.find(g => g.id === gameState.gear) : null;
         const amuletItem = gameState.amulet ? CRAFT_ITEMS.find(a => a.id === gameState.amulet) : null;
@@ -504,7 +551,9 @@ async function updateRankData() {
             statusMsg: gameState.statusMsg || "운빨 최강 도전 중!",
             lastUpdated: Date.now()
         }, { merge: true });
-    } catch(e) { console.warn("랭킹 업데이트 대기 중:", e); }
+    } catch(e) { 
+        if (e.code === 'resource-exhausted') isDbHealthy = false;
+    }
 }
 
 document.getElementById('game-start-btn').addEventListener('click', () => {
@@ -1497,7 +1546,7 @@ function setMarketButtonState(healthy) {
     if (!healthy) {
         ui.marketBtn.style.opacity = "0.5";
         ui.marketBtn.style.cursor = "not-allowed";
-        ui.marketBtn.title = "서버 장애/한도 초과로 일시 중지됨";
+        ui.marketBtn.title = "서버 할당량 초과로 임시 차단됨";
     } else {
         ui.marketBtn.style.opacity = "1.0";
         ui.marketBtn.style.cursor = "pointer";
@@ -1505,16 +1554,13 @@ function setMarketButtonState(healthy) {
     }
 }
 
-// 🛡️ 메인 화면의 [거래 장터] 버튼 클릭 시 엄격한 차단 로직
+// 🛡️ 메인 화면의 [거래 장터] 버튼 클릭 시 차단 로직
 ui.marketBtn.addEventListener('click', async () => {
-    if (!currentUser) { 
-        alert("❌ 거래 장터는 로그인 후 이용 가능합니다!"); 
-        return; 
-    }
+    if (!currentUser) { alert("❌ 거래 장터는 로그인 후 이용 가능합니다!"); return; }
     
-    // 🛑 DB가 비정상 상태이면 모달 창을 절대 열지 않고 즉시 차단!
+    // DB가 비정상(할당량 초과)일 때만 장터 차단
     if (!isDbHealthy) {
-        alert("⚠️ DB 서버 한도 초과 또는 연결 오류로 인해 현재 거래 장터를 이용할 수 없습니다.");
+        alert("⚠️ DB 서버 한도 초과(Quota exceeded)로 인해 현재 거래 장터를 이용할 수 없습니다. (정상화되면 자동 개방)");
         return;
     }
 
@@ -1524,14 +1570,19 @@ ui.marketBtn.addEventListener('click', async () => {
 
 ui.closeMarket.addEventListener('click', () => { ui.marketModal.classList.add('hidden'); });
 
-// 🛡️ 장터 매물 로드 및 DB 상태 체크 (에러 발생 시 즉시 장터 잠금)
+// 🛡️ 장터 매물 로드 (정상일 때는 열리고, 터졌을 때만 잠김)
 async function loadMarketList() {
+    if (!isDbHealthy) {
+        ui.marketModal.classList.add('hidden');
+        alert("⚠️ 현재 서버 할당량 초과 상태입니다.");
+        return;
+    }
+
     ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">⏳ 장터 매물 불러오는 중...</p>`;
     try {
         const marketQuery = query(collection(db, "market"), orderBy("createdAt", "desc"), limit(50));
         const querySnapshot = await getDocs(marketQuery);
         
-        // 정상 연결 성공 시
         setMarketButtonState(true);
         ui.marketItemGrid.innerHTML = '';
 
@@ -1568,14 +1619,13 @@ async function loadMarketList() {
             ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">현재 장터에 등록된 칭호가 없습니다.</p>`;
         }
     } catch(e) { 
-        console.error("장터 로드 오류 (DB 한도 초과/오류 발생):", e); 
-        
-        // ❌ 에러 발생 시 즉시 장터 상태를 비정상으로 잠그고 창을 강제로 닫음
-        setMarketButtonState(false);
-        ui.marketModal.classList.add('hidden');
-        if (ui.openSellMarketBtn) ui.openSellMarketBtn.disabled = true;
-        
-        alert("⚠️ DB 서버 장애/용량 초과가 감지되어 유저장터가 안전하게 차단되었습니다.");
+        console.error("장터 로드 오류:", e); 
+        if (e.code === 'resource-exhausted' || (e.message && e.message.includes('Quota exceeded'))) {
+            setMarketButtonState(false);
+            ui.marketModal.classList.add('hidden');
+            if (ui.openSellMarketBtn) ui.openSellMarketBtn.disabled = true;
+            alert("⚠️ 파이어베이스 무료 용량 초과로 장터가 일시 중지되었습니다.");
+        }
     }
 }
 
@@ -1668,6 +1718,10 @@ ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
         await loadMarketList();
         alert(`🎉 성공적으로 칭호 ${count}개를 거래소에 등록했습니다!`);
     } catch(e) { 
+        if (e.code === 'resource-exhausted') {
+            isDbHealthy = false;
+            setMarketButtonState(false);
+        }
         alert("❌ 등록 실패 (DB 서버 응답 없음/용량 초과): 아이템이 차감되지 않았습니다."); 
     }
 });
