@@ -3,7 +3,7 @@ import { CRAFT_ITEMS } from './craftItems.js';
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
 // 1. Supabase 접속 설정 (본인 프로젝트 정보)
-const SUPABASE_URL = 'https://jsexzvxgbrdsvxxfwc.supabase.co';
+const SUPABASE_URL = 'https://jsexzvxgrzbrdsvxxfwc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_mKL_punb-wQOxbTsfFdUjA_DARRiphP'; // Supabase 대시보드 -> Settings -> API -> anon public key 입력
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
