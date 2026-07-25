@@ -1,13 +1,11 @@
 import { AURA_DATA } from './auras.js';
 import { CRAFT_ITEMS } from './craftItems.js';
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-// ⚡ Supabase 클라이언트 설정
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-// ⚙️ 프로젝트의 Supabase URL과 Anon Key로 변경하세요.
-const SUPABASE_URL = "https://jsexzvxgrzbrdsvxxfwc.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_mKL_punb-wQOxbTsfFdUjA_DARRiphP";
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// 1. Supabase 접속 설정 (본인 프로젝트 정보)
+const SUPABASE_URL = 'https://jsexzvxgbrdsvxxfwc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_mKL_punb-wQOxbTsfFdUjA_DARRiphP'; // Supabase 대시보드 -> Settings -> API -> anon public key 입력
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 
@@ -297,7 +295,7 @@ loadSoundSettings();
 applySoundSettingsToUI();
 playBgm('lobby');
 
-// ⚡ Supabase 구글 로그인
+// Supabase 구글 로그인
 document.querySelectorAll('.google-login-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
         const { error } = await supabase.auth.signInWithOAuth({
@@ -308,24 +306,24 @@ document.querySelectorAll('.google-login-btn').forEach(btn => {
     });
 });
 
-// ⚡ Supabase 로그아웃
+// Supabase 로그아웃
 document.querySelectorAll('.google-logout-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-        const { error } = await supabase.auth.signOut();
-        if (!error) alert("로그아웃 되었습니다.");
+        await supabase.auth.signOut();
+        alert("로그아웃 되었습니다.");
     });
 });
 
-// ⚡ Supabase 인증 상태 감지
+// Supabase 인증 상태 변경 감지
 supabase.auth.onAuthStateChange(async (event, session) => {
     const statusText = document.getElementById('user-status-text');
     const statusTextSettings = document.getElementById('user-status-text-settings');
     const loginBtns = document.querySelectorAll('.google-login-btn');
     const logoutBtns = document.querySelectorAll('.google-logout-btn');
 
-    if (session?.user) {
+    if (session && session.user) {
         currentUser = session.user;
-        const userName = currentUser.user_metadata?.full_name || currentUser.email;
+        const userName = currentUser.user_metadata?.full_name || currentUser.email || "유저";
         const txt = `🟢 로그인됨: ${userName}`;
         if (statusText) statusText.innerText = txt;
         if (statusTextSettings) statusTextSettings.innerText = txt;
@@ -344,18 +342,22 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     }
 });
 
-// ⚡ Supabase 데이터 저장
+// ☁️ Supabase 클라우드 저장
 async function saveGameToCloud() {
     if (!currentUser || backupGameState !== null) return;
     try {
         const { error } = await supabase
             .from('users')
-            .upsert({ id: currentUser.id, game_state: gameState, updated_at: new Date() });
-        if (error) console.error("클라우드 저장 실패:", error.message);
+            .upsert({ 
+                id: currentUser.id, 
+                game_state: gameState,
+                updated_at: new Date()
+            });
+        if (error) console.error("Supabase 저장 에러:", error);
     } catch (e) { console.error("클라우드 저장 실패:", e); }
 }
 
-// ⚡ Supabase 데이터 로드
+// ☁️ Supabase 클라우드 불러오기 (덮어쓰기 방지 처리)
 async function loadGameFromCloud() {
     if (!currentUser) return;
     try {
@@ -363,13 +365,17 @@ async function loadGameFromCloud() {
             .from('users')
             .select('game_state')
             .eq('id', currentUser.id)
-            .single();
+            .maybeSingle();
 
         if (data && data.game_state) {
-            gameState = { ...createInitialGameState(), ...data.game_state };
+            if (gameState.rolls > (data.game_state.rolls || 0)) {
+                await saveGameToCloud();
+            } else {
+                gameState = { ...createInitialGameState(), ...data.game_state };
+            }
             updateStatsUI(); buildShopUI(); buildAutoDeleteUI(); updateCraftUI(); updateQuickRollUI();
-        } else {
-            await saveGameToCloud();
+        } else { 
+            await saveGameToCloud(); 
         }
     } catch (e) { console.error("클라우드 로드 실패:", e); }
 }
@@ -397,11 +403,7 @@ window.addEventListener('beforeunload', () => {
         localStorage.setItem('js_rng_save', JSON.stringify(gameState));
     }
     if (currentUser) {
-        const savedData = localStorage.getItem('js_rng_save');
-        if (savedData) {
-            const finalState = JSON.parse(savedData);
-            supabase.from('users').upsert({ id: currentUser.id, game_state: finalState }).catch(err => console.error("종료 시 저장 실패:", err));
-        }
+        saveGameToCloud();
     }
 });
 
@@ -440,7 +442,6 @@ ui.submitCodeBtn.addEventListener('click', () => {
     } else { alert("❌ 존재하지 않거나 잘못된 코드입니다."); }
 });
 
-// ⚡ Supabase 매물 삭제 취소
 window.cancelMarketListing = async function(listingId, auraId) {
     if (!confirm("정말 매물 등록을 취소하고 칭호를 회수하시겠습니까?")) return;
     try {
@@ -453,22 +454,16 @@ window.cancelMarketListing = async function(listingId, auraId) {
     } catch(e) { alert("취소 실패: " + e.message); }
 };
 
-// ⚡ Supabase 장터 구매
 window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
     if (gameState.jc < price) { alert("❌ JC가 부족합니다!"); return; }
 
     try {
-        // 1. 판매자 JC 획득 처리
-        const { data: sellerData } = await supabase.from('users').select('game_state').eq('id', sellerUid).single();
-        let sellerState = sellerData?.game_state || {};
-        sellerState.jc = (sellerState.jc || 0) + price;
+        const { data: itemData, error: fetchErr } = await supabase.from('market').select('*').eq('id', listingId).maybeSingle();
+        if (fetchErr || !itemData) throw "이미 판매되었거나 취소된 매물입니다!";
 
-        await supabase.from('users').update({ game_state: sellerState }).eq('id', sellerUid);
+        const { error: deleteErr } = await supabase.from('market').delete().eq('id', listingId);
+        if (deleteErr) throw "구매 처리 중 오류가 발생했습니다.";
 
-        // 2. 매물 삭제
-        await supabase.from('market').delete().eq('id', listingId);
-
-        // 3. 구매자 보상 지급
         gameState.jc -= price;
         gameState.inventory[auraId] = (gameState.inventory[auraId] || 0) + 1;
         if (!gameState.discoveredAuras.includes(auraId)) gameState.discoveredAuras.push(auraId);
@@ -476,13 +471,14 @@ window.buyMarketItem = async function(listingId, sellerUid, auraId, price) {
         saveGame(); saveGameToCloud(); updateStatsUI(); updateInventory();
         await loadMarketList();
         alert("🎉 구매를 완료했습니다!");
-    } catch(e) { alert("구매 실패: " + e.message); }
+    } catch(e) { alert("구매 실패: " + e); }
 };
 
 window.forceDeleteMarketItem = async function(listingId) {
     if (!confirm("🛠️ [개발자 권한] 해당 매물을 강제 삭제하시겠습니까?")) return;
     try {
-        await supabase.from('market').delete().eq('id', listingId);
+        const { error } = await supabase.from('market').delete().eq('id', listingId);
+        if (error) throw error;
         await loadMarketList();
         alert("🗑️ 매물이 즉시 DB에서 강제 삭제되었습니다.");
     } catch(e) { alert("삭제 실패: " + e.message); }
@@ -506,7 +502,6 @@ function getBestAuraInfo() {
     return best;
 }
 
-// ⚡ Supabase 랭킹 데이터 업데이트
 async function updateRankData() {
     if (!currentUser) return;
     try {
@@ -1398,7 +1393,6 @@ function buildAutoDeleteUI() {
     } 
 }
 
-// ⚡ Supabase 랭킹 목록 로드
 async function loadRankingList(tabType) {
     currentRankTab = tabType;
     ui.rankingListGrid.innerHTML = `<p style="color:#aaa; text-align:center;">⏳ 랭킹 데이터 불러오는 중...</p>`;
@@ -1420,7 +1414,7 @@ async function loadRankingList(tabType) {
     }
 
     try {
-        const { data, error } = await supabase
+        const { data: rankData, error } = await supabase
             .from('rankings')
             .select('*')
             .order(field, { ascending: false })
@@ -1430,10 +1424,10 @@ async function loadRankingList(tabType) {
         ui.rankingListGrid.innerHTML = '';
 
         let rank = 1;
-        data.forEach((row) => {
+        rankData.forEach((data) => {
             const card = document.createElement('div');
             card.className = 'ranking-card';
-            card.onclick = () => openUserProfileModal(row.uid);
+            card.onclick = () => openUserProfileModal(data.uid);
 
             let rankBadgeClass = "rank-normal";
             if (rank === 1) rankBadgeClass = "rank-1";
@@ -1441,16 +1435,16 @@ async function loadRankingList(tabType) {
             else if (rank === 3) rankBadgeClass = "rank-3";
 
             let displayValue = "";
-            if (tabType === 'rolls') displayValue = `🎲 ${(row.rolls || 0).toLocaleString()}회`;
-            else if (tabType === 'jc') displayValue = `🪙 ${(row.jc || 0).toLocaleString()} JC`;
-            else if (tabType === 'aura') displayValue = `👑 ${row.best_aura || '없음'}`;
+            if (tabType === 'rolls') displayValue = `🎲 ${(data.rolls || 0).toLocaleString()}회`;
+            else if (tabType === 'jc') displayValue = `🪙 ${(data.jc || 0).toLocaleString()} JC`;
+            else if (tabType === 'aura') displayValue = `👑 ${data.best_aura || '없음'}`;
 
             card.innerHTML = `
                 <div class="rank-badge ${rankBadgeClass}">${rank}</div>
-                <img src="${row.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                <img src="${data.photo || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0;">
                 <div class="ranking-user-info">
-                    <div style="font-weight:bold; font-size:14px; color:white;">${row.name}</div>
-                    <div style="font-size:11px; color:#f39c12; margin-top:2px;">"${row.status_msg || '운빨 최강 도전 중!'}"</div>
+                    <div style="font-weight:bold; font-size:14px; color:white;">${data.name}</div>
+                    <div style="font-size:11px; color:#f39c12; margin-top:2px;">"${data.status_msg || '운빨 최강 도전 중!'}"</div>
                 </div>
                 <div style="text-align: right; flex-shrink:0;">
                     <div style="font-size:12px; font-weight:bold; color:#f1c40f;">${displayValue}</div>
@@ -1460,7 +1454,7 @@ async function loadRankingList(tabType) {
             rank++;
         });
 
-        if (!data || data.length === 0) {
+        if (!rankData || rankData.length === 0) {
             ui.rankingListGrid.innerHTML = `<p style="color:#aaa; text-align:center;">등록된 랭킹 데이터가 없습니다.</p>`;
         }
     } catch(e) {
@@ -1510,7 +1504,6 @@ ui.editFileInput.addEventListener('change', (e) => {
     }
 });
 
-// ⚡ Supabase 유저 프로필 조회
 async function openUserProfileModal(targetUid) {
     ui.profileModal.classList.remove('hidden');
     const isMe = currentUser && (currentUser.id === targetUid);
@@ -1520,7 +1513,7 @@ async function openUserProfileModal(targetUid) {
     else editBox.classList.add('hidden');
 
     try {
-        const { data, error } = await supabase.from('rankings').select('*').eq('uid', targetUid).single();
+        const { data, error } = await supabase.from('rankings').select('*').eq('uid', targetUid).maybeSingle();
         if (data) {
             document.getElementById('profile-user-img').src = data.photo || 'https://via.placeholder.com/80';
             document.getElementById('profile-user-name').innerText = data.name || "무명 유저";
@@ -1589,11 +1582,10 @@ ui.marketBtn.addEventListener('click', async () => {
 });
 ui.closeMarket.addEventListener('click', () => { ui.marketModal.classList.add('hidden'); });
 
-// ⚡ Supabase 장터 목록 조회
 async function loadMarketList() {
     ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">⏳ 장터 매물 불러오는 중...</p>`;
     try {
-        const { data, error } = await supabase
+        const { data: marketData, error } = await supabase
             .from('market')
             .select('*')
             .order('created_at', { ascending: false })
@@ -1602,7 +1594,8 @@ async function loadMarketList() {
         if (error) throw error;
         ui.marketItemGrid.innerHTML = '';
 
-        data.forEach((item) => {
+        marketData.forEach((item) => {
+            const itemId = item.id;
             const auraInfo = AURA_DATA.find(a => a.id === item.aura_id);
             if (!auraInfo) return;
 
@@ -1611,10 +1604,10 @@ async function loadMarketList() {
 
             const isMine = currentUser && (currentUser.id === item.seller_uid);
             let actionBtnHtml = isMine ? 
-                `<button class="action-btn" style="background:#888;" onclick="cancelMarketListing('${item.id}', '${item.aura_id}')">취소하기</button>` :
-                `<button class="action-btn buy" onclick="buyMarketItem('${item.id}', '${item.seller_uid}', '${item.aura_id}', ${item.price})">구매하기</button>`;
+                `<button class="action-btn" style="background:#888;" onclick="cancelMarketListing('${itemId}', '${item.aura_id}')">취소하기</button>` :
+                `<button class="action-btn buy" onclick="buyMarketItem('${itemId}', '${item.seller_uid}', '${item.aura_id}', ${item.price})">구매하기</button>`;
 
-            let devDeleteBtn = `<button class="action-btn" style="background:#e74c3c; margin-top:5px; font-size:10px;" onclick="forceDeleteMarketItem('${item.id}')">🗑️ 강제 삭제</button>`;
+            let devDeleteBtn = `<button class="action-btn" style="background:#e74c3c; margin-top:5px; font-size:10px;" onclick="forceDeleteMarketItem('${itemId}')">🗑️ 강제 삭제</button>`;
 
             tile.innerHTML = `
                 <div style="font-size: 11px; color:#aaa;">판매자: ${item.seller_name}</div>
@@ -1626,7 +1619,7 @@ async function loadMarketList() {
             ui.marketItemGrid.appendChild(tile);
         });
 
-        if (!data || data.length === 0) {
+        if (!marketData || marketData.length === 0) {
             ui.marketItemGrid.innerHTML = `<p style="color:#aaa; text-align:center; grid-column: 1 / -1;">현재 장터에 등록된 칭호가 없습니다.</p>`;
         }
     } catch(e) { console.error("장터 로드 오류:", e); }
@@ -1675,7 +1668,6 @@ function updatePriceLimitUI() {
 ui.marketSellAuraSelect.addEventListener('change', updatePriceLimitUI);
 ui.closeRegisterMarket.addEventListener('click', () => { ui.registerMarketModal.classList.add('hidden'); });
 
-// ⚡ Supabase 매물 등록
 ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
     const auraId = ui.marketSellAuraSelect.value;
     const count = parseInt(ui.marketSellCount.value);
@@ -1704,18 +1696,14 @@ ui.confirmRegisterMarketBtn.addEventListener('click', async () => {
 
     try {
         const name = gameState.customNickname || currentUser.user_metadata?.full_name || "무명 유저";
-        const insertRows = [];
         for (let i = 0; i < count; i++) {
-            insertRows.push({
+            await supabase.from('market').insert({
                 seller_uid: currentUser.id,
                 seller_name: name,
                 aura_id: auraId,
                 price: price
             });
         }
-        const { error } = await supabase.from('market').insert(insertRows);
-        if (error) throw error;
-
         ui.registerMarketModal.classList.add('hidden');
         await loadMarketList();
         alert(`🎉 성공적으로 칭호 ${count}개를 각각의 매물로 연달아 등록했습니다!`);
@@ -1727,7 +1715,7 @@ ui.inventoryBtn.addEventListener('click', () => { updateInventory(); ui.inventor
 ui.itemInvenBtn.addEventListener('click', () => { updateItemInventory(); ui.itemInvenModal.classList.remove('hidden'); }); ui.closeItemInven.addEventListener('click', () => { ui.itemInvenModal.classList.add('hidden'); });
 ui.shopBtn.addEventListener('click', () => { ui.shopModal.classList.remove('hidden'); }); ui.closeShop.addEventListener('click', () => { ui.shopModal.classList.add('hidden'); });
 ui.indexBtn.addEventListener('click', () => { updateIndex(); ui.indexModal.classList.remove('hidden'); }); ui.closeIndex.addEventListener('click', () => { ui.indexModal.classList.add('hidden'); });
-ui.questBtn.addEventListener('click', () => { updateQuestUI(); ui.questModal.classList.remove('hidden'); }); ui.closeQuest.addEventListener('click', () => { ui.questModal.classList.add('hidden'); });
+ui.questBtn.addEventListener('click', () => { updateQuestUI(); ui.questModal.classList.remove('hidden'); }); ui.closeQuest.addEventListener('click', () => { ui.closeQuest.classList.add('hidden'); });
 ui.craftBtn.addEventListener('click', () => { updateCraftUI(); ui.craftModal.classList.remove('hidden'); }); ui.closeCraft.addEventListener('click', () => { ui.craftModal.classList.add('hidden'); });
 
 loadGame();
