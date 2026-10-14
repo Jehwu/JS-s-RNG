@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=5">
-    <link rel="stylesheet" href="effects.css?v=5">
+    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="effects.css?v=6">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -191,7 +191,7 @@
                     <div id="grade-table"></div>
                 </div>
 
-                <button id="dev-btn" class="dev-link">dev</button>
+                <button id="dev-btn" class="dev-link">개발자 모드</button>
             </div>
         </div>
     </div>
@@ -243,7 +243,7 @@
         <div class="dialog">
             <div id="ask-title" class="dialog-title"></div>
             <div id="ask-msg" class="dialog-sub"></div>
-            <input type="password" id="ask-input" class="hidden" autocomplete="off">
+            <input type="password" id="ask-input" class="hidden" autocomplete="off" inputmode="numeric">
             <div class="dialog-actions">
                 <button class="btn" data-ask="cancel">취소</button>
                 <button id="ask-ok" class="btn btn-primary" data-ask="ok">확인</button>
@@ -253,6 +253,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=5"></script>
+    <script type="module" src="script.js?v=6"></script>
 </body>
 </html>

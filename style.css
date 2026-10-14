@@ -488,7 +488,7 @@ input, select { font-family: inherit; -webkit-user-select: text; user-select: te
 .grade-row:last-child { border-bottom: none; }
 .grade-row .grade-odds { color: var(--muted); letter-spacing: 0.03em; font-size: 12px; font-variant-numeric: tabular-nums; }
 
-.dev-link { display: block; margin: 24px auto 0; background: none; border: none; color: rgba(255, 255, 255, 0.08); font-size: 11px; letter-spacing: 0.3em; cursor: pointer; }
+.dev-link { display: block; margin: 24px auto 0; background: none; border: none; color: var(--faint); font-size: 12px; letter-spacing: 0.1em; padding: 10px 16px; cursor: pointer; }
 .dev-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
 
 /* 슬라이더 */

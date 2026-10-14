@@ -73,7 +73,7 @@ const COUPONS = {
     SPEEEED: { items: { heaven_potion: 3 }, msg: "🧪 천상의 물약 3개" }
 };
 
-const DEV_PASSWORD = "로블록스33";
+const DEV_PASSWORD = "3699";
 const SAVE_KEY = 'js_rng_demo_save';   // 데모 버전: 예전 기록과 따로 새로 시작
 const SOUND_KEY = 'js_rng_sound';
 
