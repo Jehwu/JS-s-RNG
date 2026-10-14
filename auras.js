@@ -1,137 +1,84 @@
+/* =========================================================
+   🌟 칭호 데이터 (데모 버전, 22개)
+
+   in    : 1 in N 확률
+   color : 칭호 대표 색 (아우라 기본 색)
+   class : 칭호 글자 연출 (effects.css)
+   fx    : 3D 아우라 모양 — 전부 네모 블록으로 만들어짐
+     colors    아우라에 쓰는 색들 (없으면 color 하나)
+     glow      캐릭터 테두리/조명 세기 (0 ~ 3)
+     particles 위로 떠오르는 작은 큐브 수
+     rise      큐브가 떠오르는 속도
+     orbit     몸 주위를 도는 큐브 수
+     rings     발밑에서 도는 네모 링 수
+     halo      머리 위 네모 후광
+     pillar    바닥에서 솟는 빛기둥
+     wings     등 뒤 블록 날개
+     shards    주위를 떠다니는 큰 크리스탈 큐브 수
+     lightning 번개 블록
+     void      검은 큐브가 빨려드는 공허 효과
+   ========================================================= */
+
 export const AURA_DATA = [
     // 1. COMMON
-    { id: "com_just_byungeun", name: "그저 공병은", grade: "COMMON", in: 6, color: "#95a5a6" },
-    { id: "com_drum", name: "동네북 김가은", grade: "COMMON", in: 2, color: "#696969" },
-    { id: "com_normal", name: "평범한 김티비", grade: "COMMON", in: 4, color: "#808080" },
-    { id: "com_new_gunwoo", name: "심심한 김건우", grade: "COMMON", in: 5, color: "#7f8c8d" },
-    { id: "com_passerby", name: "지나가는 김민채", grade: "COMMON", in: 7, color: "#a9a9a9" },
-    { id: "unc_stretching", name: "스트레칭하는 김티비", grade: "COMMON", in: 10, color: "#2ecc71" },
-    { id: "com_sleepy_jisung", name: "하품하는 박지성", grade: "COMMON", in: 8, color: "#95a5a6" },
-    { id: "com_bench_jisung", name: "벤치 온기 유지자 박지성", grade: "COMMON", in: 3, color: "#7f8c8d" },
-    { id: "com_snack_minchae", name: "과자 껍질 김민채", grade: "COMMON", in: 4, color: "#95a5a6" },
-    { id: "com_yawn_gaen", name: "수업시간 하품 김가은", grade: "COMMON", in: 5, color: "#a9a9a9" },
-    { id: "com_mic_tv", name: "마이크 바람소리 김티비", grade: "COMMON", in: 6, color: "#808080" },
-    { id: "com_lag_gunwoo", name: "핑 999ms 김건우", grade: "COMMON", in: 8, color: "#7f8c8d" },
-    { id: "com_coffee_byungeun", name: "믹스커피 공병은", grade: "COMMON", in: 9, color: "#95a5a6" },
+    { id: "com_normal", name: "평범한 김티비", grade: "COMMON", in: 2, color: "#9aa0ad",
+      fx: { particles: 4, rise: 0.5 } },
+    { id: "com_sleepy_jisung", name: "하품하는 박지성", grade: "COMMON", in: 4, color: "#8fa3b8",
+      fx: { particles: 6, rise: 0.35 } },
+    { id: "com_just_byungeun", name: "그저 공병은", grade: "COMMON", in: 6, color: "#b0b6c2",
+      fx: { particles: 8, rise: 0.6 } },
 
     // 2. UNCOMMON
-    { id: "unc_cute_tv", name: "귀척 김티비", grade: "UNCOMMON", in: 66, color: "#ffb6c1" },
-    { id: "unc_running", name: "뛰어가는 김민채", grade: "UNCOMMON", in: 12, color: "#90ee90" },
-    { id: "unc_angry", name: "조금 화난 김건우", grade: "UNCOMMON", in: 16, color: "#3cb371" },
-    { id: "unc_new_byungeun", name: "군기 잡힌 공병은", grade: "UNCOMMON", in: 18, color: "#27ae60" },
-    { id: "unc_tired", name: "피곤한 박지성", grade: "UNCOMMON", in: 20, color: "#32cd32" },
-    { id: "com_darkminchae", name: "깜민채", grade: "UNCOMMON", in: 25, color: "#2f4f4f" },
-    { id: "unc_snack_tv", name: "과자 먹는 김티비", grade: "UNCOMMON", in: 22, color: "#2ecc71" },
-    { id: "unc_lunch_minchae", name: "급식실 1등 도착 김민채", grade: "UNCOMMON", in: 11, color: "#2ecc71" },
-    { id: "unc_shoelace_jisung", name: "축구화 끈 묶는 박지성", grade: "UNCOMMON", in: 14, color: "#27ae60" },
-    { id: "unc_math_gaen", name: "수학문제 포기자 김가은", grade: "UNCOMMON", in: 17, color: "#32cd32" },
-    { id: "unc_sub_tv", name: "구독 구걸 김티비", grade: "UNCOMMON", in: 19, color: "#90ee90" },
-    { id: "unc_desk_gunwoo", name: "책상 탕탕 김건우", grade: "UNCOMMON", in: 21, color: "#3cb371" },
-    { id: "unc_drill_byungeun", name: "출석체크 공병은", grade: "UNCOMMON", in: 24, color: "#2ecc71" },
+    { id: "unc_running", name: "뛰어가는 김민채", grade: "UNCOMMON", in: 12, color: "#5fe08a",
+      fx: { particles: 14, rise: 1.2, glow: 0.4 } },
+    { id: "unc_tired", name: "피곤한 박지성", grade: "UNCOMMON", in: 20, color: "#3cbf6a",
+      fx: { particles: 12, rise: 0.4, glow: 0.4 } },
 
     // 3. RARE
-    { id: "rare_soldier", name: "예비군 공병은", grade: "RARE", in: 28, color: "#6495ed" },
-    { id: "com_yellow_butt", name: "노랭덩이", grade: "RARE", in: 33, color: "#d4ac0d" },
-    { id: "rare_train", name: "폭주기관차 김민채", grade: "RARE", in: 45, color: "#1e90ff" },
-    { id: "rare_gunwoo_tribe", name: "김건우족을보았다", grade: "RARE", in: 56, color: "#3498db" },
-    { id: "rare_new_gaen", name: "투정 부리는 김가은", grade: "RARE", in: 60, color: "#f39c12" },
-    { id: "rare_new_jisung", name: "축구공 차는 박지성", grade: "RARE", in: 75, color: "#2980b9" },
-    { id: "rare_algo", name: "알고리즘 김티비", grade: "RARE", in: 85, color: "#4169e1" },
-    { id: "rare_drill_byungeun", name: "조교 공병은", grade: "RARE", in: 90, color: "#3498db" },
-    { id: "rare_reaction_tv", name: "리액션 부자 김티비", grade: "RARE", in: 50, color: "#4169e1" },
-    { id: "rare_header_jisung", name: "논스톱 헤더 박지성", grade: "RARE", in: 65, color: "#1e90ff" },
-    { id: "rare_rage_gunwoo", name: "키보드 샷건 준비 김건우", grade: "RARE", in: 70, color: "#3498db" },
-    { id: "rare_karaoke_gaen", name: "코인노래방 100점 김가은", grade: "RARE", in: 80, color: "#6495ed" },
-    { id: "rare_sprint_minchae", name: "100m 11초 김민채", grade: "RARE", in: 95, color: "#4169e1" },
+    { id: "rare_soldier", name: "예비군 공병은", grade: "RARE", in: 28, color: "#6495ed",
+      fx: { particles: 16, rise: 0.8, rings: 1, glow: 0.6 } },
+    { id: "rare_train", name: "폭주기관차 김민채", grade: "RARE", in: 45, color: "#1e90ff",
+      fx: { particles: 26, rise: 2.2, rings: 1, glow: 0.7 } },
+    { id: "rare_new_jisung", name: "축구공 차는 박지성", grade: "RARE", in: 75, color: "#2f9bff",
+      fx: { particles: 16, rise: 0.9, orbit: 3, glow: 0.7 } },
 
     // 4. EPIC
-    { id: "ep_sorry_minchae", name: "쏘리맨 김민채", grade: "EPIC", in: 300, color: "#9b59b6" },
-    { id: "ep_baksisung", name: "밪지성", grade: "EPIC", in: 100, color: "#27ae60" },
-    { id: "epic_lucky", name: "운수 좋은 김티비", grade: "EPIC", in: 150, color: "#da70d6" },
-    { id: "unc_hospital", name: "박지성지병원", grade: "EPIC", in: 250, color: "#2e8b57" },
-    { id: "ep_new_minchae", name: "폭주 일보직전 김민채", grade: "EPIC", in: 300, color: "#8e44ad" },
-    { id: "epic_destroy", name: "파괴신 김건우", grade: "EPIC", in: 350, color: "#9932cc" },
-    { id: "ep_psychopath_gunwoo", name: "싸이코패스 김건우", grade: "EPIC", in: 444, color: "#b03a2e" },
-    { id: "ep_angry_gaen", name: "성질내는 김가은", grade: "EPIC", in: 220, color: "#e67e22" },
-    { id: "ep_commander_byungeun", name: "지휘관 공병은", grade: "EPIC", in: 400, color: "#9b59b6" },
-    { id: "ep_shotgun_gunwoo", name: "샷건 마스터 김건우", grade: "EPIC", in: 280, color: "#9b59b6" },
-    { id: "ep_live_tv", name: "생방송 사고 유발자 김티비", grade: "EPIC", in: 320, color: "#8e44ad" },
-    { id: "ep_captain_jisung", name: "캡틴 박지성", grade: "EPIC", in: 380, color: "#da70d6" },
-    { id: "ep_goddess_gaen", name: "음색 여신 김가은", grade: "EPIC", in: 420, color: "#9932cc" },
+    { id: "ep_baksisung", name: "밪지성", grade: "EPIC", in: 100, color: "#2ecc71",
+      fx: { particles: 22, rise: 1, orbit: 4, rings: 1, glow: 1 } },
+    { id: "epic_destroy", name: "파괴신 김건우", grade: "EPIC", in: 350, color: "#b44dff",
+      fx: { colors: ["#b44dff", "#ff3b6b"], particles: 30, rise: 1.6, orbit: 6, rings: 1, glow: 1.1 } },
 
     // 5. LEGEND
-    { id: "leg_gold_sujeo", name: "김가은수저 : 금수저", grade: "LEGEND", in: 7373, color: "#ffd700", class: "aura-legend-4" },
-    { id: "rare_gaedoor", name: "김가은두르", grade: "LEGEND", in: 500, color: "#4682b4" },
-    { id: "ep_poop_tv", name: "똥먹방 김티비", grade: "LEGEND", in: 645, color: "#8d6e63" },
-    { id: "ep_gaen_sujeo", name: "김가은수저", grade: "LEGEND", in: 737, color: "#f39c12" },
-    { id: "ep_crazykong", name: "크레이지콩", grade: "LEGEND", in: 758, color: "#d35400" },
-    { id: "epic_emperor", name: "황제 박지성", grade: "LEGEND", in: 800, color: "#8a2be2" },
-    { id: "ep_mc_byungeun", name: "MC병은", grade: "LEGEND", in: 888, color: "#8e44ad" },
-    { id: "legend_speed", name: "광속의 김민채", grade: "LEGEND", in: 1200, color: "#dc143c", class: "aura-legend-1" },
-    { id: "epic_kimmodi", name: "기모띠비", grade: "LEGEND", in: 2222, color: "#9370db", class: "aura-legend-2" },
-    { id: "legend_wizard", name: "대마법사 공병은", grade: "LEGEND", in: 3500, color: "#ff0000", class: "aura-legend-3" },
-    { id: "var_gebsin", name: "김가은두르 : 게브신", grade: "LEGEND", in: 7878, color: "#f1c40f", class: "aura-legend-4" },
-    { id: "legend_knight", name: "빛의 기사 김가은", grade: "LEGEND", in: 8000, color: "#ff4500", class: "aura-legend-5" },
-    { id: "com_steel_gaen", name: "동네북 김가은 : 강철맷집", grade: "LEGEND", in: 8888, color: "#ff6347", class: "aura-legend-1" },
-    { id: "leg_streamer_tv", name: "인기 스트리머 김티비", grade: "LEGEND", in: 1500, color: "#e74c3c", class: "aura-legend-2" },
-    { id: "leg_shadow_minchae", name: "그림자 암살자 김민채", grade: "LEGEND", in: 5500, color: "#8e44ad", class: "aura-legend-5" },
-    { id: "leg_tech_byungeun", name: "공학의 수호신 공병은", grade: "LEGEND", in: 1500, color: "#ffd700", class: "aura-legend-3" },
-    { id: "leg_pentakill_gunwoo", name: "펜타킬 김건우", grade: "LEGEND", in: 4800, color: "#dc143c", class: "aura-legend-1" },
+    { id: "ep_crazykong", name: "크레이지콩", grade: "LEGEND", in: 758, color: "#ff7a1a",
+      fx: { colors: ["#ff7a1a", "#ffd23f"], particles: 36, rise: 1.4, orbit: 6, rings: 2, halo: true, glow: 1.4 } },
+    { id: "legend_speed", name: "광속의 김민채", grade: "LEGEND", in: 1200, color: "#ff2a4a", class: "aura-legend-1",
+      fx: { colors: ["#ff2a4a", "#ffc300"], particles: 50, rise: 3.2, orbit: 8, rings: 2, halo: true, glow: 1.5 } },
+    { id: "legend_wizard", name: "대마법사 공병은", grade: "LEGEND", in: 3500, color: "#ff2b2b", class: "aura-legend-3",
+      fx: { colors: ["#ff2b2b", "#7a2bff"], particles: 40, rise: 1, orbit: 6, rings: 2, halo: true, shards: 3, glow: 1.6 } },
 
     // 6. MYTHIC
-    { id: "mythic_minjeryam", name: "김민제리얌", grade: "MYTHIC", in: 36000, color: "#ff70a6", class: "aura-mythic-3" },
-    { id: "gemini_basic", name: "김민제미나이", grade: "MYTHIC", in: 10101, color: "#00ffff", class: "aura-mythic-1" },
-    { id: "epic_monkey", name: "건숭이", grade: "MYTHIC", in: 13131, color: "#ba55d3", class: "aura-mythic-2" },
-    { id: "mythic_empress", name: "절대여제 김가은", grade: "MYTHIC", in: 15000, color: "#ff69b4", class: "aura-mythic-3" },
-    { id: "un_sleep_jisung", name: "피곤한 박지성 : 눈을 뜬", grade: "MYTHIC", in: 22330, color: "#e74c3c", class: "aura-mythic-4" },
-    { id: "variant_lord", name: "파괴신 김건우 : 멸망의 군주", grade: "MYTHIC", in: 44444, color: "#cd853f", class: "aura-mythic-5" },
-    { id: "mythic_tube", name: "100만 유튜버 김티비", grade: "MYTHIC", in: 45000, color: "#00bcd4", class: "aura-mythic-6" },
-    { id: "cosmic_black_butt", name: "노랭덩이 : 흑덩이", grade: "MYTHIC", in: 89898, color: "#212121", class: "aura-cosmic-2" },
-    { id: "var_gokpog", name: "폭주기관차 김민채 : 광폭", grade: "MYTHIC", in: 95555, color: "#ff4500", class: "aura-mythic-2" },
-    { id: "mythic_heart", name: "두 개의 심장 박지성", grade: "MYTHIC", in: 100000, color: "#00fa9a", class: "aura-mythic-1" },
-    { id: "kim_crazy_kim_77", name: "기모띠비 : 앙기모띠", grade: "MYTHIC", in: 777777, color: "#ff1493", class: "aura-mythic-3" },
-    { id: "mythic_pacifist_jisung", name: "불살의 왕 박지성", grade: "MYTHIC", in: 919191, color: "#00ff7f", class: "aura-pacifist-king" },
-    { id: "mythic_space_byungeun", name: "우주 사령관 공병은", grade: "MYTHIC", in: 333333, color: "#9b59b6", class: "aura-mythic-5" },
-    { id: "mythic_overlord_gunwoo", name: "심연의 패왕 김건우", grade: "MYTHIC", in: 555555, color: "#e74c3c", class: "aura-mythic-2" },
-    { id: "mythic_heaven_gaen", name: "천상의 가창력 김가은", grade: "MYTHIC", in: 35000, color: "#ff69b4", class: "aura-mythic-3" },
+    { id: "gemini_basic", name: "김민제미나이", grade: "MYTHIC", in: 10101, color: "#00ffff", class: "aura-mythic-1",
+      fx: { colors: ["#00ffff", "#2a7bff"], particles: 50, rise: 1.3, orbit: 8, rings: 2, halo: true, shards: 4, pillar: true, glow: 1.8 } },
+    { id: "epic_monkey", name: "건숭이", grade: "MYTHIC", in: 13131, color: "#ffb02e", class: "aura-mythic-2",
+      fx: { colors: ["#ffb02e", "#ff4d2e"], particles: 56, rise: 1.8, orbit: 10, rings: 3, halo: true, shards: 4, glow: 1.9 } },
+    { id: "mythic_heart", name: "두 개의 심장 박지성", grade: "MYTHIC", in: 100000, color: "#00fa9a", class: "aura-mythic-1",
+      fx: { colors: ["#00fa9a", "#ff3b5c"], particles: 60, rise: 1.5, orbit: 10, rings: 3, halo: true, shards: 6, pillar: true, glow: 2 } },
 
     // 7. DIVINE
-    { id: "divine_doomsday_voice", name: "귀척 김티비 : 종말의 보이스", grade: "DIVINE", in: 6666666, color: "#e056fd", class: "aura-doomsday-voice" },
-    { id: "gemini_pro", name: "김민제미나이 : 프로", grade: "DIVINE", in: 1010101, color: "#9b59b6", class: "aura-gemini-pro" },
-    { id: "div_absolute_gaen", name: "절대여제 김가은 : 범접불가", grade: "DIVINE", in: 1515151, color: "#a55fea", class: "aura-divine-gaen" },
-    { id: "var_virtual", name: "100만 유튜버 김티비 : 버츄얼 모드", grade: "DIVINE", in: 2545454, color: "#2ecc71", class: "aura-virtual-mode" },
-    { id: "variant_abyss", name: "깜민채 : 형용할 수 없는 아득함", grade: "DIVINE", in: 3555555, color: "#bdc3c7", class: "aura-indescribable-grey" },
-    { id: "cosmic_psycho_mode", name: "싸이코패스 김건우 : 무감정 모드", grade: "DIVINE", in: 4040404, color: "#581845", class: "aura-emotionless-mode" },
-    { id: "divine_god", name: "초월자 김건우", grade: "DIVINE", in: 5000000, color: "#3498db", class: "aura-transcendent-gunwoo" },
-    { id: "divine_knight_gaen_sword", name: "빛의 기사 김가은 : 성검의 소유자", grade: "DIVINE", in: 6780000, color: "#fff176", class: "aura-holy-sword" },
-    { id: "var_simon", name: "MC병은 : 사이먼 도미닉", grade: "DIVINE", in: 8898989, color: "#8e44ad", class: "aura-stage-light" },
-    { id: "divine_steel_byungeun", name: "강철검 공병은", grade: "DIVINE", in: 9400000, color: "#718093", class: "aura-steel-sword" },
-    { id: "divine_dim", name: "차원 지배자 공병은", grade: "DIVINE", in: 12000000, color: "#00c6ff", class: "aura-portal-color" },
-    { id: "divine_vampire_hunter_byungeun", name: "뱀파이어 사냥꾼 공병은", grade: "DIVINE", in: 17000000, color: "#c0392b", class: "aura-vampire-hunter" },
-    { id: "divine_monkey_prisoner", name: "건숭이 : 긴고아의 죄수", grade: "DIVINE", in: 19999999, color: "#d4ac0d", class: "aura-monkey-prisoner" },
-    { id: "divine_170kg_heavy", name: "170kg OOO", grade: "DIVINE", in: 17000000, color: "#4a3b32", class: "aura-170kg-heavy" },
+    { id: "divine_god", name: "초월자 김건우", grade: "DIVINE", in: 5000000, color: "#ffe14d", class: "aura-transcendent-gunwoo",
+      fx: { colors: ["#ffe14d", "#ffffff", "#ffb800"], particles: 70, rise: 1.6, orbit: 10, rings: 3, halo: true, shards: 6, pillar: true, wings: true, glow: 2.4 } },
+    { id: "divine_knight_gaen_sword", name: "빛의 기사 김가은 : 성검의 소유자", grade: "DIVINE", in: 6780000, color: "#fff176", class: "aura-holy-sword",
+      fx: { colors: ["#fff6b0", "#9fe8ff", "#ffffff"], particles: 70, rise: 1.2, orbit: 8, rings: 3, halo: true, shards: 8, pillar: true, wings: true, glow: 2.4 } },
 
     // 8. COSMIC
-    { id: "cosmic_queen_table", name: "김민제리얌 : 퀸카의 밥상", grade: "COSMIC", in: 36000000, color: "#ff4081", class: "aura-queen-table" },
-    { id: "cosmic_hidden_power", name: "그저 공병은 : 힘을 숨긴자", grade: "COSMIC", in: 60000000, color: "#00e676", class: "aura-hidden-power" },
-    { id: "cosmic_steel_emperor", name: "강철검 공병은 : 강철검제", grade: "COSMIC", in: 99999999, color: "#00b0ff", class: "aura-steel-emperor" },
-    { id: "variant_haebeoji", name: "두개의 심장 박지성 : 해버지", grade: "COSMIC", in: 26666666, color: "#ff8c00", class: "aura-manu-colors" },
-    { id: "legend_gonjiam", name: "곤지암병은", grade: "COSMIC", in: 29999999, color: "#ff1493", class: "aura-gonjiam-spooky" },
-    { id: "js_collector", name: "전설의 공병수집가 공병은", grade: "COSMIC", in: 36363636, color: "#ffaa00", class: "aura-pink-blue" },
-    { id: "cosmic_burning_wings_jisung", name: "타오르는 날개 박지성", grade: "COSMIC", in: 45000000, color: "#ff4500", class: "aura-burning-wings" },
-    { id: "js_creator", name: "우주의 대거악 김민채", grade: "COSMIC", in: 50000000, color: "#ff0055", class: "aura-cosmic-dark-minchae" },
-    { id: "cosmic_indomitable_gaen", name: "불굴의 투사 김가은", grade: "COSMIC", in: 55555555, color: "#e74c3c", class: "aura-indomitable-gaen" },
-    { id: "cosmic_diarrhea_tv", name: "똥먹방 김티비 : 설사먹방", grade: "COSMIC", in: 64564564, color: "#795548", class: "aura-poop-diarrhea" },
-    { id: "cosmic_primeval_sage_haesol", name: "태고의 현자 최해솔", grade: "COSMIC", in: 71052816, color: "#00e5ff", class: "aura-primeval-sage" },
-    { id: "cosmic_lord_slayer", name: "군주학살자 김건우", grade: "COSMIC", in: 72772772, color: "#ff0000", class: "aura-lord-slayer" },
+    { id: "legend_gonjiam", name: "곤지암병은", grade: "COSMIC", in: 29999999, color: "#00e676", class: "aura-gonjiam-spooky",
+      fx: { colors: ["#00e676", "#004d40", "#00b0ff"], particles: 80, rise: 0.7, orbit: 12, rings: 4, halo: true, shards: 8, pillar: true, void: true, glow: 2.6 } },
+    { id: "cosmic_steel_emperor", name: "강철검 공병은 : 강철검제", grade: "COSMIC", in: 99999999, color: "#00b0ff", class: "aura-steel-emperor",
+      fx: { colors: ["#80d8ff", "#00b0ff", "#e0f7ff"], particles: 90, rise: 2, orbit: 14, rings: 4, halo: true, shards: 10, pillar: true, wings: true, glow: 2.8 } },
 
     // 9. JS
-    { id: "js_heinous_criminal", name: "흉악범", grade: "JS", in: 200000000, color: "#ff0055", class: "aura-heinous-criminal" },
-    { id: "js_void_king", name: "공허왕 공허병은", grade: "JS", in: 111111111, color: "#ff0000", class: "aura-js-void" },
-    { id: "js_false_theatre_tv", name: "거짓 종막의 연출가 김티비", grade: "JS", in: 123123123, color: "#0055ff", class: "aura-false-theatre" },
-    { id: "divine_angel_gaen", name: "환희의 대천사 김가은", grade: "JS", in: 150000000, color: "#fff59d", class: "aura-holy-angel" },
-    { id: "js_demon_minchae", name: "격노와 정욕의 마신 김민채", grade: "JS", in: 244444444, color: "#ff007f", class: "aura-demon-minchae" },
-    { id: "js_lightning_jisung", name: "번개의 좌 박지성", grade: "JS", in: 300000000, color: "#00ffff", class: "aura-lightning" },
-    { id: "js_monkey_liberator", name: "건숭이 : 가장 오래된 해방자", grade: "JS", in: 360000000, color: "#f39c12", class: "aura-monkey-liberator" },
-    { id: "js_170kg_minchae", name: "170kg OOO : 김민채", grade: "JS", in: 170000000, color: "#00e676", class: "aura-170kg-minchae" }
+    { id: "js_void_king", name: "공허왕 공허병은", grade: "JS", in: 111111111, color: "#ff0040", class: "aura-js-void",
+      fx: { colors: ["#ff0040", "#2b00ff", "#ffffff"], particles: 100, rise: 1.2, orbit: 14, rings: 5, halo: true, shards: 12, pillar: true, wings: true, void: true, glow: 3 } },
+    { id: "js_lightning_jisung", name: "번개의 좌 박지성", grade: "JS", in: 300000000, color: "#00ffff", class: "aura-lightning",
+      fx: { colors: ["#00ffff", "#7c4dff", "#ffffff"], particles: 100, rise: 3, orbit: 14, rings: 5, halo: true, shards: 10, pillar: true, wings: true, lightning: true, glow: 3 } }
 ];

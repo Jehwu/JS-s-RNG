@@ -74,7 +74,7 @@ const COUPONS = {
 };
 
 const DEV_PASSWORD = "로블록스33";
-const SAVE_KEY = 'js_rng_save';
+const SAVE_KEY = 'js_rng_demo_save';   // 데모 버전: 예전 기록과 따로 새로 시작
 const SOUND_KEY = 'js_rng_sound';
 
 // 칭호 확률·판매가 계산
@@ -214,7 +214,8 @@ function createInitialGameState() {
         activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0, luckLevel: 0, speedLevel: 0 },
         activeMultBuffs: [],
         gear: null, amulet: null, amuletStack: 0, craftedGears: [], usedCodes: [],
-        completedQuests: [], activeQuest: null, questProgress: {}, quickRollUnlocked: false
+        completedQuests: [], activeQuest: null, questProgress: {}, quickRollUnlocked: false,
+        equippedAura: null
     };
 }
 
@@ -399,7 +400,7 @@ function startRoll() {
     renderStats();
     saveGame();
 
-    ui.stage.classList.add('rolling');
+    stage3d?.setRolling(true);
     if (isQuickRollActive && gameState.quickRollUnlocked) { finishRoll(); return; }
 
     const maxTime = Math.max(400, 1200 * (1 - getSpeedBonus()));
@@ -475,12 +476,17 @@ async function finishRoll() {
         soldHtml = `<div class="result-sold">자동 판매 +${fmt(rolled.jcValue)} JC</div>`;
     } else {
         gameState.inventory[rolled.id] = (gameState.inventory[rolled.id] || 0) + 1;
+        const equipped = AURA_BY_ID[gameState.equippedAura];
+        if (!equipped || rolled.in > equipped.in) {
+            gameState.equippedAura = rolled.id;
+            applyEquippedAura();
+            soldHtml = `<div class="result-equip">아우라 장착</div>`;
+        }
     }
     saveGame();
     renderStats();
 
-    ui.stage.classList.remove('rolling');
-    document.documentElement.style.setProperty('--aura', rolled.color);
+    stage3d?.setRolling(false);
     const glow = HIGH_GRADES.includes(rolled.grade) && !rolled.class ? `text-shadow:0 0 14px ${rolled.color}aa;` : '';
     ui.display.innerHTML = `
         <div class="result-pop">
@@ -507,10 +513,10 @@ async function finishRoll() {
 
 /* ---------- 연출 ---------- */
 function playShakeGlow(rolled) {
-    document.body.classList.add('screen-shake');
+    stage3d?.shake(CUTSCENE_GRADES.includes(rolled.grade) ? 0.6 : 0.35);
     ui.glowOverlay.style.boxShadow = `inset 0 0 70px 25px ${rolled.color || "#f1c40f"}`;
     ui.glowOverlay.classList.remove('hidden');
-    setTimeout(() => { document.body.classList.remove('screen-shake'); ui.glowOverlay.classList.add('hidden'); }, 1500);
+    setTimeout(() => { ui.glowOverlay.classList.add('hidden'); }, 1500);
 }
 
 const CUTSCENE_BG_CLASSES = ['cutscene-bg-cosmic', 'cutscene-bg-js', 'cutscene-bg-angel', 'cutscene-bg-false-theatre', 'cutscene-bg-lightning', 'cutscene-bg-monkey', 'cutscene-bg-demon'];
@@ -658,7 +664,12 @@ function renderInventory() {
                 <div class="card-name">${auraNameHtml(a)}</div>
                 <div class="card-have">×${fmt(gameState.inventory[a.id])}</div>
                 <div class="card-meta">개당 ${fmt(a.jcValue)} JC</div>
-                <button class="btn btn-sm" data-sell="${a.id}">판매</button>
+                <div class="card-actions">
+                    ${gameState.equippedAura === a.id
+                        ? `<button class="btn btn-sm" disabled>장착 중</button>`
+                        : `<button class="btn btn-sm btn-primary" data-equip-aura="${a.id}">장착</button>`}
+                    <button class="btn btn-sm" data-sell="${a.id}">판매</button>
+                </div>
             </div>`;
         }
     }
@@ -875,6 +886,8 @@ $('game-start-btn').addEventListener('click', () => {
     initSynthAudio();
     $('lobby-screen').classList.add('hidden');
     $('main-game').classList.remove('hidden');
+    stage3d?.resize();
+    applyEquippedAura();
     playBgm('main');
 });
 
@@ -895,6 +908,13 @@ ui.quickBtn.addEventListener('click', () => {
 
 /* ---------- 판매 ---------- */
 ui.inventoryGrid.addEventListener('click', e => {
+    const eq = e.target.dataset.equipAura;
+    if (eq) {
+        gameState.equippedAura = eq;
+        saveGame(); applyEquippedAura(); renderInventory();
+        toast(`${AURA_BY_ID[eq].name} 장착`, 'good');
+        return;
+    }
     const id = e.target.dataset.sell;
     if (!id) return;
     const a = AURA_BY_ID[id], count = gameState.inventory[id];
@@ -911,7 +931,10 @@ ui.inventoryGrid.addEventListener('click', e => {
                 if (!ok) return;
             }
             gameState.inventory[id] -= n;
-            if (gameState.inventory[id] <= 0) delete gameState.inventory[id];
+            if (gameState.inventory[id] <= 0) {
+                delete gameState.inventory[id];
+                if (gameState.equippedAura === id) { gameState.equippedAura = null; applyEquippedAura(); }
+            }
             gameState.jc += a.jcValue * n;
             saveGame(); renderStats(); renderInventory();
             toast(`${fmt(n)}개 판매  +${fmt(a.jcValue * n)} JC`, 'gold');
@@ -1125,6 +1148,7 @@ $('sheet-dev').addEventListener('click', e => {
         toast('개발자 모드 OFF. 원래 데이터로 복구했습니다.', 'good');
     }
     renderAll();
+    applyEquippedAura();
 });
 
 /* =========================================================
@@ -1144,8 +1168,9 @@ setInterval(() => {
    ✨ 별 배경 (천천히 떠다니며 반짝임)
    ========================================================= */
 
-(function starfield() {
+function startStarfield2D() {
     const cv = $('starfield'), ctx = cv.getContext('2d');
+    cv.classList.remove('hidden');
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     let w, h, dpr, stars = [];
     function resize() {
@@ -1176,7 +1201,44 @@ setInterval(() => {
     }
     addEventListener('resize', resize);
     resize(); draw();
-})();
+}
+
+/* =========================================================
+   🧊 3D 아우라 무대
+   ========================================================= */
+
+let stage3d = null;
+const nametag = $('nametag');
+
+function applyEquippedAura() {
+    const aura = AURA_BY_ID[gameState.equippedAura] || null;
+    stage3d?.setAura(aura);
+    document.documentElement.style.setProperty('--aura', aura ? aura.color : '#5b4dff');
+    const inGame = !$('main-game').classList.contains('hidden');
+    if (aura && inGame) {
+        nametag.innerHTML = auraNameHtml(aura);
+        nametag.classList.remove('hidden');
+    } else {
+        nametag.classList.add('hidden');
+    }
+}
+
+import('./aura3d.js?v=5')
+    .then(({ createAuraStage }) => {
+        stage3d = createAuraStage($('stage3d'), {
+            getStageRect: () => {
+                const r = ui.stage.getBoundingClientRect();
+                return r.height > 0 ? r : null;
+            },
+            onLabel: (x, y) => { nametag.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`; }
+        });
+        applyEquippedAura();
+    })
+    .catch(err => {
+        console.warn('3D를 켤 수 없어 2D 배경으로 대신합니다:', err);
+        $('stage3d').remove();
+        startStarfield2D();
+    });
 
 /* =========================================================
    🔄 새 버전 자동 확인
