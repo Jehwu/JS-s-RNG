@@ -36,8 +36,8 @@ const SHOP_ITEMS = [
 const QUEST_DATA = [
     {
         id: "quest_swift", name: "신속하게", repeatable: false,
-        desc: "빠른 롤 시스템을 사용하기 위한 신속함 증명하기",
-        rewardDesc: "⚡ 빠른 롤 해금 + 🧪 천상의 물약 5개",
+        desc: "빠른 뽑기를 쓸 자격이 있는지 증명하기",
+        rewardDesc: "빠른 뽑기 해금 + 천상의 물약 5개",
         reward: { unlockQuickRoll: true, items: { heaven_potion: 5 } },
         targets: { rolls: 5000, divine: 15, cosmic: 5, jc: 3000000, shopPurchases: 20 }
     },
@@ -139,7 +139,7 @@ function ask({ title, message = '', input = false, okText = '확인', danger = f
         $('ask-title').textContent = title;
         $('ask-msg').textContent = message;
         ok.textContent = okText;
-        ok.className = `btn ${danger ? 'btn-red' : 'btn-primary'}`;
+        ok.className = `btn ${danger ? 'btn-red' : 'btn-gold'}`;
         inp.classList.toggle('hidden', !input);
         inp.value = '';
         dlg.classList.remove('hidden');
@@ -481,7 +481,7 @@ async function finishRoll() {
     const glow = HIGH_GRADES.includes(rolled.grade) && !rolled.class ? `text-shadow:0 0 14px ${rolled.color}aa;` : '';
     ui.display.innerHTML = `
         <div class="result-pop">
-            <div class="result-grade ${gradeCol(rolled.grade)}">${rolled.grade}${isNew ? ' · NEW' : ''}</div>
+            <div class="result-grade ${gradeCol(rolled.grade)}">${rolled.grade}${isNew ? '<span class="new-tag">처음!</span>' : ''}</div>
             <div class="result-name"><span class="${rolled.class || ''}" style="${rolled.class ? '' : `color:${rolled.color};${glow}`}">${rolled.name}</span></div>
             <div class="result-chance">1 in ${fmt(rolled.in)}</div>
             ${soldHtml}
@@ -622,23 +622,23 @@ function renderBuffs() {
     const now = Date.now();
     const b = gameState.activeBuffs;
     const pills = [];
-    if (b.luckExpireTime > now) pills.push(`<span class="buff">🧪 행운 ${b.luckLevel} · ${Math.ceil((b.luckExpireTime - now) / 1000)}초</span>`);
-    if (b.speedExpireTime > now) pills.push(`<span class="buff">🧪 속도 ${b.speedLevel} · ${Math.ceil((b.speedExpireTime - now) / 1000)}초</span>`);
-    gameState.activeMultBuffs.forEach(m => pills.push(`<span class="buff mult">⚡ ${m.name} ${m.uses}회</span>`));
+    if (b.luckExpireTime > now) pills.push(`<span class="buff">행운물약 ${b.luckLevel}  ${Math.ceil((b.luckExpireTime - now) / 1000)}초</span>`);
+    if (b.speedExpireTime > now) pills.push(`<span class="buff">속도물약 ${b.speedLevel}  ${Math.ceil((b.speedExpireTime - now) / 1000)}초</span>`);
+    gameState.activeMultBuffs.forEach(m => pills.push(`<span class="buff mult">${m.name} ${m.uses}번 남음</span>`));
     const gear = getGear();
-    if (gear) pills.push(`<span class="buff gear">🥊 ${gear.name}</span>`);
-    if (gameState.amulet) pills.push(`<span class="buff gear">📜 ${CRAFT_BY_ID[gameState.amulet]?.name || ''}</span>`);
+    if (gear) pills.push(`<span class="buff gear">${gear.name}</span>`);
+    if (gameState.amulet) pills.push(`<span class="buff gear">${CRAFT_BY_ID[gameState.amulet]?.name || ''}</span>`);
     ui.buffs.innerHTML = pills.join('');
 }
 
 function renderRollToggles() {
     ui.autoBtn.classList.toggle('active', isAutoRolling);
-    ui.autoBtn.innerHTML = `오토 <b>${isAutoRolling ? 'ON' : 'OFF'}</b>`;
+    ui.autoBtn.textContent = isAutoRolling ? '자동 뽑기 켜짐' : '자동 뽑기 꺼짐';
     ui.quickBtn.disabled = !gameState.quickRollUnlocked;
     ui.quickBtn.classList.toggle('active', isQuickRollActive);
-    ui.quickBtn.innerHTML = gameState.quickRollUnlocked
-        ? `빠른 롤 <b>${isQuickRollActive ? 'ON' : 'OFF'}</b>`
-        : '🔒 빠른 롤';
+    ui.quickBtn.textContent = gameState.quickRollUnlocked
+        ? (isQuickRollActive ? '빠른 뽑기 켜짐' : '빠른 뽑기 꺼짐')
+        : '🔒 빠른 뽑기';
 }
 
 function gradeHeader(grade, extra = '') {
@@ -655,13 +655,14 @@ function renderInventory() {
             html += `
             <div class="card ${getAuraBorderClass(a)}">
                 <div class="card-name">${auraNameHtml(a)}</div>
-                <div class="card-meta">${fmt(gameState.inventory[a.id])}개 · 개당 ${fmt(a.jcValue)} JC</div>
-                <button class="btn btn-sm" data-sell="${a.id}">판매</button>
+                <div class="card-have">×${fmt(gameState.inventory[a.id])}</div>
+                <div class="card-meta">하나에 ${fmt(a.jcValue)} JC</div>
+                <button class="btn btn-sm" data-sell="${a.id}">팔기</button>
             </div>`;
         }
     }
     ui.inventoryGrid.className = 'card-grid';
-    ui.inventoryGrid.innerHTML = html || `<div class="empty">아직 뽑은 칭호가 없어요</div>`;
+    ui.inventoryGrid.innerHTML = html || `<div class="empty">가방이 비어 있어요.<br>뽑기부터 해 보세요!</div>`;
 }
 
 function renderPotions() {
@@ -673,10 +674,10 @@ function renderPotions() {
         <div class="card ${item.border}">
             <div class="card-name">${item.name}</div>
             <div class="card-desc">${item.desc}</div>
-            <div class="card-meta">보유 ${fmt(gameState.itemInventory[id])}개</div>
+            <div class="card-have">×${fmt(gameState.itemInventory[id])}</div>
             <button class="btn btn-sm btn-green" data-use="${id}">사용</button>
         </div>`;
-    }).join('') : `<div class="empty">물약이 없어요. 상점에서 사 보세요</div>`;
+    }).join('') : `<div class="empty">물약이 없어요.<br>매점에서 살 수 있어요.</div>`;
 }
 
 let craftTab = "gauntlet";
@@ -727,7 +728,7 @@ function renderShop() {
             <div class="card-name">${item.name}</div>
             <div class="card-desc">${item.desc}</div>
             <div class="shop-price">${fmt(item.price)} JC</div>
-            <button class="btn btn-sm btn-gold" data-buy="${item.id}" ${gameState.jc < item.price ? 'disabled' : ''}>구매</button>
+            <button class="btn btn-sm btn-gold" data-buy="${item.id}" ${gameState.jc < item.price ? 'disabled' : ''}>사기</button>
         </div>`).join('');
 }
 
@@ -755,7 +756,7 @@ function renderQuests() {
         if (done) btn = `<button class="btn btn-block" disabled>완료됨</button>`;
         else if (active && canClaim) btn = `<button class="btn btn-block btn-green" data-claim="${q.id}">🎉 보상 받기</button>`;
         else if (active) btn = `<button class="btn btn-block" disabled>진행 중…</button>`;
-        else btn = `<button class="btn btn-block btn-primary" data-quest="${q.id}">이 퀘스트 진행하기</button>`;
+        else btn = `<button class="btn btn-block btn-gold" data-quest="${q.id}">이 숙제 하기</button>`;
 
         const reqHtml = done ? '' : `<div class="req-list">${rows.map(r => `
             <div class="req ${r.met ? 'met' : ''}">
@@ -771,7 +772,7 @@ function renderQuests() {
             <div class="reward">🎁 ${q.rewardDesc}</div>
             ${btn}
         </div>`;
-    }).join('') + `<div class="list-desc" style="text-align:center;margin-top:4px;">퀘스트는 한 번에 하나만 진행돼요. 바꿔도 진행도는 남아 있어요.</div>`;
+    }).join('') + `<div class="list-desc" style="text-align:center;margin-top:4px;">숙제는 한 번에 하나만 할 수 있어요. 바꿔도 해 둔 만큼은 남아요.</div>`;
 }
 
 function renderIndex() {
@@ -788,7 +789,7 @@ function renderIndex() {
         for (const a of list) {
             html += found.has(a.id)
                 ? `<div class="index-cell ${getAuraBorderClass(a)}"><div class="card-name">${auraNameHtml(a)}</div><div class="card-meta">1 in ${fmt(a.in)}</div></div>`
-                : `<div class="index-cell unknown"><div class="card-name">???</div><div class="card-meta">1 in ${fmt(a.in)}</div></div>`;
+                : `<div class="index-cell unknown"><div class="card-name">?</div><div class="card-meta">1 in ${fmt(a.in)}</div></div>`;
         }
     }
     ui.indexGrid.innerHTML = html + '</div>';
@@ -812,7 +813,7 @@ function renderSoundUI() {
         $(`vol-${key}-val`).textContent = v;
     }
     const btn = $('sound-toggle-btn');
-    btn.textContent = soundSettings.enabled ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐';
+    btn.textContent = soundSettings.enabled ? '🔊 소리 켜짐' : '🔇 소리 꺼짐';
     btn.className = `btn btn-block ${soundSettings.enabled ? 'btn-green' : 'btn-red'}`;
 }
 
@@ -898,21 +899,21 @@ ui.inventoryGrid.addEventListener('click', e => {
     const a = AURA_BY_ID[id], count = gameState.inventory[id];
     if (!a || !count) return;
     openQtyDialog({
-        title: `${a.name} 판매`,
-        sub: `${a.grade} · 보유 ${fmt(count)}개`,
+        title: `${a.name} 팔기`,
+        sub: `${a.grade} 칭호, 지금 ${fmt(count)}개 있어요`,
         max: count, initial: count,
         priceEach: a.jcValue, totalLabel: '받는 금액',
-        okText: '판매',
+        okText: '팔기',
         onConfirm: async n => {
             if (HIGH_GRADES.includes(a.grade)) {
-                const ok = await ask({ title: `${a.grade} 칭호를 판매할까요?`, message: `${a.name} ${fmt(n)}개`, okText: '판매', danger: true });
+                const ok = await ask({ title: `${a.grade} 칭호를 팔까요?`, message: `${a.name} ${fmt(n)}개를 팔아요.`, okText: '팔기', danger: true });
                 if (!ok) return;
             }
             gameState.inventory[id] -= n;
             if (gameState.inventory[id] <= 0) delete gameState.inventory[id];
             gameState.jc += a.jcValue * n;
             saveGame(); renderStats(); renderInventory();
-            toast(`+${fmt(a.jcValue * n)} JC`, 'gold');
+            toast(`${fmt(n)}개 팔아서 ${fmt(a.jcValue * n)} JC 받았어요`, 'gold');
         }
     });
 });
@@ -925,11 +926,11 @@ ui.shopGrid.addEventListener('click', e => {
     const max = Math.floor(gameState.jc / item.price);
     if (max < 1) { toast('JC가 부족해요', 'bad'); return; }
     openQtyDialog({
-        title: `${item.name} 구매`,
-        sub: `${item.desc}\n보유 JC ${fmt(gameState.jc)}`,
+        title: `${item.name} 사기`,
+        sub: `${item.desc}\n가진 JC ${fmt(gameState.jc)}`,
         max, initial: 1,
         priceEach: item.price, totalLabel: '총',
-        okText: '구매',
+        okText: '사기',
         onConfirm: n => {
             const cost = n * item.price;
             if (gameState.jc < cost) { toast('JC가 부족해요', 'bad'); return; }
@@ -937,7 +938,7 @@ ui.shopGrid.addEventListener('click', e => {
             addItems({ [id]: n });
             trackQuestProgress("shopPurchases", n);
             saveGame(); renderStats(); renderShop();
-            toast(`${item.name} ${n}개 구매 완료`, 'good');
+            toast(`${item.name} ${n}개 샀어요`, 'good');
         }
     });
 });
@@ -959,8 +960,8 @@ ui.potionGrid.addEventListener('click', e => {
 
     openQtyDialog({
         title: `${item.name} 사용`,
-        sub: `${item.desc}\n보유 ${fmt(count)}개 · 여러 개 쓰면 시간/횟수가 늘어나요`,
-        max: count, initial: 1, okText: '사용',
+        sub: `${item.desc}\n지금 ${fmt(count)}개 있어요. 여러 개 쓰면 시간이나 횟수가 늘어나요.`,
+        max: count, initial: 1, okText: '쓰기',
         onConfirm: n => {
             if ((gameState.itemInventory[id] || 0) < n) return;
             gameState.itemInventory[id] -= n;
@@ -976,7 +977,7 @@ ui.potionGrid.addEventListener('click', e => {
                 gameState.activeMultBuffs.push({ name: item.name, bonus: item.value, uses: item.maxUses * n });
             }
             saveGame(); renderStats(); renderBuffs(); renderPotions();
-            toast(`${item.name} ${n}개 사용!`, 'good');
+            toast(`${item.name} ${n}개 썼어요`, 'good');
         }
     });
 });
@@ -995,7 +996,7 @@ ui.craftGrid.addEventListener('click', e => {
         }
         gameState.craftedGears.push(gear.id);
         equip(gear);
-        toast(`🎉 ${gear.name} 제작 완료! 바로 장착했어요`, 'good');
+        toast(`${gear.name} 완성! 바로 장착했어요`, 'good');
     } else if (d.equip) {
         equip(CRAFT_BY_ID[d.equip]);
     } else if (d.unequip) {
@@ -1028,7 +1029,7 @@ ui.questList.addEventListener('click', e => {
         if (q.reward.items) addItems(q.reward.items);
         if (q.reward.jc) gameState.jc += q.reward.jc;
         saveGame(); renderStats(); renderQuests(); renderRollToggles();
-        toast(`🎉 퀘스트 완료!\n${q.rewardDesc}`, 'gold');
+        toast(`숙제 끝!\n${q.rewardDesc}`, 'gold');
     }
 });
 
@@ -1086,7 +1087,7 @@ $('dev-btn').addEventListener('click', async () => {
     }
     closeSheet('sheet-settings');
     openSheet('sheet-dev');
-    toast('개발자 모드 ON — 이 동안은 저장되지 않아요', 'gold');
+    toast('개발자 모드를 켰어요. 끌 때까지 저장되지 않아요.', 'gold');
 });
 
 $('sheet-dev').addEventListener('click', e => {
@@ -1105,14 +1106,14 @@ $('sheet-dev').addEventListener('click', e => {
             gameState.questProgress[q.id] = { ...q.targets };
         });
         gameState.quickRollUnlocked = true;
-        toast('모든 퀘스트 조건 달성');
+        toast('모든 숙제 조건을 채웠어요');
     } else if (act === 'crafts') {
         CRAFT_ITEMS.forEach(i => { if (!gameState.craftedGears.includes(i.id)) gameState.craftedGears.push(i.id); });
         toast('모든 제작템 획득');
     } else if (act === 'next') {
         nextRollOverride = $('dev-aura-select').value;
         const a = AURA_BY_ID[nextRollOverride];
-        toast(`다음 롤: [${a.grade}] ${a.name}`);
+        toast(`다음 뽑기는 [${a.grade}] ${a.name}`);
     } else if (act === 'exit') {
         gameState = backupGameState;
         backupGameState = null;
@@ -1120,7 +1121,7 @@ $('sheet-dev').addEventListener('click', e => {
         saveGame();
         ui.mainDevBtn.classList.add('hidden');
         closeSheet('sheet-dev');
-        toast('개발자 모드 종료 — 원래 데이터로 복구했어요', 'good');
+        toast('개발자 모드를 껐어요. 원래 데이터로 돌아왔어요.', 'good');
     }
     renderAll();
 });
@@ -1139,6 +1140,24 @@ setInterval(() => {
 }, 1000);
 
 /* =========================================================
+   🔄 새 버전 자동 확인
+   index.html의 ?v= 숫자와 version.json이 다르면
+   브라우저에 남은 예전 화면 대신 새 버전으로 다시 연다
+   ========================================================= */
+
+const APP_VERSION = new URL(import.meta.url).searchParams.get('v') || '0';
+fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' })
+    .then(r => r.json())
+    .then(({ v }) => {
+        const tried = sessionStorage.getItem('js_rng_reload');
+        if (String(v) !== APP_VERSION && tried !== String(v)) {
+            sessionStorage.setItem('js_rng_reload', String(v));
+            location.replace(`${location.pathname}?v=${v}`);
+        }
+    })
+    .catch(() => {});
+
+/* =========================================================
    🚀 시작
    ========================================================= */
 
@@ -1147,6 +1166,6 @@ renderSoundUI();
 renderGradeTable();
 renderAll();
 if (gameState.rolls > 0) {
-    $('lobby-save-info').textContent = `저장된 기록 · ${fmt(gameState.rolls)}롤 · ${fmt(gameState.jc)} JC`;
+    $('lobby-save-info').textContent = `지난번까지 ${fmt(gameState.rolls)}번 뽑았어요`;
 }
 playBgm('lobby');

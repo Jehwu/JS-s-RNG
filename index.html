@@ -3,16 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0b0b12">
+    <meta http-equiv="Cache-Control" content="no-cache">
+    <meta name="theme-color" content="#1d3127">
     <title>JS RNG</title>
-    <link rel="stylesheet" href="style.css?v=2">
-    <link rel="stylesheet" href="effects.css?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
+    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="effects.css?v=3">
 </head>
 <body>
 
     <!-- 🌌 컷씬 (DIVINE / COSMIC / JS) -->
     <div id="star-cutscene-overlay" class="hidden">
-        <button id="skip-cutscene-btn">SKIP ⏭</button>
+        <button id="skip-cutscene-btn">건너뛰기</button>
         <div id="cutscene-star-container">
             <div class="star-beam vertical"></div>
             <div class="star-beam horizontal"></div>
@@ -23,10 +28,10 @@
 
     <!-- 🏠 로비 -->
     <div id="lobby-screen">
-        <div class="lobby-inner">
+        <div class="lobby-board">
             <div class="logo">JS RNG</div>
-            <div class="lobby-sub">당신의 운명을 시험해 보세요</div>
-            <button id="game-start-btn" class="btn btn-primary btn-big">게임 시작</button>
+            <div class="lobby-sub">우리 반 칭호 뽑기</div>
+            <button id="game-start-btn" class="sticker">시작하기</button>
             <div id="lobby-save-info" class="lobby-save"></div>
         </div>
     </div>
@@ -34,55 +39,54 @@
     <!-- 🎮 메인 -->
     <div id="main-game" class="hidden">
         <header class="topbar">
-            <div class="chips">
-                <div class="chip"><span class="chip-label">ROLLS</span><span id="roll-count">0</span></div>
-                <div class="chip chip-gold"><span class="chip-label">JC</span><span id="jc-count">0</span></div>
+            <div class="counts">
+                <span class="count-item">뽑기 <b id="roll-count">0</b>회</span>
+                <span class="count-item coin">🪙 <b id="jc-count">0</b></span>
             </div>
             <div class="topbar-right">
-                <button id="main-dev-btn" class="icon-btn hidden" aria-label="개발자 패널">🛠️</button>
+                <button id="main-dev-btn" class="icon-btn hidden" aria-label="개발자 콘솔">🛠️</button>
                 <button id="settings-btn" class="icon-btn" aria-label="설정">⚙️</button>
             </div>
         </header>
 
-        <section class="stage">
+        <section class="board">
+            <div class="board-corner">
+                <span>행운 ×<b id="luck-multiplier">1</b></span>
+                <span>속도 ×<b id="speed-multiplier">1.00</b></span>
+            </div>
             <div id="aura-display">
-                <div class="stage-hint">아래 버튼을 눌러 뽑기를 시작하세요</div>
+                <div class="stage-hint">오늘은 뭐가 나올까</div>
             </div>
         </section>
-
-        <section class="stats">
-            <div class="stat"><span class="stat-label">🍀 행운</span><span class="stat-val"><b id="luck-multiplier">1</b>배</span></div>
-            <div class="stat"><span class="stat-label">⚡ 속도</span><span class="stat-val"><b id="speed-multiplier">1.00</b>배</span></div>
-        </section>
-        <div id="active-buffs" class="buffs"></div>
+        <div id="active-buffs" class="tray"></div>
 
         <section class="controls">
             <button id="roll-btn">
                 <div class="roll-btn-content">
-                    <span id="btn-main-text">ROLL</span>
+                    <span id="btn-main-text">뽑기!</span>
                     <span id="btn-sub-text" class="hidden">0 / 10</span>
                 </div>
                 <div id="cooldown-bar"></div>
             </button>
             <div class="toggles">
-                <button id="auto-roll-btn" class="toggle">오토 <b>OFF</b></button>
-                <button id="quick-roll-btn" class="toggle" disabled>🔒 빠른 롤</button>
+                <button id="auto-roll-btn" class="toggle">자동 뽑기 꺼짐</button>
+                <button id="quick-roll-btn" class="toggle" disabled>🔒 빠른 뽑기</button>
             </div>
         </section>
 
         <nav class="bottom-nav">
             <button class="nav-btn" data-sheet="sheet-bag"><span class="nav-ico">🎒</span><span>가방</span></button>
-            <button class="nav-btn" data-sheet="sheet-craft"><span class="nav-ico">🔨</span><span>제작</span></button>
-            <button class="nav-btn" data-sheet="sheet-shop"><span class="nav-ico">🛒</span><span>상점</span></button>
-            <button class="nav-btn" data-sheet="sheet-quest"><span class="nav-ico">📜</span><span>퀘스트</span></button>
-            <button class="nav-btn" data-sheet="sheet-index"><span class="nav-ico">📖</span><span>도감</span></button>
+            <button class="nav-btn" data-sheet="sheet-craft"><span class="nav-ico">✂️</span><span>제작</span></button>
+            <button class="nav-btn" data-sheet="sheet-shop"><span class="nav-ico">🍞</span><span>매점</span></button>
+            <button class="nav-btn" data-sheet="sheet-quest"><span class="nav-ico">📝</span><span>숙제</span></button>
+            <button class="nav-btn" data-sheet="sheet-index"><span class="nav-ico">📸</span><span>앨범</span></button>
         </nav>
     </div>
 
     <!-- 🎒 가방 -->
     <div id="sheet-bag" class="sheet-backdrop hidden">
         <div class="sheet">
-            <div class="sheet-head"><h2>가방</h2><button class="sheet-close" data-close>✕</button></div>
+            <div class="sheet-head"><h2>가방</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
             <div class="tabs" id="bag-tabs">
                 <button class="tab active" data-tab="aura">칭호</button>
                 <button class="tab" data-tab="potion">물약</button>
@@ -94,38 +98,38 @@
         </div>
     </div>
 
-    <!-- 🔨 제작 -->
+    <!-- ✂️ 제작 -->
     <div id="sheet-craft" class="sheet-backdrop hidden">
         <div class="sheet">
-            <div class="sheet-head"><h2>제작소</h2><button class="sheet-close" data-close>✕</button></div>
+            <div class="sheet-head"><h2>제작</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
             <div class="tabs" id="craft-tabs">
-                <button class="tab active" data-tab="gauntlet">🥊 건틀렛</button>
-                <button class="tab" data-tab="amulet">📜 부적</button>
+                <button class="tab active" data-tab="gauntlet">건틀렛</button>
+                <button class="tab" data-tab="amulet">부적</button>
             </div>
             <div class="sheet-body"><div id="craft-grid"></div></div>
         </div>
     </div>
 
-    <!-- 🛒 상점 -->
+    <!-- 🍞 매점 -->
     <div id="sheet-shop" class="sheet-backdrop hidden">
         <div class="sheet">
-            <div class="sheet-head"><h2>상점</h2><button class="sheet-close" data-close>✕</button></div>
+            <div class="sheet-head"><h2>매점</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
             <div class="sheet-body"><div id="shop-grid"></div></div>
         </div>
     </div>
 
-    <!-- 📜 퀘스트 -->
+    <!-- 📝 숙제 -->
     <div id="sheet-quest" class="sheet-backdrop hidden">
         <div class="sheet">
-            <div class="sheet-head"><h2>퀘스트</h2><button class="sheet-close" data-close>✕</button></div>
+            <div class="sheet-head"><h2>숙제</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
             <div class="sheet-body"><div id="quest-list"></div></div>
         </div>
     </div>
 
-    <!-- 📖 도감 -->
+    <!-- 📸 앨범 -->
     <div id="sheet-index" class="sheet-backdrop hidden">
         <div class="sheet">
-            <div class="sheet-head"><h2>도감 <small id="index-progress"></small></h2><button class="sheet-close" data-close>✕</button></div>
+            <div class="sheet-head"><h2>칭호 앨범 <small id="index-progress"></small></h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
             <div class="sheet-body"><div id="index-grid"></div></div>
         </div>
     </div>
@@ -133,38 +137,38 @@
     <!-- ⚙️ 설정 -->
     <div id="sheet-settings" class="sheet-backdrop hidden">
         <div class="sheet">
-            <div class="sheet-head"><h2>설정</h2><button class="sheet-close" data-close>✕</button></div>
+            <div class="sheet-head"><h2>설정</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
             <div class="sheet-body">
                 <div class="section">
-                    <div class="section-title">🔊 사운드</div>
-                    <button id="sound-toggle-btn" class="btn btn-block">사운드 켜짐</button>
-                    <div class="slider-row"><label>마스터 <span id="vol-master-val">100</span>%</label><input type="range" id="vol-master" min="0" max="100"></div>
-                    <div class="slider-row"><label>BGM <span id="vol-bgm-val">70</span>%</label><input type="range" id="vol-bgm" min="0" max="100"></div>
-                    <div class="slider-row"><label>컷씬 · 드롭 <span id="vol-cutscene-val">50</span>%</label><input type="range" id="vol-cutscene" min="0" max="100"></div>
-                    <div class="slider-row"><label>클릭음 <span id="vol-click-val">100</span>%</label><input type="range" id="vol-click" min="0" max="100"></div>
-                    <div class="slider-row"><label>롤링음 <span id="vol-roll-val">100</span>%</label><input type="range" id="vol-roll" min="0" max="100"></div>
+                    <div class="section-title">소리</div>
+                    <button id="sound-toggle-btn" class="btn btn-block">소리 켜짐</button>
+                    <div class="slider-row"><label>전체 <span id="vol-master-val">100</span></label><input type="range" id="vol-master" min="0" max="100"></div>
+                    <div class="slider-row"><label>배경음악 <span id="vol-bgm-val">70</span></label><input type="range" id="vol-bgm" min="0" max="100"></div>
+                    <div class="slider-row"><label>컷씬과 등장음 <span id="vol-cutscene-val">50</span></label><input type="range" id="vol-cutscene" min="0" max="100"></div>
+                    <div class="slider-row"><label>버튼 소리 <span id="vol-click-val">100</span></label><input type="range" id="vol-click" min="0" max="100"></div>
+                    <div class="slider-row"><label>뽑는 소리 <span id="vol-roll-val">100</span></label><input type="range" id="vol-roll" min="0" max="100"></div>
                 </div>
 
                 <div class="section">
-                    <div class="section-title">🗑️ 자동 판매</div>
-                    <div class="section-desc">켜 둔 등급은 뽑자마자 JC로 바뀝니다.</div>
+                    <div class="section-title">자동 판매</div>
+                    <div class="section-desc">체크한 등급은 뽑자마자 JC로 바뀌어요.</div>
                     <div id="auto-sell-grid"></div>
                 </div>
 
                 <div class="section">
-                    <div class="section-title">🎁 쿠폰</div>
+                    <div class="section-title">쿠폰</div>
                     <div class="input-row">
-                        <input type="text" id="code-input" placeholder="코드 입력" autocomplete="off">
-                        <button id="submit-code-btn" class="btn btn-green">확인</button>
+                        <input type="text" id="code-input" placeholder="쿠폰 코드" autocomplete="off">
+                        <button id="submit-code-btn" class="btn btn-gold">받기</button>
                     </div>
                 </div>
 
                 <div class="section">
-                    <div class="section-title">📊 등급 및 확률</div>
+                    <div class="section-title">등급별 확률</div>
                     <div id="grade-table"></div>
                 </div>
 
-                <button id="dev-btn" class="dev-link">개발자 접근</button>
+                <button id="dev-btn" class="dev-link">개발자</button>
             </div>
         </div>
     </div>
@@ -172,46 +176,46 @@
     <!-- 🛠️ 개발자 -->
     <div id="sheet-dev" class="sheet-backdrop hidden">
         <div class="sheet">
-            <div class="sheet-head"><h2>개발자 콘솔</h2><button class="sheet-close" data-close>✕</button></div>
+            <div class="sheet-head"><h2>개발자 콘솔</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
             <div class="sheet-body">
                 <div class="dev-list">
-                    <button class="btn btn-block" data-dev="jc">🪙 +100만 JC</button>
-                    <button class="btn btn-block" data-dev="luck">🍀 기본 행운 10,000배</button>
-                    <button class="btn btn-block" data-dev="auras">🎒 모든 칭호 50개씩</button>
-                    <button class="btn btn-block" data-dev="quests">📜 모든 퀘스트 조건 달성</button>
-                    <button class="btn btn-block" data-dev="crafts">🔨 모든 제작템 획득</button>
+                    <button class="btn btn-block" data-dev="jc">100만 JC 받기</button>
+                    <button class="btn btn-block" data-dev="luck">기본 행운 10,000배</button>
+                    <button class="btn btn-block" data-dev="auras">모든 칭호 50개씩 받기</button>
+                    <button class="btn btn-block" data-dev="quests">모든 숙제 조건 채우기</button>
+                    <button class="btn btn-block" data-dev="crafts">모든 제작템 받기</button>
                 </div>
                 <div class="section">
-                    <div class="section-title">🎯 다음 롤 칭호 지정</div>
+                    <div class="section-title">다음 뽑기 칭호 정하기</div>
                     <select id="dev-aura-select"></select>
-                    <button class="btn btn-block" data-dev="next">지정하기</button>
+                    <button class="btn btn-block" data-dev="next">정하기</button>
                 </div>
-                <button class="btn btn-block btn-red" data-dev="exit">🚪 개발자 모드 종료 (원래 데이터로 복구)</button>
+                <button class="btn btn-block btn-red" data-dev="exit">개발자 모드 끄고 원래 데이터로 돌아가기</button>
             </div>
         </div>
     </div>
 
-    <!-- 🔢 수량 선택 (판매/구매/사용 공용) -->
+    <!-- 🔢 수량 선택 (판매/구매/사용 공용) — 공책 -->
     <div id="qty-dialog" class="dialog-backdrop hidden">
         <div class="dialog">
             <div id="qty-title" class="dialog-title"></div>
             <div id="qty-sub" class="dialog-sub"></div>
             <input type="range" id="qty-slider" min="1" max="1" value="1">
             <div class="qty-row">
-                <button class="qty-step" data-step="-1">−</button>
+                <button class="qty-step" data-step="-1" aria-label="하나 빼기">−</button>
                 <input type="number" id="qty-input" min="1" value="1" inputmode="numeric">
-                <button class="qty-step" data-step="1">+</button>
-                <button class="qty-max" data-step="max">MAX</button>
+                <button class="qty-step" data-step="1" aria-label="하나 더하기">+</button>
+                <button class="qty-max" data-step="max">전부</button>
             </div>
             <div id="qty-total" class="qty-total"></div>
             <div class="dialog-actions">
                 <button class="btn" data-qty="cancel">취소</button>
-                <button id="qty-confirm" class="btn btn-primary" data-qty="ok">확인</button>
+                <button id="qty-confirm" class="btn btn-gold" data-qty="ok">확인</button>
             </div>
         </div>
     </div>
 
-    <!-- ❓ 확인 / 입력 다이얼로그 -->
+    <!-- ❓ 확인 / 입력 -->
     <div id="ask-dialog" class="dialog-backdrop hidden">
         <div class="dialog">
             <div id="ask-title" class="dialog-title"></div>
@@ -219,13 +223,13 @@
             <input type="password" id="ask-input" class="hidden" autocomplete="off">
             <div class="dialog-actions">
                 <button class="btn" data-ask="cancel">취소</button>
-                <button id="ask-ok" class="btn btn-primary" data-ask="ok">확인</button>
+                <button id="ask-ok" class="btn btn-gold" data-ask="ok">확인</button>
             </div>
         </div>
     </div>
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=2"></script>
+    <script type="module" src="script.js?v=3"></script>
 </body>
 </html>
