@@ -1,0 +1,307 @@
+/* =========================================================
+   🥊 장비 3D (gear3d.js)
+   - 건틀렛: 캐릭터 기준 오른팔(dummy.armL, 화면에선 왼쪽) 아래팔에 낌
+   - 부적:   캐릭터 기준 왼팔(dummy.armR) 윗팔에 띠를 감고 부적 종이를 매담
+   - 전부 네모 박스로만 만든다
+   - 팔 피벗 기준: 팔은 y 0.1 ~ -1.9, 폭 1 x 1 (손끝이 -1.9)
+   ========================================================= */
+
+import * as THREE from 'three';
+
+const BOX = new THREE.BoxGeometry(1, 1, 1);
+
+const std = (color, { metal = 0.2, rough = 0.55, emissive = null, ei = 0 } = {}) =>
+    new THREE.MeshStandardMaterial({ color, metalness: metal, roughness: rough, emissive: emissive ?? 0x000000, emissiveIntensity: ei });
+const glow = (color, opacity = 1) =>
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+
+function box(parent, mat, w, h, d, x, y, z, rx = 0, ry = 0, rz = 0) {
+    const m = new THREE.Mesh(BOX, mat);
+    m.scale.set(w, h, d);
+    m.position.set(x, y, z);
+    m.rotation.set(rx, ry, rz);
+    parent.add(m);
+    return m;
+}
+
+// 아래팔을 감싸는 기본 껍데기. side = 바깥쪽 방향 (-1: 화면 왼쪽)
+function shell(g, mat, { top = -0.95, bottom = -1.98, grow = 0.12 } = {}) {
+    const h = top - bottom;
+    return box(g, mat, 1 + grow, h, 1 + grow, 0, (top + bottom) / 2, 0);
+}
+
+/* ---------- 건틀렛 6종 ---------- */
+const GAUNTLETS = {
+    // 초보자의 운수대통: 갈색 가죽 + 금 징 + 손등에 네모 네잎클로버
+    gear_beginner(g, up, side) {
+        const leather = std('#7a4a2a', { rough: 0.85 });
+        const strap = std('#4a2c18', { rough: 0.9 });
+        const gold = std('#ffcf4a', { metal: 0.8, rough: 0.3, emissive: '#ffb300', ei: 0.25 });
+        shell(g, leather, { top: -1.15 });
+        box(g, strap, 1.16, 0.12, 1.16, 0, -1.3, 0);
+        box(g, strap, 1.16, 0.12, 1.16, 0, -1.62, 0);
+        for (const z of [-0.3, 0.3]) for (const y of [-1.3, -1.62]) box(g, gold, 0.1, 0.1, 0.1, side * 0.6, y, z);
+        // 손등(앞면)에 네잎클로버
+        const leaf = std('#3ddc6a', { emissive: '#1fbf4a', ei: 0.55, rough: 0.5 });
+        const clover = new THREE.Group();
+        clover.position.set(0, -1.55, 0.6);
+        for (const [x, y] of [[-0.13, 0.13], [0.13, 0.13], [-0.13, -0.13], [0.13, -0.13]]) box(clover, leaf, 0.22, 0.22, 0.06, x, y, 0, 0, 0, Math.PI / 4);
+        box(clover, std('#2a8c3c'), 0.05, 0.22, 0.05, 0.08, -0.3, 0, 0, 0, 0.4);
+        g.add(clover);
+        up.push(t => { clover.rotation.z = Math.sin(t * 2) * 0.12; clover.scale.setScalar(1 + Math.sin(t * 4) * 0.04); });
+    },
+
+    // 폭주기관차: 검은 무쇠 + 빨간 줄 + 굴뚝 + 피스톤 + 연기 큐브
+    gear_speed(g, up, side) {
+        const iron = std('#26272c', { metal: 0.7, rough: 0.45 });
+        const red = std('#d8262f', { metal: 0.3, rough: 0.4, emissive: '#7a0a10', ei: 0.4 });
+        const brass = std('#c8a24a', { metal: 0.85, rough: 0.3 });
+        shell(g, iron, { top: -0.9 });
+        box(g, red, 1.15, 0.14, 1.15, 0, -1.1, 0);
+        box(g, red, 1.15, 0.14, 1.15, 0, -1.75, 0);
+        // 앞쪽 소 잡는 쟁기(카우캐처): 손끝 앞쪽 비스듬한 판
+        for (let i = 0; i < 4; i++) box(g, red, 0.16, 0.36, 0.12, -0.36 + i * 0.24, -2.0, 0.52, -0.5, 0, 0);
+        // 굴뚝 (바깥쪽 위로)
+        const stack = new THREE.Group();
+        stack.position.set(side * 0.62, -1.15, 0);
+        box(stack, iron, 0.3, 0.42, 0.3, 0, 0.1, 0);
+        box(stack, brass, 0.42, 0.1, 0.42, 0, 0.34, 0);
+        g.add(stack);
+        // 피스톤
+        const rod = box(g, brass, 0.08, 0.08, 0.8, side * 0.6, -1.6, 0.05);
+        // 리벳
+        for (const y of [-1.25, -1.45, -1.6]) for (const z of [-0.35, 0, 0.35]) box(g, brass, 0.06, 0.06, 0.06, 0, y, 0.57).position.x = z;
+        // 헤드라이트
+        box(g, std('#fff4c0', { emissive: '#ffe066', ei: 1.6 }), 0.26, 0.26, 0.05, 0, -1.42, 0.59);
+        // 연기
+        const smokeMat = glow('#c7c9d6', 0.5);
+        const puffs = [];
+        for (let i = 0; i < 6; i++) { const p = box(g, smokeMat, 0.18, 0.18, 0.18, 0, 0, 0); puffs.push(p); }
+        up.push((t, dt, speed = 1) => {
+            rod.position.z = 0.05 + Math.sin(t * 9 * speed) * 0.15;
+            puffs.forEach((p, i) => {
+                const k = ((t * 0.9 * speed + i / puffs.length) % 1);
+                p.position.set(side * (0.62 + k * 0.5), -0.75 + k * 1.2, Math.sin(i * 7 + t) * 0.1);
+                const s = 0.12 + k * 0.32;
+                p.scale.set(s, s, s);
+                p.rotation.set(k * 3, k * 2, 0);
+                p.material.opacity = 0.5 * (1 - k);
+            });
+        });
+    },
+
+    // 파괴신: 두툼한 검붉은 갑옷 + 가시 + 붉게 빛나는 균열
+    gear_destroyer_fist(g, up, side) {
+        const plate = std('#2a0d10', { metal: 0.65, rough: 0.35 });
+        const edge = std('#5a1418', { metal: 0.6, rough: 0.35 });
+        const lava = glow('#ff3a1f', 0.95);
+        shell(g, plate, { top: -0.7, grow: 0.22 });
+        box(g, edge, 1.3, 0.16, 1.3, 0, -0.72, 0);
+        box(g, edge, 1.34, 0.4, 1.3, 0, -1.85, 0.02);   // 주먹 덩어리
+        // 손가락 마디 가시
+        for (const x of [-0.42, -0.14, 0.14, 0.42]) box(g, edge, 0.12, 0.12, 0.34, x, -1.85, 0.75, 0, 0, Math.PI / 4);
+        // 바깥쪽 큰 가시
+        for (const [y, s] of [[-0.95, 0.55], [-1.3, 0.7], [-1.62, 0.5]]) {
+            const sp = box(g, edge, s, 0.14, 0.14, side * (0.66 + s / 2), y, 0, 0, 0, side * 0.35);
+            sp.rotation.x = Math.PI / 4;
+        }
+        // 균열 (빛)
+        const cracks = [];
+        for (const [w, h, x, y, rz] of [[0.06, 0.5, -0.15, -1.1, 0.4], [0.06, 0.4, 0.2, -1.45, -0.5], [0.3, 0.06, 0.05, -1.3, 0], [0.06, 0.3, -0.3, -1.55, 0.2]]) {
+            cracks.push(box(g, lava, w, h, 0.04, x, y, 0.62, 0, 0, rz));
+            cracks.push(box(g, lava, w, h, 0.04, x, y, -0.62, 0, 0, -rz));
+        }
+        const core = box(g, std('#ff4a1f', { emissive: '#ff2a00', ei: 1.4 }), 0.22, 0.22, 0.06, 0, -1.3, 0.63, 0, 0, Math.PI / 4);
+        up.push(t => {
+            const p = 0.55 + 0.45 * Math.abs(Math.sin(t * 2.6));
+            cracks.forEach(c => { c.material.opacity = p; });
+            const k = 0.85 + p * 0.3; core.scale.set(0.22 * k, 0.22 * k, 0.06);
+        });
+    },
+
+    // 크레이지콩: 커다란 고릴라 주먹 (털 큐브가 들썩들썩)
+    gear_crazykong_heart(g, up, side) {
+        const fur = std('#8a5a32', { rough: 0.95 });
+        const furDark = std('#5e3b1f', { rough: 0.95 });
+        const skin = std('#5a4a40', { rough: 0.8 });
+        const fist = new THREE.Group();
+        g.add(fist);
+        box(fist, fur, 1.24, 0.8, 1.24, 0, -1.2, 0);
+        box(fist, skin, 1.5, 0.75, 1.45, 0, -1.92, 0.05);      // 왕주먹
+        for (const x of [-0.5, -0.17, 0.17, 0.5]) box(fist, skin, 0.3, 0.3, 0.2, x, -1.75, 0.82);
+        box(fist, std('#ffd84a', { emissive: '#ffc400', ei: 0.4 }), 1.46, 0.1, 0.1, 0, -1.58, 0.78);   // 바나나색 손목띠
+        const tufts = [];
+        for (let i = 0; i < 10; i++) {
+            const a = (i / 10) * Math.PI * 2;
+            tufts.push(box(fist, i % 2 ? fur : furDark, 0.22, 0.32, 0.22, Math.cos(a) * 0.66, -0.9 + (i % 3) * -0.12, Math.sin(a) * 0.66, 0, 0, Math.cos(a) * 0.3));
+        }
+        up.push((t, dt, speed = 1) => {
+            const b = Math.max(0, Math.sin(t * 5 * speed));
+            fist.position.y = -b * 0.06;
+            fist.scale.set(1 + b * 0.05, 1, 1 + b * 0.05);
+            tufts.forEach((tf, i) => { tf.rotation.x = Math.sin(t * 6 + i) * 0.25; });
+        });
+    },
+
+    // 대마법사: 보라 천 토시 + 금테 + 손등 보석 + 손목 둘레를 도는 룬 큐브
+    gear_wizard(g, up, side) {
+        const cloth = std('#2c1a66', { rough: 0.7 });
+        const trim = std('#e8c25a', { metal: 0.85, rough: 0.25, emissive: '#a07a10', ei: 0.3 });
+        shell(g, cloth, { top: -0.85 });
+        box(g, trim, 1.17, 0.1, 1.17, 0, -0.88, 0);
+        box(g, trim, 1.17, 0.1, 1.17, 0, -1.95, 0);
+        // 넓게 퍼지는 소맷부리
+        box(g, cloth, 1.36, 0.18, 1.36, 0, -0.96, 0);
+        const gem = box(g, std('#7af7ff', { emissive: '#36d6ff', ei: 2.0, rough: 0.1 }), 0.26, 0.26, 0.1, 0, -1.5, 0.6, 0, 0, Math.PI / 4);
+        box(g, trim, 0.4, 0.4, 0.06, 0, -1.5, 0.57, 0, 0, Math.PI / 4);
+        const runeMat = glow('#9a7bff', 0.9);
+        const runes = [];
+        for (let i = 0; i < 5; i++) runes.push(box(g, runeMat, 0.12, 0.12, 0.12, 0, 0, 0));
+        up.push(t => {
+            runes.forEach((r, i) => {
+                const a = t * 1.6 + (i / runes.length) * Math.PI * 2;
+                r.position.set(Math.cos(a) * 0.95, -1.45 + Math.sin(t * 2 + i) * 0.18, Math.sin(a) * 0.95);
+                r.rotation.set(t * 2 + i, t * 3, 0);
+            });
+            gem.material.emissiveIntensity = 1.4 + Math.sin(t * 3) * 0.6;
+        });
+    },
+
+    // 두 심장: 흰 판금 + 픽셀 하트 두 개가 번갈아 쿵쾅
+    gear_two_hearts(g, up, side) {
+        const white = std('#f1eef4', { metal: 0.5, rough: 0.3 });
+        const crimson = std('#b3122e', { metal: 0.4, rough: 0.35 });
+        shell(g, white, { top: -0.8, grow: 0.16 });
+        box(g, crimson, 1.2, 0.14, 1.2, 0, -0.82, 0);
+        box(g, crimson, 1.2, 0.14, 1.2, 0, -1.95, 0);
+        // 픽셀 하트 모양
+        const HEART = ['01100110', '11111111', '11111111', '01111110', '00111100', '00011000'];
+        function pixelHeart(color) {
+            const h = new THREE.Group();
+            const m = std(color, { emissive: color, ei: 1.1, rough: 0.4 });
+            const s = 0.055;
+            HEART.forEach((row, r) => [...row].forEach((c, k) => {
+                if (c === '1') box(h, m, s, s, 0.05, (k - 3.5) * s, (2.5 - r) * s, 0);
+            }));
+            return h;
+        }
+        const h1 = pixelHeart('#ff2a4f'); h1.position.set(-0.2, -1.25, 0.6);
+        const h2 = pixelHeart('#ff7aa0'); h2.position.set(0.2, -1.6, 0.6);
+        g.add(h1, h2);
+        // 옆면 혈관 줄
+        for (const y of [-1.1, -1.4, -1.7]) box(g, crimson, 0.05, 0.05, 1.0, side * 0.59, y, 0);
+        up.push(t => {
+            const beat = k => { const x = (t * 1.3 + k) % 1; return x < 0.12 ? 1 + x * 3 : x < 0.24 ? 1.36 - (x - 0.12) * 3 : 1; };
+            h1.scale.setScalar(beat(0));
+            h2.scale.setScalar(beat(0.5));
+        });
+    }
+};
+
+/* ---------- 부적 2종 ---------- */
+function talismanTexture(paper, ink, title) {
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 128;
+    const g = c.getContext('2d');
+    g.fillStyle = paper; g.fillRect(0, 0, 64, 128);
+    g.strokeStyle = ink; g.lineWidth = 3;
+    g.strokeRect(5, 5, 54, 118);
+    g.fillStyle = ink;
+    // 위쪽 네모 도장
+    g.fillRect(20, 12, 24, 4); g.fillRect(20, 28, 24, 4); g.fillRect(20, 12, 4, 20); g.fillRect(40, 12, 4, 20);
+    g.fillRect(28, 18, 8, 8);
+    // 가운데 글씨 (세로)
+    g.font = 'bold 18px sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    [...title].forEach((ch, i) => g.fillText(ch, 32, 50 + i * 20));
+    // 아래 꼬불 획 (네모로)
+    g.fillRect(14, 112, 36, 3); g.fillRect(30, 100, 3, 14);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.magFilter = THREE.NearestFilter;
+    return tex;
+}
+
+const AMULETS = {
+    // 평범함의 부적: 회색 천 띠 + 누런 종이 부적 한 장
+    amulet_drum(g, up, side) {
+        const band = std('#6c6e78', { rough: 0.9 });
+        box(g, band, 1.1, 0.26, 1.1, 0, -0.42, 0);
+        box(g, std('#3d3f48'), 1.12, 0.06, 1.12, 0, -0.32, 0);
+        const paper = new THREE.Group();
+        paper.position.set(side * 0.2, -0.5, 0.57);
+        const mat = new THREE.MeshStandardMaterial({ map: talismanTexture('#e9d27a', '#b3261e', '평범'), roughness: 0.9 });
+        box(paper, mat, 0.42, 0.84, 0.03, 0, -0.42, 0);
+        g.add(paper);
+        up.push(t => { paper.rotation.x = 0.08 + Math.sin(t * 1.7) * 0.07; paper.rotation.z = Math.sin(t * 1.3) * 0.06; });
+    },
+
+    // 미나이의 부적: 쌍둥이 부적 두 장 (하늘/보라) + 빛나는 띠 + 띠 둘레를 도는 별 큐브 2개
+    amulet_commander(g, up, side) {
+        const band = std('#1a1f3a', { metal: 0.6, rough: 0.3 });
+        box(g, band, 1.12, 0.3, 1.12, 0, -0.42, 0);
+        const line = glow('#7af7ff', 0.9);
+        box(g, line, 1.14, 0.05, 1.14, 0, -0.34, 0);
+        box(g, glow('#c08bff', 0.9), 1.14, 0.05, 1.14, 0, -0.5, 0);
+        const papers = [];
+        [['#bff3ff', '#1a4fd6', '미나'], ['#e7d4ff', '#7a1fd6', '이']].forEach(([paperC, ink, txt], i) => {
+            const p = new THREE.Group();
+            p.position.set((i ? 0.23 : -0.23), -0.52, 0.58);
+            const mat = new THREE.MeshStandardMaterial({ map: talismanTexture(paperC, ink, txt), roughness: 0.8, emissive: paperC, emissiveIntensity: 0.18 });
+            box(p, mat, 0.38, 0.76, 0.03, 0, -0.38, 0);
+            g.add(p); papers.push(p);
+        });
+        const stars = [glow('#7af7ff', 1), glow('#c08bff', 1)].map(m => box(g, m, 0.1, 0.1, 0.1, 0, 0, 0));
+        up.push(t => {
+            papers.forEach((p, i) => { p.rotation.x = 0.08 + Math.sin(t * 1.6 + i * 1.5) * 0.08; p.rotation.z = Math.sin(t * 1.2 + i) * 0.08; });
+            stars.forEach((s, i) => {
+                const a = t * 2.2 + i * Math.PI;
+                s.position.set(Math.cos(a) * 0.82, -0.42 + Math.sin(a * 2) * 0.08, Math.sin(a) * 0.82);
+                s.rotation.set(t * 3, t * 2, 0);
+            });
+        });
+    }
+};
+
+/* ---------- 장착 관리 ---------- */
+// dummy: makeDummy() 결과. 반환: { set({gauntlet, amulet, visible}), update(t, dt, speed) }
+export function createGearRig(dummy) {
+    const slots = {
+        gauntlet: { arm: dummy.armL, side: -1, group: null, up: [], id: null, table: GAUNTLETS },
+        amulet: { arm: dummy.armR, side: 1, group: null, up: [], id: null, table: AMULETS }
+    };
+    let visible = true;
+
+    function disposeGroup(grp) {
+        grp.traverse(o => {
+            if (o.material) { o.material.map?.dispose?.(); o.material.dispose?.(); }
+        });
+    }
+
+    function setSlot(slot, id) {
+        if (slot.id === id) return;
+        if (slot.group) { slot.arm.remove(slot.group); disposeGroup(slot.group); }
+        slot.group = null; slot.up = []; slot.id = id;
+        const build = id && slot.table[id];
+        if (!build) return;
+        const g = new THREE.Group();
+        g.userData.noFit = true;
+        build(g, slot.up, slot.side);
+        g.visible = visible;
+        slot.arm.add(g);
+        slot.group = g;
+    }
+
+    return {
+        set({ gauntlet = null, amulet = null, visible: vis = true } = {}) {
+            visible = vis;
+            setSlot(slots.gauntlet, gauntlet);
+            setSlot(slots.amulet, amulet);
+            for (const s of Object.values(slots)) if (s.group) s.group.visible = visible;
+        },
+        update(t, dt, speed) {
+            if (!visible) return;
+            for (const s of Object.values(slots)) if (s.group) s.up.forEach(u => u(t, dt, speed));
+        }
+    };
+}

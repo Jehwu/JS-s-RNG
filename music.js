@@ -6,7 +6,12 @@
 
 export const BGM_TRACKS = [
     { id: 'main', title: 'Abyss Drift', artist: 'JS RNG OST', src: 'main_bgm.mp3' },
-    { id: 'lobby', title: 'Lobby Signal', artist: 'JS RNG OST', src: 'lobby_bgm.mp3' }
+    { id: 'lobby', title: 'Lobby Signal', artist: 'JS RNG OST', src: 'lobby_bgm.mp3' },
+    { id: 'ut_start', title: 'Start Menu', artist: 'Toby Fox · UNDERTALE', src: 'bgm/start_menu.mp3' },
+    { id: 'ut_ruins', title: 'Ruins', artist: 'Toby Fox · UNDERTALE', src: 'bgm/ruins.mp3' },
+    { id: 'ut_ghost', title: 'Ghost Fight', artist: 'Toby Fox · UNDERTALE', src: 'bgm/ghost_fight.mp3' },
+    { id: 'ut_sans', title: 'sans.', artist: 'Toby Fox · UNDERTALE', src: 'bgm/sans.mp3' },
+    { id: 'ut_snowy', title: 'Snowy', artist: 'Toby Fox · UNDERTALE', src: 'bgm/snowy.mp3' }
 ];
 
 const STATE_KEY = 'js_rng_music';

@@ -1,6 +1,6 @@
-import { AURA_DATA } from './auras.js?v=12';
-import { CRAFT_ITEMS } from './craftItems.js?v=12';
-import { createMusicPlayer, coverArt } from './music.js?v=12';
+import { AURA_DATA } from './auras.js?v=13';
+import { CRAFT_ITEMS } from './craftItems.js?v=13';
+import { createMusicPlayer, coverArt } from './music.js?v=13';
 
 /* =========================================================
    📦 게임 데이터
@@ -1185,7 +1185,7 @@ ui.craftGrid.addEventListener('click', e => {
         if (item.category === "amulet") { gameState.amulet = null; gameState.amuletStack = 0; }
         else gameState.gear = null;
     } else return;
-    saveGame(); renderStats(); renderBuffs(); renderCraft();
+    saveGame(); renderStats(); renderBuffs(); renderCraft(); applyGear();
 });
 
 function equip(item) {
@@ -1367,7 +1367,19 @@ function startStarfield2D() {
 let stage3d = null;
 const nametag = $('nametag');
 
+// 건틀렛/부적을 3D 캐릭터 팔에 끼움
+function applyGear() {
+    stage3d?.setGear({ gauntlet: gameState.gear, amulet: gameState.amulet, visible: gameState.showGear !== false });
+    const btn = $('gear-toggle-btn');
+    if (btn) btn.textContent = gameState.showGear !== false ? '장비 보이기 켜짐' : '장비 보이기 꺼짐';
+}
+$('gear-toggle-btn').addEventListener('click', () => {
+    gameState.showGear = gameState.showGear === false;
+    saveGame(); applyGear();
+});
+
 function applyEquippedAura() {
+    applyGear();
     const aura = AURA_BY_ID[gameState.equippedAura] || null;
     stage3d?.setAura(aura);
     document.documentElement.style.setProperty('--aura', aura ? aura.color : '#5b4dff');
@@ -1384,7 +1396,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=12')
+import('./aura3d.js?v=13')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

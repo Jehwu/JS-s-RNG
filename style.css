@@ -116,9 +116,11 @@ input, select { font-family: inherit; -webkit-user-select: text; user-select: te
 .lobby-inner .start-btn { margin-top: auto; }
 .logo {
     font-family: var(--display);
-    font-size: clamp(64px, 22vw, 104px);
+    font-size: clamp(40px, 15vw, 92px);
     line-height: 0.95;
     white-space: nowrap;
+    max-width: 100%;
+    display: flex; flex-direction: column; align-items: center;
     color: #fff;
     text-shadow:
         0 0 18px color-mix(in srgb, var(--aura) 70%, transparent),
@@ -751,17 +753,16 @@ body.cine-on #nametag, body.cine-on #ambient { opacity: 0 !important; }
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 
-/* 로고 2.0 */
+/* 로고 2.0 (이름 아래 배지로 둬서 좁은 화면에서도 안 잘림) */
 .logo-ver {
-    display: inline-block;
+    display: block;
     font-family: var(--ui);
-    font-size: 0.32em;
-    letter-spacing: 0.08em;
-    vertical-align: super;
-    margin-left: 0.18em;
-    padding: 0.12em 0.35em;
+    font-size: 0.26em;
+    letter-spacing: 0.6em;
+    margin-top: 0.35em;
+    padding: 0.2em 0.5em 0.2em 1.1em;
     border: 1px solid currentColor;
-    color: var(--aura);
+    color: color-mix(in srgb, var(--aura) 60%, #fff);
     text-shadow: 0 0 12px var(--aura);
 }
 

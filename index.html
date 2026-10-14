@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=12">
-    <link rel="stylesheet" href="rarity.css?v=12">
+    <link rel="stylesheet" href="style.css?v=13">
+    <link rel="stylesheet" href="rarity.css?v=13">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -225,6 +225,12 @@
                 </div>
 
                 <div class="section">
+                    <div class="section-title">장비 표시</div>
+                    <div class="section-desc">장착한 건틀렛(오른팔)과 부적(왼팔)을 캐릭터에 보여줍니다.</div>
+                    <button id="gear-toggle-btn" class="btn btn-block">장비 보이기 켜짐</button>
+                </div>
+
+                <div class="section">
                     <div class="section-title">자동 판매</div>
                     <div class="section-desc">켜 둔 등급은 뽑자마자 JC로 바뀝니다.</div>
                     <div id="auto-sell-grid"></div>
@@ -305,6 +311,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=12"></script>
+    <script type="module" src="script.js?v=13"></script>
 </body>
 </html>
