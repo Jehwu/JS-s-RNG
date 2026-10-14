@@ -9,25 +9,37 @@ import { EffectComposer } from './lib/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './lib/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './lib/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './lib/jsm/postprocessing/OutputPass.js';
-import { SIGNATURES } from './auraSignatures.js?v=7';
+import { SIGNATURES } from './auraSignatures.js?v=8';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const rand = (a, b) => a + Math.random() * (b - a);
 
 /* ---------- 얼굴 (머리 앞면에만 붙이는 그림) ---------- */
-function makeFaceTexture(base) {
+// eye: 눈 색, smile: 웃는 입, glowEyes: 빛나는 네모 눈 (JXS용)
+function makeFaceTexture(base, { eye = '#15151c', smile = true, glowEyes = false } = {}) {
     const c = document.createElement('canvas');
     c.width = c.height = 256;
     const g = c.getContext('2d');
     g.fillStyle = base;
     g.fillRect(0, 0, 256, 256);
-    g.fillStyle = '#15151c';
-    g.beginPath(); g.ellipse(98, 104, 9, 15, 0, 0, Math.PI * 2); g.fill();
-    g.beginPath(); g.ellipse(158, 104, 9, 15, 0, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = '#15151c';
-    g.lineWidth = 9;
-    g.lineCap = 'round';
-    g.beginPath(); g.arc(128, 140, 40, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
+    if (glowEyes) {
+        g.shadowColor = eye; g.shadowBlur = 28;
+        g.fillStyle = eye;
+        g.fillRect(78, 96, 34, 14); g.fillRect(144, 96, 34, 14);
+        g.fillStyle = '#ffffff';
+        g.fillRect(86, 99, 18, 8); g.fillRect(152, 99, 18, 8);
+        g.shadowBlur = 0;
+    } else {
+        g.fillStyle = eye;
+        g.beginPath(); g.ellipse(98, 104, 9, 15, 0, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.ellipse(158, 104, 9, 15, 0, 0, Math.PI * 2); g.fill();
+    }
+    if (smile) {
+        g.strokeStyle = eye;
+        g.lineWidth = 9;
+        g.lineCap = 'round';
+        g.beginPath(); g.arc(128, 140, 40, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
+    }
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 4;
@@ -68,7 +80,7 @@ function makeDummy() {
     const headMats = [mat, mat, mat, mat, faceMat, mat];   // +z 면에만 얼굴
     const head = part(1.25, 1.2, 1.2, 0, 4.62, 0, 0, headMats);
 
-    return { root, parts, legL, legR, armL, armR, head, torso };
+    return { root, parts, legL, legR, armL, armR, head, torso, mat, faceMat, edgeMat, SKIN };
 }
 
 /* ---------- 네모 링 (얇은 박스 4개) ---------- */
@@ -280,6 +292,7 @@ function buildAura(aura, dummy, stage) {
             const col = new THREE.Mesh(BOX, colMat);
             col.scale.set(0.06, 18, 0.06);
             col.position.set(x, 9, z);
+            col.userData.noFit = true;
             pillar.add(col);
         }
         updaters.push(t => {
@@ -391,6 +404,23 @@ function buildAura(aura, dummy, stage) {
 }
 
 /* =========================================================
+   등급별 캐릭터 움직임
+   lift: 떠오르는 높이, arms: 팔 벌림, sway: 몸 흔들림,
+   burst: 몇 초마다 힘이 터지는 연출 (0이면 없음)
+   ========================================================= */
+const TIER_MOTION = {
+    COMMON:   { lift: 0,    arms: 0,    sway: 0,    burst: 0 },
+    UNCOMMON: { lift: 0,    arms: 0,    sway: 0,    burst: 0 },
+    RARE:     { lift: 0,    arms: 0.05, sway: 0.05, burst: 0 },
+    EPIC:     { lift: 0,    arms: 0.1,  sway: 0.1,  burst: 0 },
+    LEGEND:   { lift: 0.15, arms: 0.18, sway: 0.15, burst: 0 },
+    MYTHIC:   { lift: 0.35, arms: 0.3,  sway: 0.2,  burst: 4.5 },
+    ANCIENT:  { lift: 0.55, arms: 0.55, sway: 0.25, burst: 3.6 },
+    ABSOLUTE: { lift: 0.7,  arms: 0.75, sway: 0.3,  burst: 3.0 },
+    JXS:      { lift: 0.9,  arms: 1.25, sway: 0.35, burst: 2.2 }
+};
+
+/* =========================================================
    무대
    ========================================================= */
 
@@ -455,6 +485,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     // 캐릭터
     const dummy = makeDummy();
     scene.add(dummy.root);
+    const defaultFace = dummy.faceMat.map;
 
     // 아우라
     let current = null;
@@ -462,19 +493,85 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     let rolling = false, speed = 1;
     let flash = 0;
     let shakeAmt = 0;
+    let motion = TIER_MOTION.COMMON;
+    let burstAt = 0;
 
     const SKY = 0x03030a;
     let clearFns = [];
     const stageApi = {
         scene,
         setSky(hex) { scene.background.set(hex); scene.fog.color.set(hex); },
-        onClear(fn) { clearFns.push(fn); }
+        onClear(fn) { clearFns.push(fn); },
+        // 캐릭터 피부 바꾸기 (JXS 등). 아우라 바뀌면 원래대로
+        setSkin({ color, eye, glowEyes = false, smile = true, emissive = 0 }) {
+            dummy.mat.color.set(color);
+            dummy.mat.emissive.set(eye || color);
+            dummy.mat.emissiveIntensity = emissive;
+            dummy.faceMat.map = makeFaceTexture(new THREE.Color(color).getStyle(), { eye, smile, glowEyes });
+            dummy.faceMat.needsUpdate = true;
+            dummy.edgeMat.color.set(eye || 0x5d6170);
+        },
+        burst(fn) { burstHooks.push(fn); }
     };
+    let burstHooks = [];
+
+    function resetSkin() {
+        dummy.mat.color.set(dummy.SKIN);
+        dummy.mat.emissiveIntensity = 0;
+        if (dummy.faceMat.map !== defaultFace) { dummy.faceMat.map.dispose(); dummy.faceMat.map = defaultFace; dummy.faceMat.needsUpdate = true; }
+        dummy.edgeMat.color.set(0x5d6170);
+    }
+
+    // 몇 초마다 터지는 힘 (네모 충격파 + 튀어나가는 큐브)
+    const burstGroup = new THREE.Group();
+    scene.add(burstGroup);
+    const burstRing = makeSquareRing(1, 0.06, glowMat(0xffffff, 1));
+    burstRing.visible = false;
+    burstGroup.add(burstRing);
+    const BURST_N = 28;
+    const burstCubes = new THREE.InstancedMesh(BOX, glowMat(0xffffff, 1), BURST_N);
+    burstCubes.visible = false;
+    burstGroup.add(burstCubes);
+    const burstData = Array.from({ length: BURST_N }, () => ({ v: new THREE.Vector3() }));
+    let burstK = 1;
+    function fireBurst(strength = 1) {
+        if (!current) return;
+        burstK = 0;
+        burstRing.visible = burstCubes.visible = true;
+        burstRing.children.forEach(c => c.material.color.copy(current.color));
+        burstCubes.material.color.copy(current.color);
+        burstData.forEach(d => {
+            const a = rand(0, Math.PI * 2), up = rand(-0.2, 1);
+            d.v.set(Math.cos(a), up, Math.sin(a)).normalize().multiplyScalar(rand(4, 9) * strength);
+        });
+        burstHooks.forEach(fn => fn());
+        flash = Math.max(flash, 0.6 * strength);
+    }
+    function updateBurst(dt) {
+        if (burstK >= 1) return;
+        burstK = Math.min(1, burstK + dt * 1.3);
+        const k = burstK;
+        burstRing.scale.setScalar(0.5 + k * 9);
+        burstRing.position.y = 2.6 + dummy.root.position.y;
+        burstRing.children.forEach(c => { c.material.opacity = 1 - k; });
+        const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3();
+        burstData.forEach((d, i) => {
+            p.copy(d.v).multiplyScalar(k * 0.9);
+            p.y += 2.8 + dummy.root.position.y;
+            q.setFromEuler(new THREE.Euler(k * 8 + i, k * 6, 0));
+            sc.setScalar(0.22 * (1 - k));
+            burstCubes.setMatrixAt(i, m4.compose(p, q, sc));
+        });
+        burstCubes.instanceMatrix.needsUpdate = true;
+        if (k >= 1) burstRing.visible = burstCubes.visible = false;
+    }
 
     function clearAura() {
         clearFns.forEach(fn => fn()); clearFns = [];
+        burstHooks = [];
         scene.background.set(SKY); scene.fog.color.set(SKY);
         dummy.root.position.set(0, 0, 0); dummy.root.rotation.set(0, 0, 0);
+        resetSkin();
         if (!current) return;
         scene.remove(current.group);
         current.group.traverse(o => { if (o.material) o.material.dispose?.(); });
@@ -484,14 +581,20 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         current = null;
     }
 
-    function setAura(aura) {
+    function setAura(aura, { force = false } = {}) {
+        if (!force && current && aura && current.id === aura.id) return;
         clearAura();
+        motion = TIER_MOTION[aura?.grade] || TIER_MOTION.COMMON;
+        burstAt = 1.5;
+        resetFit();
         if (!aura) return;
         current = buildAura(aura, dummy, stageApi);
+        current.id = aura.id;
+        current.grade = aura.grade;
         scene.add(current.group);
         gapGlow.material.color.copy(current.color).multiplyScalar(0.35 + Math.min(1, current.glow) * 0.4);
         rim.color.copy(current.color);
-        bloom.strength = 0.5 + Math.min(current.glow, 2) * 0.12;
+        bloom.strength = 0.5 + Math.min(current.glow, 2) * 0.12 + (aura.grade === 'JXS' ? 0.25 : 0);
         auraScale = 0;
         flash = 1;
     }
@@ -503,8 +606,43 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
 
-    // 화면 크기 & 캐릭터를 .stage 영역 가운데 맞추기
-    let W = 1, H = 1, frame = { cx: 0.5, cy: 0.55, h: 0.6 };
+    /* ---------- 화면 맞춤 ----------
+       아우라가 실제로 차지하는 크기를 재서, 캐릭터와 아우라가 무대 안에 다 보이도록
+       카메라 거리를 정한다. (폰처럼 좁은 화면이면 알아서 멀어짐) */
+    const BASE_BOUNDS = { minX: -2.1, maxX: 2.1, minZ: -1, maxZ: 1, minY: -0.2, maxY: 5.4 };
+    let bounds = { ...BASE_BOUNDS };
+    let fitSampleT = 0, fitSamples = 0;
+    function resetFit() { bounds = { ...BASE_BOUNDS }; fitSamples = 0; fitSampleT = 0; }
+    const tmpBox = new THREE.Box3();
+    function sampleBounds() {
+        if (!current) return;
+        current.group.updateMatrixWorld(true);
+        const visit = o => {
+            if (o.userData.noFit || !o.visible) return;
+            if (o.isMesh && !o.isInstancedMesh && o.geometry) {
+                tmpBox.setFromObject(o);
+                if (isFinite(tmpBox.min.x)) {
+                    bounds.minX = Math.min(bounds.minX, tmpBox.min.x); bounds.maxX = Math.max(bounds.maxX, tmpBox.max.x);
+                    bounds.minZ = Math.min(bounds.minZ, tmpBox.min.z); bounds.maxZ = Math.max(bounds.maxZ, tmpBox.max.z);
+                    bounds.minY = Math.min(bounds.minY, tmpBox.min.y); bounds.maxY = Math.max(bounds.maxY, tmpBox.max.y);
+                }
+            }
+            o.children.forEach(visit);
+        };
+        current.group.children.forEach(visit);
+        // 큐브 입자들은 몸 주위 반경 3 정도
+        if (current.group.children.some(c => c.isInstancedMesh && !c.userData.noFit)) {
+            bounds.minX = Math.min(bounds.minX, -3.2); bounds.maxX = Math.max(bounds.maxX, 3.2);
+            bounds.maxY = Math.max(bounds.maxY, 6.6);
+        }
+        bounds.maxY = Math.max(bounds.maxY, 5.4 + dummy.root.position.y + 1.7);   // 머리 위 이름표 자리까지
+        // 너무 큰 건(기둥, 하늘에서 오는 번개 등) 무시하도록 위아래 한도
+        bounds.maxY = Math.min(bounds.maxY, 11);
+        bounds.minX = Math.max(bounds.minX, -6); bounds.maxX = Math.min(bounds.maxX, 6);
+    }
+
+    let W = 1, H = 1;
+    let usable = { cx: 0.5, cy: 0.55, w: 1, h: 0.45 };
     function resize() {
         W = window.innerWidth; H = window.innerHeight;
         renderer.setSize(W, H, false);
@@ -512,20 +650,37 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         bloom.resolution.set(W / 2, H / 2);
         const r = getStageRect && getStageRect();
         if (r && r.height > 40) {
-            frame = { cx: (r.left + r.width / 2) / W, cy: (r.top + r.height * 0.64) / H, h: r.height / H };
+            // 위쪽 결과 글자(약 100px)와 아래 배율 글자(약 30px)를 뺀 곳에 캐릭터를 맞춤
+            const top = r.top + Math.min(112, r.height * 0.28), bottom = r.bottom - 30;
+            usable = { cx: (r.left + r.width / 2) / W, cy: ((top + bottom) / 2) / H, w: r.width / W, h: Math.max(80, bottom - top) / H };
         } else {
-            frame = { cx: 0.5, cy: 0.5, h: 0.42 };
+            usable = { cx: 0.5, cy: 0.5, w: 1, h: 0.42 };
         }
         camera.aspect = W / H;
-        // 캐릭터+아우라(높이 약 8.6)가 무대 높이에 꽉 차도록 거리 계산
-        const fovR = THREE.MathUtils.degToRad(camera.fov);
-        dist = 10.5 / (frame.h * 2 * Math.tan(fovR / 2));
-        camera.setViewOffset(W, H, W / 2 - frame.cx * W, H / 2 - frame.cy * H, W, H);
+        camera.setViewOffset(W, H, W / 2 - usable.cx * W, H / 2 - usable.cy * H, W, H);
         camera.updateProjectionMatrix();
     }
-    let dist = 20;
     window.addEventListener('resize', resize);
     resize();
+
+    const fovT = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+    let dist = 20;
+    function fitDistance() {
+        const hgt = (bounds.maxY - bounds.minY) * 1.08;
+        const halfW = Math.max(-bounds.minX, bounds.maxX, -bounds.minZ * 0.35, bounds.maxZ * 0.35) * 1.08;
+        const dH = hgt / (2 * fovT * usable.h);
+        const dW = (2 * halfW) / (2 * fovT * usable.w * (W / H));
+        return Math.max(dH, dW, 12);
+    }
+
+    // 컷씬 (cutscene3d.js 가 카메라를 잠시 맡음)
+    let cine = null;
+    const cineCtx = {
+        THREE, scene, camera, dummy, floor, stars, kit: KIT, bloom, target,
+        setAura: (a, o) => setAura(a, o), clearAura, stageApi,
+        getNormalView: () => ({ dist, target: target.clone() }),
+        flash: v => { flash = Math.max(flash, v); }
+    };
 
     // 루프
     const clock = new THREE.Clock();
@@ -536,33 +691,62 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         speed += ((rolling ? 3.2 : 1) - speed) * Math.min(1, dt * 4);
         t += dt;
 
-        // 카메라: 천천히 좌우로 흔들리며 캐릭터를 봄
-        const yaw = Math.sin(t * 0.18) * 0.35;
-        camera.position.set(Math.sin(yaw) * dist, target.y + dist * 0.16, Math.cos(yaw) * dist);
-        if (shakeAmt > 0.001) {
-            camera.position.x += rand(-1, 1) * shakeAmt;
-            camera.position.y += rand(-1, 1) * shakeAmt;
-            shakeAmt *= Math.pow(0.02, dt);
+        // 아우라 크기 재기 (처음 3초 동안 여러 번)
+        if (current && fitSamples < 12) {
+            fitSampleT -= dt;
+            if (fitSampleT <= 0) { sampleBounds(); fitSamples++; fitSampleT = 0.25; }
         }
-        camera.lookAt(target);
+        const wantDist = fitDistance();
+        dist += (wantDist - dist) * Math.min(1, dt * 2.5);
+        const wantY = (bounds.minY + bounds.maxY) / 2;
+        target.y += (wantY - target.y) * Math.min(1, dt * 2.5);
 
-        // 숨쉬기 / 팔다리 살짝
+        // 캐릭터: 매 프레임 기본자세로 돌린 다음 아우라/등급 움직임을 얹음
+        dummy.root.position.set(0, 0, 0);
+        dummy.root.rotation.set(0, 0, 0);
         const breathe = Math.sin(t * 1.6);
         dummy.torso.position.y = 3 + breathe * 0.02;
         dummy.head.position.y = 4.62 + breathe * 0.03;
-        dummy.armL.rotation.x = Math.sin(t * 1.2) * 0.06;
-        dummy.armR.rotation.x = -Math.sin(t * 1.2) * 0.06;
-        dummy.armL.rotation.z = -0.04 - (rolling ? 0.25 : 0);
-        dummy.armR.rotation.z = 0.04 + (rolling ? 0.25 : 0);
-
-        stars.rotation.y = t * 0.004;
+        dummy.head.rotation.set(0, 0, 0);
 
         if (current) {
             auraScale += (1 - auraScale) * Math.min(1, dt * 5);
             current.group.scale.setScalar(0.4 + 0.6 * auraScale);
             current.updaters.forEach(u => u(t, dt, speed));
-            current.group.children.forEach(ch => { if (ch.isPointLight) ch.intensity = Math.min(current.glow * 2.5, 4.5) * (1 + flash * 1.2); });
+            current.group.children.forEach(ch => { if (ch.isPointLight && !ch.userData.own) ch.intensity = Math.min(current.glow * 2.5, 4.5) * (1 + flash * 1.2); });
         }
+
+        // 등급 움직임
+        const m = motion;
+        dummy.root.position.y += m.lift * (0.75 + 0.25 * Math.sin(t * 1.3));
+        dummy.root.rotation.y += Math.sin(t * 0.7) * m.sway;
+        const armOpen = m.arms + (rolling ? 0.25 : 0);
+        dummy.armL.rotation.set(Math.sin(t * 1.2) * (0.06 + m.arms * 0.08), 0, -0.04 - armOpen);
+        dummy.armR.rotation.set(-Math.sin(t * 1.2) * (0.06 + m.arms * 0.08), 0, 0.04 + armOpen);
+        dummy.legL.rotation.set(m.lift > 0 ? Math.sin(t * 1.3) * 0.08 : 0, 0, -m.lift * 0.08);
+        dummy.legR.rotation.set(m.lift > 0 ? -Math.sin(t * 1.3) * 0.08 : 0, 0, m.lift * 0.08);
+        if (m.lift > 0.5) dummy.head.rotation.x = -0.12 - Math.sin(t * 0.9) * 0.05;   // 고개를 살짝 듦
+        if (m.burst && current && !cine?.active) {
+            burstAt -= dt;
+            if (burstAt <= 0) { fireBurst(current.grade === 'JXS' ? 1.4 : 1); burstAt = m.burst; if (current.grade === 'JXS') shakeAmt = Math.max(shakeAmt, 0.12); }
+        }
+        updateBurst(dt);
+
+        // 카메라
+        if (cine?.active) {
+            cine.update(dt);
+        } else {
+            const yaw = Math.sin(t * 0.18) * 0.35;
+            camera.position.set(Math.sin(yaw) * dist, target.y + dist * 0.14, Math.cos(yaw) * dist);
+        }
+        if (shakeAmt > 0.001) {
+            camera.position.x += rand(-1, 1) * shakeAmt;
+            camera.position.y += rand(-1, 1) * shakeAmt;
+            shakeAmt *= Math.pow(0.02, dt);
+        }
+        if (!cine?.active) camera.lookAt(target);
+
+        stars.rotation.y = t * 0.004;
         flash *= Math.pow(0.04, dt);
 
         composer.render();
@@ -580,6 +764,15 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         resize,
         setRolling(v) { rolling = v; },
         flash() { flash = 1; },
-        shake(amount = 0.35) { shakeAmt = amount; flash = 1; }
+        shake(amount = 0.35) { shakeAmt = amount; flash = 1; },
+        // 3D 컷씬 재생. cfg = { hit, hit2, total, tier }, getTime() = 지금 컷씬 몇 초인지
+        async playCutscene(aura, cfg, getTime) {
+            if (!cine) {
+                const { createCutscene } = await import('./cutscene3d.js?v=8');
+                cine = createCutscene(cineCtx);
+            }
+            return cine.play(aura, cfg, getTime, { shake: a => { shakeAmt = Math.max(shakeAmt, a); } });
+        },
+        isCutscene() { return !!cine?.active; }
     };
 }

@@ -582,3 +582,180 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 /* 가방 칭호 카드: 장착 / 판매 */
 .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
 .card-actions .btn { margin-top: 0; }
+
+/* =========================================================
+   🎬 컷씬 위 화면
+   ========================================================= */
+body.cine-on #main-game { opacity: 0; pointer-events: none; transition: opacity 0.35s; }
+body.cine-on #nametag, body.cine-on #ambient { opacity: 0 !important; }
+#main-game { transition: opacity 0.5s; }
+
+#cine { position: fixed; inset: 0; z-index: 900; pointer-events: none; }
+.cine-bar { position: absolute; left: 0; right: 0; height: 9vh; background: #000; z-index: 3; animation: bar-in 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.cine-bar.top { top: 0; }
+.cine-bar.bottom { bottom: 0; animation-name: bar-in-b; }
+@keyframes bar-in { from { transform: translateY(-100%); } }
+@keyframes bar-in-b { from { transform: translateY(100%); } }
+#cine.closing .cine-bar.top { transform: translateY(-100%); transition: transform 0.6s ease-in; }
+#cine.closing .cine-bar.bottom { transform: translateY(100%); transition: transform 0.6s ease-in; }
+#cine.closing .cine-title { opacity: 0; transition: opacity 0.5s; }
+.cine-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.75) 100%); z-index: 1; }
+
+.cine-flash { position: absolute; inset: 0; background: #fff; opacity: 0; z-index: 4; }
+.cine-flash.go { animation: cine-flash 0.9s ease-out; }
+.cine-flash.go.strong { animation-duration: 1.4s; }
+@keyframes cine-flash { 0% { opacity: 1; } 18% { opacity: 0.95; } 100% { opacity: 0; } }
+
+.cine-crack { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; opacity: 0; }
+.cine-crack.show { animation: crack 2.2s ease-out forwards; }
+.cine-crack path, .cine-crack polyline { filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9)); }
+@keyframes crack { 0% { opacity: 0; transform: scale(1.04); } 6% { opacity: 1; transform: scale(1); } 60% { opacity: 0.85; } 100% { opacity: 0; } }
+
+.cine-title {
+    position: absolute; left: 0; right: 0; top: 12vh;
+    z-index: 5; text-align: center; padding: 0 16px;
+    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.95);
+    opacity: 0;
+}
+.cine-title.pre { opacity: 1; }
+.cine-title.pre .cine-name, .cine-title.pre .cine-chance, .cine-title.pre .cine-line { opacity: 0; }
+.cine-title.pre .cine-grade { animation: grade-glitch 0.18s steps(2) infinite; letter-spacing: 0.6em; }
+.cine-title.show { opacity: 1; }
+.cine-grade { font-size: 13px; letter-spacing: 0.45em; padding-left: 0.45em; margin-bottom: 14px; }
+.cine-title.show .cine-grade { animation: grade-in 1s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.cine-name {
+    font-family: var(--display);
+    font-size: clamp(34px, 11vw, 60px);
+    line-height: 1.1;
+    word-break: keep-all;
+}
+.cine-name > span { display: inline-block; }
+.cine-title.show .cine-name { animation: name-in 1.1s cubic-bezier(0.2, 0.9, 0.3, 1) 0.1s both; }
+.cine-chance { font-size: 14px; color: #cfd0e8; letter-spacing: 0.12em; margin-top: 14px; }
+.cine-title.show .cine-chance { animation: fade-up 0.8s ease-out 0.5s both; }
+.cine-line { font-size: 14px; color: #fff; opacity: 0.85; margin-top: 18px; letter-spacing: 0.06em; }
+.cine-title.show .cine-line { animation: fade-up 1s ease-out 0.9s both; }
+@keyframes grade-in { from { opacity: 0; letter-spacing: 1.4em; } }
+@keyframes name-in { 0% { opacity: 0; transform: scale(1.5); filter: blur(14px); } 60% { opacity: 1; filter: blur(0); } 100% { transform: scale(1); } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(10px); } }
+@keyframes grade-glitch { 0% { transform: translate(2px, 0); opacity: 0.9; } 50% { transform: translate(-3px, 1px); opacity: 0.5; } 100% { transform: translate(1px, -1px); opacity: 1; } }
+
+/* JXS: 이름이 잠깐씩 찢어지듯 어긋남 */
+#cine.tier-jxs .cine-title.show .cine-name > span { animation: jxs-tear 2.6s steps(1) 1.2s infinite; }
+@keyframes jxs-tear {
+    0%, 86%, 100% { clip-path: none; transform: none; }
+    88% { clip-path: inset(10% 0 55% 0); transform: translate(-6px, 0); }
+    90% { clip-path: inset(55% 0 10% 0); transform: translate(5px, 0); }
+    92% { clip-path: inset(30% 0 35% 0); transform: translate(-3px, 0); }
+}
+#cine.tier-absolute .cine-bar, #cine.tier-jxs .cine-bar { height: 11vh; }
+
+.cine-skip {
+    position: absolute; right: 16px; bottom: calc(9vh + 14px); z-index: 6;
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--text);
+    border: 1px solid var(--line-2);
+    padding: 9px 18px 9px calc(18px + 0.3em);
+    font-size: 12px; letter-spacing: 0.3em;
+    cursor: pointer;
+    animation: fade-up 0.6s ease-out 0.8s both;
+}
+
+/* =========================================================
+   ✨ UI 애니메이션
+   ========================================================= */
+
+/* 로비 등장 */
+.lobby-inner .logo { animation: logo-in 1.4s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.lobby-inner .lobby-sub { animation: fade-up 1s ease-out 0.5s both; }
+.lobby-inner .start-btn { animation: fade-up 0.9s ease-out 0.9s both; }
+.lobby-inner .lobby-save { animation: fade-up 0.9s ease-out 1.1s both; }
+@keyframes logo-in { 0% { opacity: 0; letter-spacing: 0.4em; filter: blur(12px); } 100% { opacity: 1; letter-spacing: normal; filter: blur(0); } }
+.start-btn:not(:active) { transition: box-shadow 0.3s, border-color 0.3s, letter-spacing 0.3s; }
+#lobby-screen.leaving .lobby-inner { animation: lobby-out 0.5s ease-in forwards; }
+@keyframes lobby-out { to { opacity: 0; transform: scale(1.06); filter: blur(6px); } }
+
+/* 메인 화면 등장: 위 → 아래 순서로 */
+#main-game.entering .topbar { animation: fade-down 0.6s ease-out both; }
+#main-game.entering .buffs { animation: fade-up 0.6s ease-out 0.25s both; }
+#main-game.entering .controls { animation: fade-up 0.6s ease-out 0.35s both; }
+#main-game.entering .bottom-nav { animation: nav-in 0.6s ease-out 0.45s both; }
+@keyframes fade-down { from { opacity: 0; transform: translateY(-10px); } }
+@keyframes nav-in { from { opacity: 0; transform: translate(-50%, 20px); } }
+
+/* ROLL 버튼: 가만히 있어도 빛이 한 번씩 훑고 지나감 */
+#roll-btn::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+    animation: roll-shine 3.6s ease-in-out infinite;
+    pointer-events: none; z-index: 1;
+}
+#roll-btn:disabled::after { animation: none; }
+@keyframes roll-shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+#roll-btn.pressed { animation: roll-press 0.3s ease-out; }
+@keyframes roll-press { 0% { transform: scale(0.97); } 60% { transform: scale(1.015); } 100% { transform: scale(1); } }
+
+/* 결과 글자: 굴리는 중엔 흐릿하게 바뀌고, 결과는 튀어나옴 */
+#aura-display .result-pop { animation: result-in 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+#aura-display .result-pop .result-grade { animation: fade-down 0.4s ease-out both; }
+#aura-display .result-pop .result-chance { animation: fade-up 0.5s ease-out 0.15s both; }
+#aura-display .result-pop .result-sold,
+#aura-display .result-pop .result-equip { animation: fade-up 0.5s ease-out 0.3s both; }
+@keyframes result-in { 0% { opacity: 0; transform: scale(0.7); filter: blur(6px); } 100% { opacity: 1; transform: scale(1); filter: blur(0); } }
+.rolling-text { animation: rolling-flick 0.12s linear infinite; }
+@keyframes rolling-flick { 0% { transform: translateY(-3px); opacity: 0.6; } 50% { transform: translateY(2px); opacity: 0.95; } 100% { transform: translateY(-3px); opacity: 0.6; } }
+
+/* 숫자가 바뀔 때 살짝 튐 */
+.bump { animation: bump 0.35s ease-out; }
+@keyframes bump { 0% { transform: translateY(0); } 35% { transform: translateY(-4px); color: #fff; } 100% { transform: translateY(0); } }
+
+/* 이름표 바뀔 때 */
+#nametag.swap { animation: tag-swap 0.6s ease-out; }
+@keyframes tag-swap { from { opacity: 0; filter: blur(6px); } }
+
+/* 버프가 새로 생길 때 */
+.buff { animation: buff-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+@keyframes buff-in { from { opacity: 0; transform: scale(0.6); } }
+
+/* 아래 메뉴: 누르면 아이콘이 통통 */
+.nav-btn svg { transition: transform 0.2s; }
+.nav-btn:active svg { transform: translateY(-3px) scale(1.12); }
+.nav-btn.open { color: var(--text); }
+.nav-btn.open svg { filter: drop-shadow(0 0 6px var(--aura)); }
+
+/* 시트: 열릴 때 올라오고, 닫힐 때 내려감 */
+.sheet-backdrop { animation: backdrop-in 0.25s ease-out both; }
+.sheet-backdrop.closing { animation: backdrop-out 0.22s ease-in forwards; }
+.sheet-backdrop.closing .sheet { animation: slide-down 0.22s ease-in forwards; }
+@keyframes backdrop-in { from { opacity: 0; } }
+@keyframes backdrop-out { to { opacity: 0; } }
+@keyframes slide-down { to { transform: translateY(100%); } }
+
+/* 시트 안 카드들이 차례로 등장 */
+.stagger > * { animation: card-in 0.42s cubic-bezier(0.2, 0.9, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 28ms); }
+@keyframes card-in { from { opacity: 0; transform: translateY(12px) scale(0.97); } }
+
+/* 탭 밑줄이 미끄러지듯 */
+.tab { transition: color 0.2s, border-color 0.25s; }
+
+/* 다이얼로그 닫힘 */
+.dialog-backdrop { animation: backdrop-in 0.18s ease-out both; }
+
+/* 버튼 공통 눌림 */
+.btn, .toggle, .icon-btn, .sell-chip, .qty-step, .qty-max { transition: transform 0.1s, background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s; }
+.toggle:active, .sell-chip:active, .qty-step:active, .qty-max:active { transform: scale(0.96); }
+.toggle.active { animation: toggle-on 0.35s ease-out; }
+@keyframes toggle-on { 0% { transform: scale(0.95); } 60% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+/* 제작/퀘스트 진행 막대가 차오름 */
+.req-bar > div, .index-bar > div { animation: bar-grow 0.8s cubic-bezier(0.2, 0.9, 0.3, 1) both; transform-origin: left; }
+@keyframes bar-grow { from { transform: scaleX(0); } }
+
+/* 가방 장착 성공 */
+.card.just-equipped { animation: equip-flash 0.7s ease-out; }
+@keyframes equip-flash { 0% { box-shadow: 0 0 0 0 var(--aura); } 30% { box-shadow: 0 0 22px 2px var(--aura); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

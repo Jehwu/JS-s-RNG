@@ -1,11 +1,11 @@
-import { AURA_DATA } from './auras.js?v=7';
-import { CRAFT_ITEMS } from './craftItems.js?v=7';
+import { AURA_DATA } from './auras.js?v=8';
+import { CRAFT_ITEMS } from './craftItems.js?v=8';
 
 /* =========================================================
    📦 게임 데이터
    ========================================================= */
 
-const GRADES = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGEND", "MYTHIC", "DIVINE", "COSMIC", "JS"];
+const GRADES = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGEND", "MYTHIC", "ANCIENT", "ABSOLUTE", "JXS"];
 const GRADE_ODDS = {
     COMMON: "1 in 2 ~ 10",
     UNCOMMON: "1 in 11 ~ 25",
@@ -13,12 +13,12 @@ const GRADE_ODDS = {
     EPIC: "1 in 100 ~ 499",
     LEGEND: "1 in 500 ~ 9,999",
     MYTHIC: "1 in 10,000 ~ 999,999",
-    DIVINE: "1 in 1,000,000 ~ 19,999,999",
-    COSMIC: "1 in 20,000,000 ~ 99,999,999",
-    JS: "1 in 100,000,000+"
+    ANCIENT: "1 in 1,000,000 ~ 19,999,999",
+    ABSOLUTE: "1 in 20,000,000 ~ 99,999,999",
+    JXS: "1 in 100,000,000+"
 };
-const HIGH_GRADES = ["LEGEND", "MYTHIC", "DIVINE", "COSMIC", "JS"];
-const CUTSCENE_GRADES = ["DIVINE", "COSMIC", "JS"];
+const HIGH_GRADES = ["LEGEND", "MYTHIC", "ANCIENT", "ABSOLUTE", "JXS"];
+const CUTSCENE_GRADES = ["ANCIENT", "ABSOLUTE", "JXS"];
 
 const SHOP_ITEMS = [
     { id: "luck_1", name: "행운의 물약 1", price: 300, type: "luck", level: 1, value: 0.15, duration: 120, desc: "+15% 행운 (2분)", border: "border-green" },
@@ -39,7 +39,7 @@ const QUEST_DATA = [
         desc: "빠른 롤을 쓸 자격을 증명하세요.",
         rewardDesc: "빠른 롤 해금 + 천상의 물약 5개",
         reward: { unlockQuickRoll: true, items: { heaven_potion: 5 } },
-        targets: { rolls: 5000, divine: 15, cosmic: 5, jc: 3000000, shopPurchases: 20 }
+        targets: { rolls: 5000, ancient: 15, absolute: 5, jc: 3000000, shopPurchases: 20 }
     },
     {
         id: "quest_repeat_overcome", name: "극복의 시련", repeatable: true,
@@ -60,8 +60,8 @@ const QUEST_TARGET_LABELS = {
     rolls: n => `롤 ${fmt(n)}번 하기`,
     legend: n => `LEGEND ${n}개 뽑기`,
     mythic: n => `MYTHIC ${n}개 뽑기`,
-    divine: n => `DIVINE ${n}개 뽑기`,
-    cosmic: n => `COSMIC ${n}개 뽑기`,
+    ancient: n => `ANCIENT ${n}개 뽑기`,
+    absolute: n => `ABSOLUTE ${n}개 뽑기`,
     jc: n => `${fmt(n)} JC 모으기`,
     shopPurchases: n => `상점 아이템 ${n}개 구매`
 };
@@ -82,8 +82,8 @@ AURA_DATA.sort((a, b) => a.in - b.in);
 for (const aura of AURA_DATA) {
     aura.chance = 100 / aura.in;
     let baseJc = Math.max(1, Math.floor(aura.in / 5));
-    if (["MYTHIC", "DIVINE", "COSMIC", "JS"].includes(aura.grade)) baseJc = Math.floor(baseJc * 0.5);
-    if (["DIVINE", "COSMIC", "JS"].includes(aura.grade)) baseJc = Math.floor(baseJc * 0.6);
+    if (["MYTHIC", "ANCIENT", "ABSOLUTE", "JXS"].includes(aura.grade)) baseJc = Math.floor(baseJc * 0.5);
+    if (["ANCIENT", "ABSOLUTE", "JXS"].includes(aura.grade)) baseJc = Math.floor(baseJc * 0.6);
     aura.jcValue = Math.max(1, baseJc);
 }
 const AURA_BY_ID = Object.fromEntries(AURA_DATA.map(a => [a.id, a]));
@@ -450,7 +450,7 @@ async function finishRoll() {
     const rolled = pickAura();
 
     const gradeKey = rolled.grade.toLowerCase();
-    if (["legend", "mythic", "divine", "cosmic"].includes(gradeKey)) trackQuestProgress(gradeKey);
+    if (["legend", "mythic", "ancient", "absolute"].includes(gradeKey)) trackQuestProgress(gradeKey);
 
     if (gameState.activeMultBuffs.length) {
         gameState.activeMultBuffs.forEach(b => b.uses--);
@@ -460,8 +460,10 @@ async function finishRoll() {
     const isNew = !gameState.discoveredAuras.includes(rolled.id);
     if (isNew) gameState.discoveredAuras.push(rolled.id);
 
-    if (CUTSCENE_GRADES.includes(rolled.grade)) {
-        await playStarCutscene(rolled);
+    if (CUT_CFG[rolled.grade] && stage3d) {
+        await playCinematic(rolled);
+    } else if (CUTSCENE_GRADES.includes(rolled.grade)) {
+        await playStarCutscene(rolled);   // 3D가 안 될 때 예전 컷씬
         playShakeGlow(rolled);
     } else if (rolled.grade === "LEGEND" || rolled.grade === "MYTHIC") {
         playShakeGlow(rolled);
@@ -511,6 +513,167 @@ async function finishRoll() {
     }, cooldown);
 }
 
+/* ---------- 3D 컷씬 ----------
+   사운드 길이와 터지는 지점에 맞춤 (ffprobe로 잰 값)
+     divine_full.mp3  19.6초, 9.5초에 쾅
+     cosmic_full.mp3  18.6초, 10.25초에 쾅
+     js_full.mp3      22.8초, 9.5초에 1차 / 16초에 2차 클라이맥스
+   MYTHIC은 솔스처럼 짧은 별 뽑기 (등장음은 터질 때)
+*/
+const CUT_CFG = {
+    MYTHIC:   { tier: 'MYTHIC',   hit: 2.3,  total: 4.4,  sound: null },
+    ANCIENT:  { tier: 'ANCIENT',  hit: 9.5,  total: 19.6, sound: 'divine_all' },
+    ABSOLUTE: { tier: 'ABSOLUTE', hit: 10.25, total: 18.6, sound: 'cosmic_all' },
+    JXS:      { tier: 'JXS',      hit: 9.5,  hit2: 16.0, total: 22.8, sound: 'js_all' }
+};
+
+const cine = {
+    el: $('cine'),
+    flash: document.querySelector('.cine-flash'),
+    crack: document.querySelector('.cine-crack'),
+    title: document.querySelector('.cine-title'),
+    grade: document.querySelector('.cine-grade'),
+    name: document.querySelector('.cine-name'),
+    chance: document.querySelector('.cine-chance'),
+    line: document.querySelector('.cine-line'),
+    skip: document.querySelector('.cine-skip')
+};
+
+// 짧은 상승음 (MYTHIC 별 뽑기용)
+function playRiser(sec) {
+    if (!soundSettings.enabled) return;
+    try {
+        initSynthAudio();
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, t);
+        osc.frequency.exponentialRampToValueAtTime(1400, t + sec);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.08 * soundSettings.master * soundSettings.cutscene, t + sec * 0.9);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + sec);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(t + sec);
+    } catch (e) {}
+}
+
+// 화면 깨짐: 터진 지점에서 사방으로 금
+function drawCrack(color) {
+    const cx = 50 + (Math.random() - 0.5) * 8, cy = 40 + (Math.random() - 0.5) * 8;
+    let paths = '';
+    for (let i = 0; i < 14; i++) {
+        let a = (i / 14) * Math.PI * 2 + Math.random() * 0.3, x = cx, y = cy, d = `M${x} ${y}`;
+        for (let k = 0; k < 6; k++) {
+            a += (Math.random() - 0.5) * 0.7;
+            const len = 6 + Math.random() * 12;
+            x += Math.cos(a) * len; y += Math.sin(a) * len;
+            d += ` L${x.toFixed(1)} ${y.toFixed(1)}`;
+        }
+        paths += `<path d="${d}"/>`;
+    }
+    let rings = '';
+    for (let r = 6; r < 40; r += 9 + Math.random() * 6) {
+        const pts = Array.from({ length: 9 }, (_, k) => {
+            const a = (k / 8) * Math.PI * 2, rr = r * (0.8 + Math.random() * 0.4);
+            return `${(cx + Math.cos(a) * rr).toFixed(1)},${(cy + Math.sin(a) * rr).toFixed(1)}`;
+        }).join(' ');
+        rings += `<polyline points="${pts}"/>`;
+    }
+    cine.crack.innerHTML = `<g stroke="${color}" fill="none" stroke-width="0.35" vector-effect="non-scaling-stroke">${paths}${rings}</g>`;
+    cine.crack.classList.remove('show'); void cine.crack.getBoundingClientRect(); cine.crack.classList.add('show');
+}
+
+function cineFlash(strong) {
+    cine.flash.classList.remove('go', 'strong');
+    void cine.flash.offsetWidth;
+    cine.flash.classList.add('go');
+    if (strong) cine.flash.classList.add('strong');
+}
+
+async function playCinematic(rolled) {
+    const cfg = CUT_CFG[rolled.grade];
+    const finalHit = cfg.hit2 || cfg.hit;
+
+    // 칭호 공개 글자 준비
+    cine.grade.textContent = rolled.grade;
+    cine.grade.className = `cine-grade ${gradeCol(rolled.grade)}`;
+    cine.name.innerHTML = `<span class="${rolled.class || ''}" style="${rolled.class ? '' : `color:${rolled.color};`}">${rolled.name}</span>`;
+    cine.chance.textContent = `1 in ${fmt(rolled.in)}`;
+    cine.line.textContent = rolled.line || '';
+    cine.el.className = `tier-${cfg.tier.toLowerCase()}`;
+    cine.title.classList.remove('show', 'pre');
+    cine.crack.classList.remove('show');
+    document.body.classList.add('cine-on');
+    if (currentBgm) currentBgm.pause();
+
+    // 시계 (사운드와 같이 감)
+    const t0 = performance.now();
+    let offset = 0;
+    const getTime = () => (performance.now() - t0) / 1000 + offset;
+
+    stopCutsceneAudio();
+    if (cfg.sound) cutsceneAudio = playClip(cfg.sound, soundSettings.master * soundSettings.cutscene);
+    else playRiser(cfg.hit);
+
+    let done = false;
+    const onSkip = () => {
+        const now = getTime();
+        if (now < finalHit - 0.3) {
+            // 터지는 순간 바로 앞으로 건너뜀
+            offset += (finalHit - 0.25) - now;
+            if (cutsceneAudio) cutsceneAudio.currentTime = finalHit - 0.25;
+        } else {
+            offset += cfg.total - now;   // 바로 끝
+        }
+    };
+    cine.skip.addEventListener('click', onSkip);
+
+    // 화면 효과 (섬광, 깨짐, 글자)를 시간에 맞춰
+    const fired = {};
+    const loop = () => {
+        if (done) return;
+        const t = getTime();
+        if (!fired.hit && t >= cfg.hit) {
+            fired.hit = true;
+            cineFlash(true);
+            if (cfg.tier === 'MYTHIC') playDropSound('MYTHIC');
+            if (cfg.tier === 'ABSOLUTE' || (cfg.tier === 'JXS' && !cfg.hit2)) drawCrack('#ffffff');
+            if (cfg.hit2) { drawCrack(rolled.color); cine.title.classList.add('pre'); }
+        }
+        if (cfg.hit2 && !fired.hit2 && t >= cfg.hit2) {
+            fired.hit2 = true;
+            cineFlash(true);
+            drawCrack('#ffffff');
+            cine.title.classList.remove('pre');
+        }
+        if (!fired.title && t >= finalHit + 0.35) {
+            fired.title = true;
+            cine.title.classList.add('show');
+        }
+        if (!fired.out && t >= cfg.total - 0.7) {
+            fired.out = true;
+            cine.el.classList.add('closing');
+        }
+        requestAnimationFrame(loop);
+    };
+    cine.el.classList.remove('hidden');
+    requestAnimationFrame(loop);
+
+    await stage3d.playCutscene(rolled, cfg, getTime);
+
+    done = true;
+    cine.skip.removeEventListener('click', onSkip);
+    if (cutsceneAudio && getTime() < cfg.total - 0.5) {
+        // 건너뛰어서 일찍 끝났으면 소리를 부드럽게 줄임
+        const a = cutsceneAudio, v0 = a.volume;
+        let k = 0;
+        const fade = setInterval(() => { k += 0.1; a.volume = Math.max(0, v0 * (1 - k)); if (k >= 1) { clearInterval(fade); a.pause(); } }, 40);
+    }
+    cine.el.classList.add('hidden');
+    cine.el.classList.remove('closing');
+    document.body.classList.remove('cine-on');
+}
+
 /* ---------- 연출 ---------- */
 function playShakeGlow(rolled) {
     stage3d?.shake(CUTSCENE_GRADES.includes(rolled.grade) ? 0.6 : 0.35);
@@ -543,7 +706,7 @@ function playStarCutscene(rolled) {
     ui.starContainer.className = 'spin-zoom-accel';
 
     let soundKey = 'divine_all';
-    if (rolled.grade === "JS") {
+    if (rolled.grade === "JXS") {
         soundKey = 'js_all';
         if (JS_SPECIAL_BG[rolled.id]) {
             ov.classList.add(JS_SPECIAL_BG[rolled.id]);
@@ -555,7 +718,7 @@ function playStarCutscene(rolled) {
             ov.style.setProperty('--js-glow-col', g);
             ov.classList.add('cutscene-bg-js');
         }
-    } else if (rolled.grade === "COSMIC") {
+    } else if (rolled.grade === "ABSOLUTE") {
         soundKey = 'cosmic_all';
         ov.classList.add('cutscene-bg-cosmic');
     }
@@ -613,9 +776,15 @@ const ui = {
    🎨 렌더링
    ========================================================= */
 
+function setNum(el, text) {
+    if (el.textContent === text) return;
+    el.textContent = text;
+    el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+}
+
 function renderStats() {
-    ui.rollCount.textContent = fmt(gameState.rolls);
-    ui.jcCount.textContent = fmt(gameState.jc);
+    setNum(ui.rollCount, fmt(gameState.rolls));
+    setNum(ui.jcCount, fmt(gameState.jc));
     ui.luck.textContent = fmt(Math.round(getDisplayLuck() * 100) / 100);
     ui.speed.textContent = (1 + getSpeedBonus()).toFixed(2);
 
@@ -848,11 +1017,38 @@ const SHEET_RENDER = {
     'sheet-settings': () => { renderSoundUI(); renderAutoSell(); }
 };
 
+function stagger(el) {
+    if (!el) return;
+    el.classList.remove('stagger');
+    [...el.children].forEach((c, i) => c.style.setProperty('--i', Math.min(i, 24)));
+    void el.offsetWidth;
+    el.classList.add('stagger');
+    clearTimeout(el._staggerT);
+    el._staggerT = setTimeout(() => el.classList.remove('stagger'), 1400);
+}
+const SHEET_LIST = {
+    'sheet-bag': () => [ui.inventoryGrid, ui.potionGrid],
+    'sheet-craft': () => [ui.craftGrid],
+    'sheet-shop': () => [ui.shopGrid],
+    'sheet-quest': () => [ui.questList],
+    'sheet-index': () => [ui.indexGrid.querySelector('.index-grid')],
+    'sheet-settings': () => [$('sheet-settings').querySelector('.sheet-body')]
+};
+
 function openSheet(id) {
     SHEET_RENDER[id]?.();
-    $(id).classList.remove('hidden');
+    const el = $(id);
+    el.classList.remove('hidden', 'closing');
+    (SHEET_LIST[id]?.() || []).forEach(stagger);
+    document.querySelectorAll(`[data-sheet="${id}"]`).forEach(b => b.classList.add('open'));
 }
-function closeSheet(id) { $(id).classList.add('hidden'); }
+function closeSheet(id) {
+    const el = $(id);
+    if (el.classList.contains('hidden')) return;
+    el.classList.add('closing');
+    document.querySelectorAll(`[data-sheet="${id}"]`).forEach(b => b.classList.remove('open'));
+    setTimeout(() => { el.classList.add('hidden'); el.classList.remove('closing'); }, 210);
+}
 
 document.querySelectorAll('[data-sheet]').forEach(btn => btn.addEventListener('click', () => openSheet(btn.dataset.sheet)));
 document.querySelectorAll('.sheet-backdrop').forEach(bd => {
@@ -875,8 +1071,9 @@ function bindTabs(containerId, onChange) {
 bindTabs('bag-tabs', tab => {
     ui.inventoryGrid.classList.toggle('hidden', tab !== 'aura');
     ui.potionGrid.classList.toggle('hidden', tab !== 'potion');
+    stagger(tab === 'aura' ? ui.inventoryGrid : ui.potionGrid);
 });
-bindTabs('craft-tabs', tab => { craftTab = tab; renderCraft(); });
+bindTabs('craft-tabs', tab => { craftTab = tab; renderCraft(); stagger(ui.craftGrid); });
 
 /* =========================================================
    🎮 동작
@@ -884,14 +1081,24 @@ bindTabs('craft-tabs', tab => { craftTab = tab; renderCraft(); });
 
 $('game-start-btn').addEventListener('click', () => {
     initSynthAudio();
-    $('lobby-screen').classList.add('hidden');
-    $('main-game').classList.remove('hidden');
-    stage3d?.resize();
-    applyEquippedAura();
+    const lobby = $('lobby-screen'), main = $('main-game');
+    lobby.classList.add('leaving');
+    setTimeout(() => {
+        lobby.classList.add('hidden');
+        lobby.classList.remove('leaving');
+        main.classList.remove('hidden');
+        main.classList.add('entering');
+        setTimeout(() => main.classList.remove('entering'), 1300);
+        stage3d?.resize();
+        applyEquippedAura();
+    }, 420);
     playBgm('main');
 });
 
-ui.rollBtn.addEventListener('click', startRoll);
+ui.rollBtn.addEventListener('click', () => {
+    ui.rollBtn.classList.remove('pressed'); void ui.rollBtn.offsetWidth; ui.rollBtn.classList.add('pressed');
+    startRoll();
+});
 
 ui.autoBtn.addEventListener('click', () => {
     isAutoRolling = !isAutoRolling;
@@ -912,6 +1119,7 @@ ui.inventoryGrid.addEventListener('click', e => {
     if (eq) {
         gameState.equippedAura = eq;
         saveGame(); applyEquippedAura(); renderInventory();
+        ui.inventoryGrid.querySelector(`[data-sell="${eq}"]`)?.closest('.card')?.classList.add('just-equipped');
         toast(`${AURA_BY_ID[eq].name} 장착`, 'good');
         return;
     }
@@ -1216,14 +1424,18 @@ function applyEquippedAura() {
     document.documentElement.style.setProperty('--aura', aura ? aura.color : '#5b4dff');
     const inGame = !$('main-game').classList.contains('hidden');
     if (aura && inGame) {
-        nametag.innerHTML = auraNameHtml(aura);
+        if (nametag.dataset.id !== aura.id) {
+            nametag.dataset.id = aura.id;
+            nametag.innerHTML = auraNameHtml(aura);
+            nametag.classList.remove('swap'); void nametag.offsetWidth; nametag.classList.add('swap');
+        }
         nametag.classList.remove('hidden');
     } else {
         nametag.classList.add('hidden');
     }
 }
 
-import('./aura3d.js?v=7')
+import('./aura3d.js?v=8')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

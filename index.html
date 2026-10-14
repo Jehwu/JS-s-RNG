@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=7">
-    <link rel="stylesheet" href="effects.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="effects.css?v=8">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -22,7 +22,7 @@
     <div id="ambient" aria-hidden="true"></div>
     <div id="nametag" class="hidden"></div>
 
-    <!-- 🌌 컷씬 (DIVINE / COSMIC / JS) -->
+    <!-- 🌌 예전 컷씬 (3D가 안 될 때만 씀) -->
     <div id="star-cutscene-overlay" class="hidden">
         <button id="skip-cutscene-btn">SKIP</button>
         <div id="cutscene-star-container">
@@ -32,6 +32,22 @@
         <div id="glitch-text-container"></div>
     </div>
     <div id="border-glow-overlay" class="overlay hidden"></div>
+
+    <!-- 🎬 3D 컷씬 위에 겹치는 화면 (검은 띠, 섬광, 화면 깨짐, 칭호 공개) -->
+    <div id="cine" class="hidden">
+        <div class="cine-bar top"></div>
+        <div class="cine-bar bottom"></div>
+        <div class="cine-vignette"></div>
+        <svg class="cine-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="cine-flash"></div>
+        <div class="cine-title">
+            <div class="cine-grade"></div>
+            <div class="cine-name"></div>
+            <div class="cine-chance"></div>
+            <div class="cine-line"></div>
+        </div>
+        <button class="cine-skip">SKIP</button>
+    </div>
 
     <!-- 🏠 로비 -->
     <div id="lobby-screen">
@@ -253,6 +269,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=7"></script>
+    <script type="module" src="script.js?v=8"></script>
 </body>
 </html>

@@ -9,9 +9,9 @@
 .col-epic { color: #9b59b6; }
 .col-legend { color: #f1c40f; }
 .col-mythic { color: #ff69b4; }
-.col-divine { color: #00d2d3; }
-.col-cosmic { color: #a55fea; }
-.col-js { color: #ff3366; }
+.col-ancient { color: #00d2d3; }
+.col-absolute { color: #a55fea; }
+.col-jxs { color: #ff3366; }
 
 .border-common { border-color: #8c8c8c !important; }
 .border-uncommon { border-color: #2ecc71 !important; }
@@ -19,10 +19,10 @@
 .border-epic { border-color: #9b59b6 !important; }
 .border-legend { border-color: #f1c40f !important; }
 .border-mythic { border-color: #ff69b4 !important; }
-.border-divine { border-color: #00d2d3 !important; }
-.border-cosmic { border-color: #a55fea !important; box-shadow: 0 0 10px rgba(165, 95, 234, 0.4); }
+.border-ancient { border-color: #00d2d3 !important; }
+.border-absolute { border-color: #a55fea !important; box-shadow: 0 0 10px rgba(165, 95, 234, 0.4); }
 
-.border-js { 
+.border-jxs { 
     border-color: #500000 !important; 
     box-shadow: 0 0 15px rgba(255, 0, 85, 0.8), inset 0 0 10px rgba(138, 0, 0, 0.6); 
     animation: js-border-glow 1.5s infinite alternate !important; 
