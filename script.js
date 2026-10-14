@@ -1,6 +1,6 @@
-import { AURA_DATA } from './auras.js?v=16';
-import { CRAFT_ITEMS } from './craftItems.js?v=16';
-import { createMusicPlayer, coverArt } from './music.js?v=16';
+import { AURA_DATA } from './auras.js?v=17';
+import { CRAFT_ITEMS } from './craftItems.js?v=17';
+import { createMusicPlayer, coverArt } from './music.js?v=17';
 
 /* =========================================================
    📦 게임 데이터
@@ -819,44 +819,67 @@ function vialHtml(item) {
 }
 
 let craftTab = "gauntlet";
+const AMULET_MULT = { amulet_drum: 2, amulet_commander: 5 };
+// 제작창 3D 미리보기 (three.js 가 준비된 뒤에 불러옴)
+let gearPreviews = null, gearPreviewLoading = false;
+function attachGearPreviews() {
+    if (gearPreviews) { gearPreviews.attach(ui.craftGrid); return; }
+    if (gearPreviewLoading || !stage3d) return;
+    gearPreviewLoading = true;
+    import('./gearPreview.js?v=17').then(({ createGearPreviews }) => {
+        gearPreviews = createGearPreviews();
+        if (!$('sheet-craft').classList.contains('hidden')) gearPreviews.attach(ui.craftGrid);
+    }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
+}
+
 function renderCraft() {
     const items = CRAFT_ITEMS.filter(g => (g.category || "gauntlet") === craftTab);
     ui.craftGrid.classList.add('list');
     ui.craftGrid.innerHTML = items.map(gear => {
         const equipped = gear.category === "amulet" ? gameState.amulet === gear.id : gameState.gear === gear.id;
         const owned = gameState.craftedGears.includes(gear.id);
-        let canCraft = true;
+        let canCraft = true, metN = 0, reqN = 0;
         let reqHtml = '';
         if (!owned) {
             for (const reqId in gear.req) {
                 const a = AURA_BY_ID[reqId];
                 const need = gear.req[reqId], have = gameState.inventory[reqId] || 0;
                 const met = have >= need;
-                if (!met) canCraft = false;
+                reqN++; if (met) metN++; else canCraft = false;
                 reqHtml += `
-                <div class="req ${met ? 'met' : ''}">
-                    <div class="req-top">
-                        <span class="req-name">${a ? `<span class="${gradeCol(a.grade)}">[${a.grade}]</span> ${a.name}` : reqId}</span>
-                        <span class="req-num">${fmt(have)} / ${fmt(need)}</span>
-                    </div>
-                    <div class="req-bar"><div style="width:${Math.min(100, have / need * 100)}%"></div></div>
+                <div class="creq ${met ? 'met' : ''}">
+                    <i class="creq-dot" style="background:${a ? a.color : '#888'}"></i>
+                    <span class="creq-name">${a ? a.name : reqId}</span>
+                    <span class="creq-num">${fmt(Math.min(have, need))}<small>/${fmt(need)}</small></span>
+                    <div class="creq-bar"><div style="width:${Math.min(100, have / need * 100)}%"></div></div>
                 </div>`;
             }
         }
-        const badge = equipped ? '<span class="badge on">장착 중</span>' : owned ? '<span class="badge owned">보유</span>' : '';
+        const chips = [];
+        if (gear.luckBonus) chips.push(`<span class="chip luck">행운 +${Math.round(gear.luckBonus * 100)}%</span>`);
+        if (gear.speedBonus) chips.push(`<span class="chip speed">속도 +${Math.round(gear.speedBonus * 100)}%</span>`);
+        if (AMULET_MULT[gear.id]) chips.push(`<span class="chip amulet">10롤마다 행운 ×${AMULET_MULT[gear.id]}</span>`);
+        const state = equipped ? '<span class="cstate on">장착 중</span>' : owned ? '<span class="cstate owned">보유</span>' : `<span class="cstate">${metN}/${reqN}</span>`;
         const btn = equipped
             ? `<button class="btn btn-block" data-unequip="${gear.id}">해제</button>`
             : owned
                 ? `<button class="btn btn-block btn-primary" data-equip="${gear.id}">장착</button>`
-                : `<button class="btn btn-block btn-gold" data-craft="${gear.id}" ${canCraft ? '' : 'disabled'}>제작</button>`;
+                : `<button class="btn btn-block btn-gold" data-craft="${gear.id}" ${canCraft ? '' : 'disabled'}>${canCraft ? '제작하기' : '재료 부족'}</button>`;
         return `
-        <div class="list-card ${equipped ? 'equipped' : ''}">
-            <div class="list-head"><span class="list-title">${gear.name}</span>${badge}</div>
-            <div class="list-effect">${gear.desc}</div>
-            ${owned ? '' : `<div class="req-list">${reqHtml}</div>`}
+        <div class="craft-card ${equipped ? 'equipped' : ''} ${owned ? 'owned' : ''}">
+            <div class="craft-top">
+                <div class="craft-view"><canvas data-gear="${gear.id}" aria-hidden="true"></canvas>${state}</div>
+                <div class="craft-info">
+                    <div class="craft-name">${gear.name}</div>
+                    <div class="chips">${chips.join('')}</div>
+                    <div class="craft-desc">${gear.category === 'amulet' ? '왼팔에 매다는 부적' : '오른팔에 끼는 건틀렛'}</div>
+                </div>
+            </div>
+            ${owned ? '' : `<div class="creq-list">${reqHtml}</div>`}
             ${btn}
         </div>`;
     }).join('');
+    attachGearPreviews();
 }
 
 function renderShop() {
@@ -887,38 +910,60 @@ function questState(quest) {
     return { rows, canClaim: rows.every(r => r.met) };
 }
 
+function questRewardHtml(q) {
+    const chips = [];
+    if (q.reward.unlockQuickRoll) chips.push(`<span class="rw rw-unlock">⚡ 빠른 롤 해금</span>`);
+    for (const id in q.reward.items || {}) {
+        const item = SHOP_BY_ID[id];
+        if (item) chips.push(`<span class="rw">${vialHtml(item)}<span>${item.name} <b>×${q.reward.items[id]}</b></span></span>`);
+    }
+    if (q.reward.jc) chips.push(`<span class="rw rw-jc"><i class="coin"></i><span><b>${fmt(q.reward.jc)}</b> JC</span></span>`);
+    return chips.join('');
+}
+
 function renderQuests() {
     ui.questList.classList.add('list');
     ui.questList.innerHTML = QUEST_DATA.map(q => {
         const done = !q.repeatable && gameState.completedQuests.includes(q.id);
         const active = gameState.activeQuest === q.id;
         const { rows, canClaim } = questState(q);
+        const pct = done ? 100 : Math.round(rows.reduce((s, r) => s + Math.min(1, r.have / r.need), 0) / rows.length * 100);
 
-        const badge = done ? '<span class="badge done">완료</span>'
-            : active ? '<span class="badge ing">진행 중</span>'
-            : q.repeatable ? '<span class="badge repeat">반복</span>' : '';
+        const status = done ? '<span class="qstate done">완료</span>'
+            : active && canClaim ? '<span class="qstate ready">보상 대기</span>'
+            : active ? '<span class="qstate ing">진행 중</span>' : '';
 
         let btn;
         if (done) btn = `<button class="btn btn-block" disabled>완료됨</button>`;
-        else if (active && canClaim) btn = `<button class="btn btn-block btn-green" data-claim="${q.id}">🎉 보상 받기</button>`;
-        else if (active) btn = `<button class="btn btn-block" disabled>진행 중…</button>`;
-        else btn = `<button class="btn btn-block btn-primary" data-quest="${q.id}">진행하기</button>`;
+        else if (active && canClaim) btn = `<button class="btn btn-block btn-green q-claim" data-claim="${q.id}">보상 받기</button>`;
+        else if (active) btn = '';
+        else btn = `<button class="btn btn-block btn-primary" data-quest="${q.id}">이 퀘스트 진행하기</button>`;
 
-        const reqHtml = done ? '' : `<div class="req-list">${rows.map(r => `
-            <div class="req ${r.met ? 'met' : ''}">
-                <div class="req-top"><span class="req-name">${QUEST_TARGET_LABELS[r.key](r.need)}</span><span class="req-num">${fmt(r.have)} / ${fmt(r.need)}</span></div>
-                <div class="req-bar"><div style="width:${r.have / r.need * 100}%"></div></div>
+        const goals = done ? '' : `<div class="qgoals">${rows.map(r => `
+            <div class="qgoal ${r.met ? 'met' : ''}">
+                <div class="qgoal-top"><span>${QUEST_TARGET_LABELS[r.key](r.need)}</span><i class="qcheck"></i></div>
+                <div class="qgoal-num">${fmt(r.have)}<small> / ${fmt(r.need)}</small></div>
+                <div class="qgoal-bar"><div style="width:${r.have / r.need * 100}%"></div></div>
             </div>`).join('')}</div>`;
 
         return `
-        <div class="list-card ${done ? 'done' : active ? 'active-quest' : ''}">
-            <div class="list-head"><span class="list-title">${q.name}</span>${badge}</div>
-            <div class="list-desc">${q.desc}</div>
-            ${reqHtml}
-            <div class="reward">🎁 ${q.rewardDesc}</div>
+        <div class="qcard ${done ? 'done' : ''} ${active ? 'active' : ''} ${active && canClaim ? 'ready' : ''}">
+            <div class="qhead">
+                <div>
+                    <div class="qkind">${q.repeatable ? 'REPEAT' : 'ONCE'}</div>
+                    <div class="qtitle">${q.name}</div>
+                </div>
+                <div class="qpct" style="--p:${pct}">
+                    <svg viewBox="0 0 40 40"><rect x="3" y="3" width="34" height="34" class="qpct-bg"/><rect x="3" y="3" width="34" height="34" class="qpct-fg" pathLength="100"/></svg>
+                    <span>${pct}<small>%</small></span>
+                </div>
+            </div>
+            <div class="qdesc">${q.desc} ${status}</div>
+            ${goals}
+            <div class="qreward"><div class="qreward-label">REWARD</div><div class="qreward-items">${questRewardHtml(q)}</div></div>
             ${btn}
         </div>`;
-    }).join('') + `<div class="list-desc" style="text-align:center;margin-top:4px;">퀘스트는 한 번에 하나만 진행됩니다. 바꿔도 진행도는 유지돼요.</div>`;
+    }).join('') + `<div class="qnote">퀘스트는 한 번에 하나만 진행돼요. 바꿔도 진행도는 남아요.</div>`;
 }
 
 function renderIndex() {
@@ -1011,6 +1056,7 @@ function openSheet(id) {
 function closeSheet(id) {
     const el = $(id);
     if (el.classList.contains('hidden')) return;
+    if (id === 'sheet-craft') gearPreviews?.stop();
     el.classList.add('closing');
     document.querySelectorAll(`[data-sheet="${id}"]`).forEach(b => b.classList.remove('open'));
     setTimeout(() => {
@@ -1448,7 +1494,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=16')
+import('./aura3d.js?v=17')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

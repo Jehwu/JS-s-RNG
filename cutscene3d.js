@@ -14,7 +14,7 @@
      hit2 : JXS만. 두 번째 클라이맥스. hit~hit2 동안은 각성 직전 단계
    ========================================================= */
 
-import { buildLocomotive } from './auraSignatures.js?v=16';
+import { buildLocomotive } from './auraSignatures.js?v=17';
 
 export function createCutscene(ctx) {
     const { THREE, scene, camera, dummy, floor, stars, kit, bloom, stageApi } = ctx;
@@ -146,6 +146,73 @@ export function createCutscene(ctx) {
        update(time, phase, k, dt)  phase: 'build' | 'phase2' | 'reveal'
        ========================================================= */
     const MOTIFS = {
+        // 명예와 영광: 빛의 방패벽이 칸칸이 세워지고, 하늘에서 거대한 망치가 내려와 쾅
+        crusader({ g, colors }) {
+            const shield = new THREE.Group(); shield.position.set(0, 3.2, -0.5); g.add(shield);
+            const tiles = [];
+            for (let x = -4; x <= 4; x++) for (let y = -3; y <= 3; y++) {
+                const tl = new THREE.Mesh(BOX, glowMat(colors[1], 0)); tl.scale.set(0.46, 0.46, 0.05); tl.position.set(x * 0.5, y * 0.5, 0);
+                tl.userData.d = Math.hypot(x, y * 1.2); shield.add(tl); tiles.push(tl);
+            }
+            const rim = square(4.7, 0.08, glowMat(colors[0], 0.9)); rim.rotation.x = Math.PI / 2; rim.scale.set(1, 1, 3.7 / 4.7); shield.add(rim);
+            const steel = new THREE.MeshStandardMaterial({ color: 0xc9ced8, metalness: 0.85, roughness: 0.3, emissive: colors[0], emissiveIntensity: 0.15 });
+            const hammer = new THREE.Group();
+            const hs = new THREE.Mesh(BOX, new THREE.MeshStandardMaterial({ color: 0x3a2a1c })); hs.scale.set(0.3, 6, 0.3); hs.position.y = 3.2; hammer.add(hs);
+            const hh = new THREE.Mesh(BOX, steel); hh.scale.set(3.0, 1.8, 1.8); hammer.add(hh);
+            for (const y of [0.5, -0.5]) { const b = new THREE.Mesh(BOX, glowMat(colors[0], 1)); b.scale.set(3.06, 0.18, 1.86); b.position.y = y; hammer.add(b); }
+            g.add(hammer);
+            return {
+                hideStar: true, bloom: 0.75,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    tiles.forEach(tl => { tl.material.opacity = k * 6 > tl.userData.d ? 0.22 + 0.1 * Math.sin(time * 5 + tl.userData.d) : 0; });
+                    rim.children.forEach(m => { m.material.opacity = clamp01(k * 3) * 0.9; });
+                    const drop = ease.inOut(clamp01((k - 0.45) / 0.53));
+                    hammer.position.set(0, THREE.MathUtils.lerp(18, 5.6, drop), -1.2);
+                    hammer.rotation.z = THREE.MathUtils.lerp(-0.9, 0, drop);
+                    hammer.visible = k > 0.4;
+                }
+            };
+        },
+
+        // 저거너트: 붉은 기운 속에서 하늘 끝부터 철판 대검이 떨어져 땅에 꽂힘
+        juggernaut({ g, colors }) {
+            const bladeM = new THREE.MeshStandardMaterial({ color: 0x3a3b42, metalness: 0.92, roughness: 0.5, emissive: colors[0], emissiveIntensity: 0.08 });
+            const sw = new THREE.Group();
+            const blade = new THREE.Mesh(BOX, bladeM); blade.scale.set(1.5, 11, 0.4); blade.position.y = 5.5; sw.add(blade);
+            const guard = new THREE.Mesh(BOX, new THREE.MeshStandardMaterial({ color: 0x24252b, metalness: 0.9, roughness: 0.4 })); guard.scale.set(2.4, 0.45, 0.7); guard.position.y = 11.2; sw.add(guard);
+            const grip = new THREE.Mesh(BOX, new THREE.MeshStandardMaterial({ color: 0x2a1a12 })); grip.scale.set(0.4, 2.2, 0.4); grip.position.y = 12.6; sw.add(grip);
+            const edge = new THREE.Mesh(BOX, glowMat(colors[0], 0.6)); edge.scale.set(0.08, 11, 0.44); edge.position.set(0.75, 5.5, 0); sw.add(edge);
+            const edge2 = new THREE.Mesh(BOX, edge.material); edge2.scale.copy(edge.scale); edge2.position.set(-0.75, 5.5, 0); sw.add(edge2);
+            g.add(sw);
+            const N = 60;
+            const haze = new THREE.InstancedMesh(BOX, glowMat(colors[0], 0.5), N);
+            const hd = Array.from({ length: N }, () => ({ a: rand(0, 6.3), r: rand(2, 9), y: rand(-2, 12), v: rand(1, 3), s: rand(0.15, 0.45) }));
+            g.add(haze);
+            const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3();
+            return {
+                hideStar: true, bloom: 0.7,
+                update(time, phase, k, dt) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    const drop = ease.inOut(clamp01((k - 0.3) / 0.68));
+                    sw.position.set(0, THREE.MathUtils.lerp(24, -2.5, drop), -2.5);
+                    sw.rotation.z = Math.sin(time * 0.7) * 0.05 * (1 - drop);
+                    edge.material.opacity = 0.2 + k * 0.5;
+                    hd.forEach((d, i) => {
+                        d.y += d.v * (dt || 0.016) * (1 + k * 2); if (d.y > 12) d.y = -2;
+                        p.set(Math.cos(d.a + time * 0.4) * d.r, d.y, Math.sin(d.a + time * 0.4) * d.r - 2);
+                        q.setFromEuler(e.set(time + i, time * 2, 0)); sc.setScalar(d.s * (0.4 + k));
+                        haze.setMatrixAt(i, m4.compose(p, q, sc));
+                    });
+                    haze.instanceMatrix.needsUpdate = true;
+                }
+            };
+        },
+
         // 태극권: 별 대신 픽셀 태극이 커지며 점점 빨리 돌고, 팔괘가 둘레를 감쌈
         taichi({ g, colors }) {
             const N = 22, S = 0.34, R = (N / 2) * S;

@@ -923,3 +923,111 @@ body.cine-on #nametag, body.cine-on #ambient { opacity: 0 !important; }
 .ad-stats b { font-weight: 400; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ad-stats b.gold { color: var(--gold); }
 .ad-close { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border: none; background: none; color: var(--muted); cursor: pointer; z-index: 3; }
+
+/* =========================================================
+   제작 카드 (3D 미리보기)
+   ========================================================= */
+.craft-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 12px;
+}
+.craft-card.equipped { border-color: color-mix(in srgb, var(--mint) 55%, transparent); box-shadow: inset 0 0 30px color-mix(in srgb, var(--mint) 8%, transparent); }
+.craft-top { display: grid; grid-template-columns: 112px 1fr; gap: 14px; align-items: center; }
+.craft-view {
+    position: relative; width: 112px; aspect-ratio: 1;
+    background:
+        radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--aura) 22%, transparent), transparent 70%),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 14px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 14px),
+        #0a0916;
+    border: 1px solid var(--line-2);
+}
+.craft-view canvas { width: 100%; height: 100%; display: block; }
+.craft-card:not(.owned) .craft-view canvas { filter: saturate(0.55) brightness(0.8); }
+.cstate {
+    position: absolute; left: 4px; bottom: 4px;
+    font-size: 9.5px; letter-spacing: 0.12em; padding: 2px 6px;
+    color: var(--muted); background: rgba(0, 0, 0, 0.6); border: 1px solid var(--line-2);
+}
+.cstate.on { color: #06140e; background: var(--mint); border-color: var(--mint); }
+.cstate.owned { color: var(--text); }
+.craft-info { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.craft-name { font-family: var(--display); font-size: 18px; line-height: 1.2; word-break: keep-all; }
+.craft-desc { font-size: 11px; color: var(--faint); }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { font-size: 11px; padding: 3px 7px; border: 1px solid; white-space: nowrap; }
+.chip.luck { color: var(--mint); border-color: color-mix(in srgb, var(--mint) 45%, transparent); }
+.chip.speed { color: #7ab8ff; border-color: color-mix(in srgb, #7ab8ff 45%, transparent); }
+.chip.amulet { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 45%, transparent); }
+.creq-list { display: flex; flex-direction: column; gap: 7px; padding: 10px; background: rgba(0, 0, 0, 0.22); border: 1px solid var(--line); }
+.creq { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 8px; font-size: 12px; }
+.creq-dot { width: 8px; height: 8px; display: block; box-shadow: 0 0 6px currentColor; }
+.creq-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #c9c9dc; }
+.creq-num { font-variant-numeric: tabular-nums; color: var(--muted); }
+.creq-num small { color: var(--faint); }
+.creq.met .creq-num { color: var(--mint); }
+.creq-bar { grid-column: 1 / -1; height: 2px; background: var(--line); }
+.creq-bar > div { height: 100%; background: var(--muted); }
+.creq.met .creq-bar > div { background: var(--mint); box-shadow: 0 0 6px var(--mint); }
+
+/* =========================================================
+   퀘스트 카드
+   ========================================================= */
+.qcard {
+    position: relative;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px 14px 14px;
+    display: flex; flex-direction: column; gap: 12px;
+    overflow: hidden;
+}
+.qcard.active { border-color: color-mix(in srgb, var(--gold) 50%, transparent); }
+.qcard.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--gold); box-shadow: 0 0 12px var(--gold); }
+.qcard.ready { border-color: color-mix(in srgb, var(--mint) 60%, transparent); box-shadow: 0 0 22px color-mix(in srgb, var(--mint) 15%, transparent); }
+.qcard.ready::before { background: var(--mint); box-shadow: 0 0 12px var(--mint); }
+.qcard.done { opacity: 0.45; }
+.qhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.qkind { font-size: 9.5px; letter-spacing: 0.4em; color: var(--faint); margin-bottom: 3px; }
+.qtitle { font-family: var(--display); font-size: 21px; line-height: 1.15; }
+.qpct { position: relative; width: 48px; height: 48px; flex: none; }
+.qpct svg { width: 100%; height: 100%; }
+.qpct rect { fill: none; stroke-width: 3; }
+.qpct-bg { stroke: var(--line-2); }
+.qpct-fg { stroke: var(--gold); stroke-dasharray: calc(var(--p) * 1) 100; filter: drop-shadow(0 0 3px var(--gold)); transition: stroke-dasharray 0.6s; }
+.qcard.ready .qpct-fg, .qcard.done .qpct-fg { stroke: var(--mint); filter: drop-shadow(0 0 3px var(--mint)); }
+.qpct span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-variant-numeric: tabular-nums; }
+.qpct small { font-size: 8px; color: var(--muted); }
+.qdesc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.qstate { display: inline-block; margin-left: 4px; font-size: 9.5px; letter-spacing: 0.12em; padding: 1px 6px; border: 1px solid; vertical-align: 1px; }
+.qstate.ing { color: var(--gold); }
+.qstate.ready { color: var(--mint); animation: pulse-soft 1.2s ease-in-out infinite; }
+.qstate.done { color: var(--mint); }
+@keyframes pulse-soft { 50% { opacity: 0.45; } }
+.qgoals { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.qgoal { padding: 9px 9px 8px; background: rgba(0, 0, 0, 0.22); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.qgoal-top { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 11px; color: #c9c9dc; }
+.qgoal-top span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qcheck { width: 10px; height: 10px; flex: none; border: 1px solid var(--faint); }
+.qgoal.met .qcheck { background: var(--mint); border-color: var(--mint); box-shadow: 0 0 6px var(--mint); }
+.qgoal-num { font-size: 15px; font-variant-numeric: tabular-nums; }
+.qgoal-num small { font-size: 10.5px; color: var(--faint); }
+.qgoal.met .qgoal-num { color: var(--mint); }
+.qgoal-bar { height: 2px; background: var(--line); }
+.qgoal-bar > div { height: 100%; background: var(--gold); }
+.qgoal.met .qgoal-bar > div { background: var(--mint); box-shadow: 0 0 6px var(--mint); }
+.qreward { display: flex; flex-direction: column; gap: 7px; padding: 10px; border: 1px dashed color-mix(in srgb, var(--gold) 35%, transparent); background: color-mix(in srgb, var(--gold) 4%, transparent); }
+.qreward-label { font-size: 9.5px; letter-spacing: 0.4em; color: var(--gold); }
+.qreward-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.rw { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 8px 4px 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line); }
+.rw b { font-weight: 400; color: var(--gold); }
+.rw .vial { transform: scale(0.5); margin: -10px -7px; }
+.rw-unlock { color: var(--mint); padding-left: 8px; }
+.coin { width: 14px; height: 14px; display: block; background: var(--gold); box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.25), 0 0 8px var(--gold); transform: rotate(45deg) scale(0.8); }
+.q-claim { animation: claim-glow 1.4s ease-in-out infinite; }
+@keyframes claim-glow { 50% { box-shadow: 0 0 22px color-mix(in srgb, var(--mint) 45%, transparent); } }
+.qnote { font-size: 11px; color: var(--faint); text-align: center; margin-top: 2px; }

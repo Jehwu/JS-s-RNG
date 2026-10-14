@@ -305,3 +305,27 @@ export function createGearRig(dummy) {
         }
     };
 }
+
+/* ---------- 제작창 미리보기용: 팔 하나에 장비를 낀 모형 ---------- */
+export function buildGearModel(id) {
+    const isAmulet = !!AMULETS[id];
+    const build = AMULETS[id] || GAUNTLETS[id];
+    if (!build) return null;
+    const root = new THREE.Group();
+    const arm = new THREE.Group();
+    const skin = new THREE.MeshStandardMaterial({ color: 0xc3c7d2, roughness: 0.6 });
+    const m = new THREE.Mesh(BOX, skin); m.scale.set(1, 2, 1); m.position.y = -0.9; arm.add(m);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(BOX), new THREE.LineBasicMaterial({ color: 0x5d6170 }));
+    edges.scale.copy(m.scale); edges.position.copy(m.position); arm.add(edges);
+    const g = new THREE.Group();
+    const up = [];
+    build(g, up, isAmulet ? 1 : -1);
+    arm.add(g);
+    root.add(arm);
+    arm.position.y = 0.9;
+    return {
+        root, isAmulet,
+        update(t) { up.forEach(u => u(t, 1 / 60, 1)); },
+        dispose() { root.traverse(o => { if (o.material) { o.material.map?.dispose?.(); o.material.dispose?.(); } }); }
+    };
+}

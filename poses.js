@@ -492,5 +492,102 @@ export const POSES = {
         d.root.position.x += dg * 1.4;
         d.root.rotation.y = -dg * 0.25;
         set(d.legL, 0, 0, -0.04); set(d.legR, 0, 0, 0.04);
+    },
+
+    // 편의점 알바 박지성: 바코드 찍기 (삑, 삑)
+    rare_cvs_jisung(t, d) {
+        const k = pulse(t, 1.2, 0.35);
+        set(d.armL, -1.2 - k * 0.3, 0, 0.3); set(d.armR, -1.0, 0, -0.5 + k * 0.2);
+        d.head.rotation.x = 0.3; d.head.rotation.y = -0.15;
+    },
+    // 자전거 타는 김티비: 페달 밟기 + 핸들
+    rare_bike_tv(t, d) {
+        const p = t * 6;
+        set(d.legL, -0.9 + S(p) * 0.5, 0, 0); set(d.legR, -0.9 - S(p) * 0.5, 0, 0);
+        set(d.armL, -1.2, 0, 0.15); set(d.armR, -1.2, 0, -0.15);
+        d.root.rotation.x = 0.25; d.root.position.y += 0.6 + Math.abs(S(p)) * 0.04;
+    },
+    // 드럼 치는 공병은: 양손 번갈아 내리치기
+    rare_drum_byungeun(t, d) {
+        const l = Math.max(0, S(t * 12)), r = Math.max(0, S(t * 12 + Math.PI));
+        set(d.armL, -1.0 - l * 0.6, 0, 0.35); set(d.armR, -1.0 - r * 0.6, 0, -0.35);
+        d.head.rotation.x = 0.1 + Math.abs(S(t * 6)) * 0.15;
+        set(d.legL, -0.4 - Math.max(0, S(t * 6)) * 0.3, 0, 0);
+    },
+    // 마술사 김건우: 손을 펼치며 짠!
+    ep_magician_gunwoo(t, d) {
+        const k = pulse(t, 3, 0.9);
+        set(d.armL, -0.4, 0, mix(-0.3, -1.9, k)); set(d.armR, mix(-1.4, -0.4, k), 0, mix(-0.2, 1.9, k));
+        d.root.rotation.x = -k * 0.08; d.head.rotation.x = -k * 0.15;
+    },
+    // 사이보그 김가은: 딱딱하게 끊기는 로봇 동작
+    ep_cyborg_gaeun(t, d) {
+        const st = Math.floor(t * 2) % 4;
+        const poses = [[-1.57, 0, 0, 0], [0, -1.57, 0.3, 0], [-1.57, -1.57, 0, 0.4], [0, 0, -0.3, 0]];
+        const [al, ar, hy, rz] = poses[st];
+        set(d.armL, al, 0, 0.05); set(d.armR, ar, 0, -0.05);
+        d.head.rotation.y = hy; d.root.rotation.y = rz;
+    },
+    // 용암 김티비: 뜨거워서 발을 동동
+    ep_lava_tv(t, d) {
+        const w = S(t * 10);
+        set(d.legL, -Math.max(0, w) * 0.8, 0, -0.05); set(d.legR, -Math.max(0, -w) * 0.8, 0, 0.05);
+        set(d.armL, 0, 0, -0.6 - Math.abs(w) * 0.3); set(d.armR, 0, 0, 0.6 + Math.abs(w) * 0.3);
+        d.root.position.y += Math.abs(w) * 0.15;
+    },
+    // 검객 공병은: 낮은 발도 자세 → 베기
+    leg_swordsman_byungeun(t, d, _r, sig) {
+        const k = sig?.drawK ?? 0;
+        set(d.armL, mix(0.3, -1.4, k), mix(0, 0.9, k), mix(0.25, -0.2, k));
+        set(d.armR, -0.6, 0, -0.4);
+        set(d.legL, -0.6 * (0.5 + k * 0.5), 0, -0.2); set(d.legR, 0.45, 0, 0.2);
+        d.root.position.y -= 0.3 + k * 0.15; d.root.rotation.y = mix(0.4, -0.5, k);
+        d.head.rotation.y = -0.3;
+    },
+    // DJ 김티비: 한 손은 헤드폰, 한 손은 턴테이블, 박자 맞춰 끄덕
+    leg_dj_tv(t, d, _r, sig) {
+        const b = sig?.beat ?? 0;
+        const up = pulse(t, 8, 1.5);
+        set(d.armR, -0.25, 0, mix(2.2, 2.9, up)); set(d.armL, -1.0 - S(t * 3) * 0.15, 0, 0.3);
+        d.head.rotation.x = 0.05 + b * 0.25; d.head.rotation.z = -0.15;
+        d.root.position.y -= b * 0.08;
+    },
+    // 우주비행사 박지성: 무중력으로 둥둥, 천천히 돌며 손 흔들기
+    myth_astro_jisung(t, d) {
+        set(d.armL, -0.3, 0, -0.9 - S(t * 0.8) * 0.2); set(d.armR, -0.2, 0, 2.3 + S(t * 4) * 0.25);
+        set(d.legL, S(t * 0.6) * 0.3, 0, -0.15); set(d.legR, -S(t * 0.6) * 0.3, 0, 0.15);
+        d.root.position.y += 1.0 + S(t * 0.7) * 0.3;
+        d.root.rotation.z = S(t * 0.4) * 0.2; d.root.rotation.x = S(t * 0.3) * 0.15;
+    },
+    // 용기사 김민채: 창을 세우고 하늘의 용을 올려다봄
+    myth_dragonknight_minchae(t, d) {
+        const k = pulse(t, 5, 1.2, 3.6);
+        set(d.armL, mix(-0.6, -2.7, k), 0, 0.2); set(d.armR, 0.2, 0, 0.35);
+        d.head.rotation.x = -0.35; d.head.rotation.y = S(t * 0.45) * 0.4;
+        set(d.legL, -0.2, 0, -0.12); set(d.legR, 0.15, 0, 0.12);
+    },
+    // 명예와 영광 김민채: 방패를 펼치고(왼팔 앞으로) → 망치를 머리 위로 → 쾅 내리침
+    anc_honor_minchae(t, d, _r, sig) {
+        const sh = sig?.shieldK ?? 0, up = sig?.raiseK ?? 0, sl = sig?.slamK ?? 0;
+        const rest = 1 - Math.max(sh, up, sl);
+        // 캐릭터 오른팔(armL)에 망치: 평소엔 어깨에 멤
+        set(d.armL, mix(mix(-2.2, -3.0, up), -1.2, sl), 0, mix(0.35, 0.1, up));
+        set(d.armR, mix(-0.2, -1.55, sh), mix(0, -0.4, sh), mix(-0.25, 0.1, sh));
+        d.root.rotation.x = sl * 0.4 - up * 0.1;
+        d.root.position.y -= sl * 0.35;
+        set(d.legL, -0.3 * sl - 0.1, 0, -0.15); set(d.legR, 0.25 * sl + 0.05, 0, 0.15);
+        d.head.rotation.x = mix(0, -0.2, up) + sl * 0.15;
+        d.root.rotation.y = rest * S(t * 0.4) * 0.15 - sh * 0.25;
+    },
+    // 저거너트 김민채: 대검을 어깨에 메고 육중하게 섬 → 뒤로 젖혔다가 한 바퀴 휘두름
+    abs_juggernaut_minchae(t, d, _r, sig) {
+        const w = sig?.windK ?? 0, s = sig?.swingK ?? 0;
+        set(d.armL, mix(-2.6, -1.6, s), mix(0, 0.8, w), mix(0.5, 1.2, s));
+        set(d.armR, -0.3, 0, -0.35);
+        d.root.rotation.y = mix(mix(0, 0.9, w), -Math.PI * 2 * Math.min(1, s * 1.0), s > 0 ? 1 : 0);
+        d.root.rotation.x = 0.15 + w * 0.1;
+        d.root.position.y -= 0.25;
+        set(d.legL, -0.35, 0, -0.22); set(d.legR, 0.3, 0, 0.22);
+        d.head.rotation.x = 0.12;
     }
 };
