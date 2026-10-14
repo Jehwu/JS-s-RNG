@@ -443,7 +443,7 @@ export function createCutscene(ctx) {
             star.g.rotation.z = -st.spin;
             star.layers.forEach((l, i) => { l.rotation.z = (i % 2 ? -1 : 1) * st.spin * (0.5 + i * 0.4); l.position.set(rand(-1, 1) * 0.15, rand(-1, 1) * 0.15, 0); });
             star.g.scale.setScalar((1.4 + ease.in(q) * 1.6) * (1 - ease.in(implode)) + 0.001);
-            streaks.update(dt, 0.6 + q * 1.5 + implode * 2, new THREE.Vector3(0, 3.6, -3.5));
+            streaks.update(dt, 0.6 + q * 1.5 + implode * 2, st.center2 || (st.center2 = new THREE.Vector3(0, 3.6, -3.5)));
             floorLight?.update(Math.max(0, 1 - q * 3));
             motif?.update(time, 'phase2', q, dt);
             // 카메라: 실루엣 발밑에서 얼굴 쪽으로 천천히 돌며 올라감

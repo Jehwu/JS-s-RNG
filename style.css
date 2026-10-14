@@ -15,7 +15,7 @@
     --void: #03030a;
     --deep: #0a0918;
     --glass: rgba(16, 15, 34, 0.62);
-    --glass-strong: rgba(11, 10, 24, 0.9);
+    --glass-strong: #0b0a18;
     --line: rgba(255, 255, 255, 0.08);
     --line-2: rgba(255, 255, 255, 0.16);
     --text: #ecebf5;
@@ -60,8 +60,7 @@ input, select { font-family: inherit; -webkit-user-select: text; user-select: te
     background:
         radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--aura) 32%, transparent) 0%, transparent 46%),
         radial-gradient(ellipse 80% 40% at 50% 100%, color-mix(in srgb, var(--aura) 14%, transparent) 0%, transparent 70%);
-    mix-blend-mode: screen;
-    opacity: 0.3;
+    display: none;
 }
 
 /* 머리 위 이름표 (3D 머리 위치를 따라감) */
@@ -308,8 +307,6 @@ input, select { font-family: inherit; -webkit-user-select: text; user-select: te
 .sheet-backdrop {
     position: fixed; inset: 0;
     background: rgba(2, 2, 8, 0.55);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
     z-index: 1000;
     display: flex; align-items: flex-end; justify-content: center;
 }
@@ -318,8 +315,6 @@ input, select { font-family: inherit; -webkit-user-select: text; user-select: te
     width: 100%; max-width: 480px;
     max-height: 86vh; max-height: 86dvh;
     background: var(--glass-strong);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
     border: 1px solid var(--line);
     border-bottom: none;
     border-radius: 10px 10px 0 0;
@@ -500,8 +495,6 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .dialog-backdrop {
     position: fixed; inset: 0;
     background: rgba(2, 2, 8, 0.7);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     z-index: 2000;
     display: flex; align-items: center; justify-content: center;
     padding: 22px;
@@ -551,8 +544,6 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     display: flex; align-items: flex-start; gap: 10px;
     max-width: 100%;
     background: var(--glass-strong);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
     border: 1px solid var(--line-2);
     border-radius: 4px;
     padding: 11px 16px;

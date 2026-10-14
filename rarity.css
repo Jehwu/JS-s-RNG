@@ -1,0 +1,168 @@
+/* =========================================================
+   💎 등급 연출 (rarity.css)
+   - 등급 색        .col-<등급>
+   - 카드 테두리    .fr .fr-<등급>     (--c1 --c2 --c3 = 칭호 색)
+   - 칭호 글자      .nm .nm-<등급>     (--c1 --c2 --c3 = 칭호 색)
+   등급이 높을수록 화려하게. JXS는 번개가 테두리를 탐.
+   ========================================================= */
+
+@property --ang {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+}
+@keyframes spin-ang { to { --ang: 360deg; } }
+
+/* ---------- 등급 색 ---------- */
+.col-common   { color: #9aa0b0; }
+.col-uncommon { color: #5fe08a; }
+.col-rare     { color: #4da3ff; }
+.col-epic     { color: #b46bff; }
+.col-legend   { color: #ffc23d; }
+.col-mythic   { color: #ff5fb0; }
+.col-ancient  { color: #ffe39a; text-shadow: 0 0 10px rgba(255, 210, 120, 0.6); }
+.col-absolute { background: linear-gradient(90deg, #7af7ff, #c58bff, #ff8bd1, #7af7ff); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: flow 3s linear infinite; }
+.col-jxs      { color: #ff2d55; text-shadow: 0 0 8px #ff2d55, 0 0 18px rgba(255, 45, 85, 0.6); animation: jxs-flicker 2.4s steps(1) infinite; }
+@keyframes flow { to { background-position: -200% center; } }
+@keyframes jxs-flicker { 0%, 92%, 100% { opacity: 1; } 94% { opacity: 0.35; } 96% { opacity: 1; } 97% { opacity: 0.5; } }
+
+/* ---------- 카드 테두리 ---------- */
+.fr { --bg: #0f0e1d; position: relative; background: var(--bg); border: 1px solid rgba(255, 255, 255, 0.08); }
+.fr-common   { border-color: rgba(154, 160, 176, 0.35); }
+.fr-uncommon { border-color: rgba(95, 224, 138, 0.45); }
+.fr-rare     { border-color: rgba(77, 163, 255, 0.6); }
+.fr-epic     { border-color: rgba(180, 107, 255, 0.75); box-shadow: inset 0 0 18px rgba(180, 107, 255, 0.18); }
+
+/* LEGEND: 테두리를 따라 빛줄기가 돎 */
+.fr-legend {
+    border: 1.5px solid transparent;
+    background:
+        linear-gradient(var(--bg), var(--bg)) padding-box,
+        conic-gradient(from var(--ang), rgba(255, 194, 61, 0.35) 0 72%, var(--c1, #ffc23d) 84%, #fff 88%, var(--c1, #ffc23d) 92%, rgba(255, 194, 61, 0.35)) border-box;
+    animation: spin-ang 3.2s linear infinite;
+    box-shadow: 0 0 14px rgba(255, 194, 61, 0.15);
+}
+
+/* MYTHIC: 두 색이 맞물려 회전 */
+.fr-mythic {
+    border: 1.5px solid transparent;
+    background:
+        linear-gradient(var(--bg), var(--bg)) padding-box,
+        conic-gradient(from var(--ang), var(--c1, #ff5fb0), var(--c2, #6af0ff), var(--c1, #ff5fb0), var(--c2, #6af0ff), var(--c1, #ff5fb0)) border-box;
+    animation: spin-ang 4s linear infinite;
+    box-shadow: 0 0 16px color-mix(in srgb, var(--c1, #ff5fb0) 30%, transparent), inset 0 0 14px color-mix(in srgb, var(--c1, #ff5fb0) 12%, transparent);
+}
+
+/* ANCIENT: 금빛 이중 테두리 + 네 귀퉁이 문양, 맥동 */
+.fr-ancient {
+    border: 1.5px solid #ffd27a;
+    outline: 1px solid rgba(255, 210, 122, 0.35);
+    outline-offset: 3px;
+    box-shadow: 0 0 18px rgba(255, 210, 122, 0.35), inset 0 0 22px rgba(255, 210, 122, 0.15);
+    animation: ancient-pulse 2.4s ease-in-out infinite;
+}
+.fr-ancient::before, .fr-ancient::after {
+    content: ''; position: absolute; width: 9px; height: 9px;
+    border: 2px solid #fff3c9; pointer-events: none;
+    box-shadow: 0 0 8px #ffd27a;
+}
+.fr-ancient::before { top: -6px; left: -6px; border-right: none; border-bottom: none; }
+.fr-ancient::after { bottom: -6px; right: -6px; border-left: none; border-top: none; }
+@keyframes ancient-pulse { 50% { box-shadow: 0 0 28px rgba(255, 210, 122, 0.6), inset 0 0 30px rgba(255, 210, 122, 0.25); } }
+
+/* ABSOLUTE: 무지개 프리즘이 도는 테두리 */
+.fr-absolute {
+    border: 2px solid transparent;
+    background:
+        linear-gradient(var(--bg), var(--bg)) padding-box,
+        conic-gradient(from var(--ang), #ff5f6d, #ffc371, #7af7ff, #6a5cff, #ff8bd1, #ff5f6d) border-box;
+    animation: spin-ang 2.6s linear infinite;
+    box-shadow: 0 0 22px rgba(122, 247, 255, 0.28), 0 0 40px rgba(255, 139, 209, 0.15);
+}
+
+/* JXS: 핏빛 핵이 숨 쉬고, 테두리를 타고 번개가 번쩍 */
+.fr-jxs {
+    border: 2px solid transparent;
+    background:
+        radial-gradient(ellipse at 50% 115%, color-mix(in srgb, var(--c1, #ff2d55) 40%, transparent), transparent 65%) padding-box,
+        radial-gradient(ellipse at 50% -20%, color-mix(in srgb, var(--c2, #6a5cff) 25%, transparent), transparent 60%) padding-box,
+        linear-gradient(#07050c, #07050c) padding-box,
+        conic-gradient(from var(--ang), var(--c1, #ff2d55), #fff 4%, var(--c1, #ff2d55) 8%, #120008 22%, var(--c2, #6a5cff) 42%, #fff 46%, var(--c2, #6a5cff) 50%, #120008 64%, var(--c3, #ff2d55) 84%, var(--c1, #ff2d55)) border-box;
+    animation: spin-ang 1.4s linear infinite, jxs-breathe 1.8s ease-in-out infinite;
+    overflow: visible;
+}
+@keyframes jxs-breathe {
+    0%, 100% { box-shadow: 0 0 14px color-mix(in srgb, var(--c1, #ff2d55) 55%, transparent), 0 0 32px color-mix(in srgb, var(--c1, #ff2d55) 20%, transparent); }
+    50% { box-shadow: 0 0 22px color-mix(in srgb, var(--c1, #ff2d55) 85%, transparent), 0 0 50px color-mix(in srgb, var(--c2, #6a5cff) 35%, transparent); }
+}
+.fr-bolts { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); pointer-events: none; overflow: visible; z-index: 2; }
+.fr-bolts path {
+    fill: none; stroke: #fff; stroke-width: 1.8; vector-effect: non-scaling-stroke;
+    filter: drop-shadow(0 0 3px var(--c1, #ff2d55)) drop-shadow(0 0 6px var(--c1, #ff2d55));
+    opacity: 0;
+    animation: bolt-flash 1.7s steps(1) infinite;
+}
+.fr-bolts path:nth-child(2) { animation-delay: 0.55s; animation-duration: 2.1s; }
+.fr-bolts path:nth-child(3) { animation-delay: 1.1s; animation-duration: 1.4s; }
+.fr-bolts path:nth-child(4) { animation-delay: 0.3s; animation-duration: 2.6s; }
+@keyframes bolt-flash { 0% { opacity: 1; } 5% { opacity: 0.15; } 8% { opacity: 1; } 12% { opacity: 0.4; } 16% { opacity: 1; } 22%, 100% { opacity: 0; } }
+
+/* ---------- 칭호 글자 ---------- */
+.nm { display: inline-block; color: var(--c1); }
+.nm-epic { text-shadow: 0 0 10px color-mix(in srgb, var(--c1) 55%, transparent); }
+.nm-legend, .nm-mythic, .nm-ancient, .nm-absolute, .nm-jxs {
+    background-size: 200% auto;
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+}
+/* LEGEND: 빛이 훑고 지나감 */
+.nm-legend {
+    background-image: linear-gradient(100deg, var(--c1) 0%, var(--c1) 40%, #fff 50%, var(--c2) 60%, var(--c1) 100%);
+    animation: flow 3s linear infinite;
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c1) 50%, transparent));
+}
+/* MYTHIC: 두 색이 반짝이며 흐름 */
+.nm-mythic {
+    background-image: linear-gradient(90deg, var(--c1), var(--c2), var(--c1), var(--c2), var(--c1));
+    animation: flow 2.6s linear infinite;
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--c1) 55%, transparent));
+}
+/* ANCIENT: 금빛 테두리를 두른 글자, 천천히 맥동 */
+.nm-ancient {
+    background-image: linear-gradient(180deg, #fff 0%, var(--c1) 45%, var(--c3, var(--c2)) 100%);
+    background-size: 100% 100%;
+    -webkit-text-stroke: 0.6px rgba(255, 230, 160, 0.7);
+    animation: ancient-glow 2.4s ease-in-out infinite;
+}
+@keyframes ancient-glow { 0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 220, 140, 0.5)); } 50% { filter: drop-shadow(0 0 14px rgba(255, 220, 140, 0.95)); } }
+/* ABSOLUTE: 세 색 프리즘이 흐르고 빛이 강함 */
+.nm-absolute {
+    background-image: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), #fff, var(--c1));
+    animation: flow 2s linear infinite;
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--c2) 70%, transparent));
+}
+/* JXS: 흐르는 핏빛 + 주기적으로 찢어지고 깜빡임 */
+.nm-jxs {
+    position: relative;
+    background-image: linear-gradient(90deg, var(--c1), #fff, var(--c2), var(--c1), var(--c3), var(--c1));
+    animation: flow 1.6s linear infinite, jxs-tear 3s steps(1) infinite;
+    filter: drop-shadow(0 0 6px var(--c1)) drop-shadow(0 0 14px color-mix(in srgb, var(--c1) 60%, transparent));
+}
+@keyframes jxs-tear {
+    0%, 84%, 100% { clip-path: none; transform: none; }
+    86% { clip-path: inset(8% 0 55% 0); transform: translate(-5px, 0); }
+    88% { clip-path: inset(55% 0 8% 0); transform: translate(4px, 0); }
+    90% { clip-path: inset(30% 0 35% 0); transform: translate(-2px, 0); }
+    92% { clip-path: none; transform: translate(1px, 0); }
+}
+
+/* 결과 화면에서 높은 등급 이름 아래 빛줄 */
+.result-name .nm-legend, .result-name .nm-mythic, .result-name .nm-ancient, .result-name .nm-absolute, .result-name .nm-jxs { padding-bottom: 2px; }
+
+/* 레전드 이상 뽑았을 때 화면 가장자리 빛 */
+.overlay { position: fixed; inset: 0; pointer-events: none; z-index: 800; transition: opacity 0.5s ease-out; }
+#border-glow-overlay { transition: box-shadow 0.2s ease-out, opacity 0.5s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+    .fr-legend, .fr-mythic, .fr-absolute, .fr-jxs, .nm-legend, .nm-mythic, .nm-absolute, .nm-jxs { animation: none; }
+}

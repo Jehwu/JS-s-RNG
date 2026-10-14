@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=8">
-    <link rel="stylesheet" href="effects.css?v=8">
+    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="rarity.css?v=10">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -22,15 +22,6 @@
     <div id="ambient" aria-hidden="true"></div>
     <div id="nametag" class="hidden"></div>
 
-    <!-- 🌌 예전 컷씬 (3D가 안 될 때만 씀) -->
-    <div id="star-cutscene-overlay" class="hidden">
-        <button id="skip-cutscene-btn">SKIP</button>
-        <div id="cutscene-star-container">
-            <div class="star-beam vertical"></div>
-            <div class="star-beam horizontal"></div>
-        </div>
-        <div id="glitch-text-container"></div>
-    </div>
     <div id="border-glow-overlay" class="overlay hidden"></div>
 
     <!-- 🎬 3D 컷씬 위에 겹치는 화면 (검은 띠, 섬광, 화면 깨짐, 칭호 공개) -->
@@ -269,6 +260,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=8"></script>
+    <script type="module" src="script.js?v=10"></script>
 </body>
 </html>

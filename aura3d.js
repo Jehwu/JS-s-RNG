@@ -9,7 +9,8 @@ import { EffectComposer } from './lib/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './lib/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './lib/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './lib/jsm/postprocessing/OutputPass.js';
-import { SIGNATURES } from './auraSignatures.js?v=8';
+import { SIGNATURES } from './auraSignatures.js?v=9';
+import { POSES } from './poses.js?v=9';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -178,11 +179,17 @@ function makeBolt(segments, mat) {
     return g;
 }
 
-const KIT = { THREE, BOX, glowMat, solidMat, square: makeSquareRing, rand, ghost: makeGhost, sword: makeSword, bolt: makeBolt };
+// 매 프레임 재사용하는 임시 객체 (new 를 반복하면 폰에서 버벅임)
+const TMP = { m4: new THREE.Matrix4(), q: new THREE.Quaternion(), p: new THREE.Vector3(), sc: new THREE.Vector3(), e: new THREE.Euler(), up: new THREE.Vector3(0, 1, 0), v: new THREE.Vector3() };
+
+const KIT = { TMP, THREE, BOX, glowMat, solidMat, square: makeSquareRing, rand, ghost: makeGhost, sword: makeSword, bolt: makeBolt };
 
 /* ---------- 아우라 만들기 ---------- */
+const SIGNATURE_PARTICLES = { LEGEND: 22, MYTHIC: 32, ANCIENT: 44, ABSOLUTE: 56, JXS: 80 };
+
 function buildAura(aura, dummy, stage) {
-    const fx = aura.fx || {};
+    const fx = { ...(aura.fx || {}) };
+    if (fx.signature && !fx.particles) { fx.particles = SIGNATURE_PARTICLES[aura.grade] || 0; fx.rise = fx.rise || 1.1; }
     const colors = (fx.colors || [aura.color]).map(c => new THREE.Color(c));
     const c0 = colors[0];
     const pick = i => colors[i % colors.length];
@@ -396,11 +403,13 @@ function buildAura(aura, dummy, stage) {
     }
 
     // 고급 칭호: 전용 연출
+    // 칭호끼리 주고받는 값 (예: 제우스가 번개 던지는 순간 → 포즈)
+    const sig = {};
     if (fx.signature && SIGNATURES[fx.signature]) {
-        SIGNATURES[fx.signature]({ group, tick: fn => updaters.push(fn), colors, pick, c0, dummy, kit: KIT, stage });
+        SIGNATURES[fx.signature]({ group, tick: fn => updaters.push(fn), colors, pick, c0, dummy, kit: KIT, stage, sig });
     }
 
-    return { group, updaters, color: c0, glow };
+    return { group, updaters, color: c0, glow, sig, pose: POSES[aura.id] || null };
 }
 
 /* =========================================================
@@ -425,8 +434,18 @@ const TIER_MOTION = {
    ========================================================= */
 
 export function createAuraStage(canvas, { getStageRect, onLabel }) {
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+    // 화질 단계: 프레임이 느리면 자동으로 낮추고, 여유 있으면 올림
+    const DPR = window.devicePixelRatio || 1;
+    const QUALITY = [
+        { pr: Math.min(DPR, 1.5), bloomDiv: 2 },
+        { pr: Math.min(DPR, 1.2), bloomDiv: 3 },
+        { pr: 1.0, bloomDiv: 3 },
+        { pr: 0.8, bloomDiv: 4 },
+        { pr: 0.65, bloomDiv: 4 }
+    ];
+    let qLevel = DPR > 2 ? 1 : 0;   // 고해상도 폰은 한 단계 낮게 시작
+    renderer.setPixelRatio(QUALITY[qLevel].pr);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
 
@@ -554,11 +573,11 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         burstRing.scale.setScalar(0.5 + k * 9);
         burstRing.position.y = 2.6 + dummy.root.position.y;
         burstRing.children.forEach(c => { c.material.opacity = 1 - k; });
-        const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3();
+        const { m4, q, p, sc, e } = TMP;
         burstData.forEach((d, i) => {
             p.copy(d.v).multiplyScalar(k * 0.9);
             p.y += 2.8 + dummy.root.position.y;
-            q.setFromEuler(new THREE.Euler(k * 8 + i, k * 6, 0));
+            q.setFromEuler(e.set(k * 8 + i, k * 6, 0));
             sc.setScalar(0.22 * (1 - k));
             burstCubes.setMatrixAt(i, m4.compose(p, q, sc));
         });
@@ -645,9 +664,11 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     let usable = { cx: 0.5, cy: 0.55, w: 1, h: 0.45 };
     function resize() {
         W = window.innerWidth; H = window.innerHeight;
+        renderer.setPixelRatio(QUALITY[qLevel].pr);
         renderer.setSize(W, H, false);
+        composer.setPixelRatio(QUALITY[qLevel].pr);
         composer.setSize(W, H);
-        bloom.resolution.set(W / 2, H / 2);
+        bloom.resolution.set(W / QUALITY[qLevel].bloomDiv, H / QUALITY[qLevel].bloomDiv);
         const r = getStageRect && getStageRect();
         if (r && r.height > 40) {
             // 위쪽 결과 글자(약 100px)와 아래 배율 글자(약 30px)를 뺀 곳에 캐릭터를 맞춤
@@ -686,8 +707,30 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     const clock = new THREE.Clock();
     const headTop = new THREE.Vector3();
     let t = 0;
+    // 프레임 시간 재서 화질 조절
+    let perfAcc = 0, perfN = 0, perfCooldown = 3;
+    let lowPower = false, skip = 0, pendingDt = 0;
+    function adaptQuality(rawDt) {
+        perfAcc += rawDt; perfN++;
+        perfCooldown -= rawDt;
+        if (perfN < 60 || perfCooldown > 0) return;
+        const avg = perfAcc / perfN;
+        perfAcc = 0; perfN = 0;
+        if (avg > 1 / 45 && qLevel < QUALITY.length - 1) { qLevel++; resize(); perfCooldown = 2; }
+        else if (avg < 1 / 58 && qLevel > 0 && !lowPower) { qLevel--; resize(); perfCooldown = 8; }
+    }
+
     function tick() {
-        const dt = Math.min(clock.getDelta(), 0.05);
+        requestAnimationFrame(tick);
+        const rawDt = clock.getDelta();
+        // 메뉴 창이 화면을 덮고 있으면 3프레임에 1번만 그림
+        if (lowPower && !cine?.active) {
+            skip = (skip + 1) % 3;
+            if (skip) { pendingDt += rawDt; return; }
+        }
+        const dt = Math.min(rawDt + pendingDt, 0.05);
+        pendingDt = 0;
+        if (!lowPower && !document.hidden) adaptQuality(rawDt);
         speed += ((rolling ? 3.2 : 1) - speed) * Math.min(1, dt * 4);
         t += dt;
 
@@ -726,6 +769,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         dummy.legL.rotation.set(m.lift > 0 ? Math.sin(t * 1.3) * 0.08 : 0, 0, -m.lift * 0.08);
         dummy.legR.rotation.set(m.lift > 0 ? -Math.sin(t * 1.3) * 0.08 : 0, 0, m.lift * 0.08);
         if (m.lift > 0.5) dummy.head.rotation.x = -0.12 - Math.sin(t * 0.9) * 0.05;   // 고개를 살짝 듦
+        if (current?.pose) current.pose(t, dummy, rolling, current.sig);            // 칭호별 포즈
         if (m.burst && current && !cine?.active) {
             burstAt -= dt;
             if (burstAt <= 0) { fireBurst(current.grade === 'JXS' ? 1.4 : 1); burstAt = m.burst; if (current.grade === 'JXS') shakeAmt = Math.max(shakeAmt, 0.12); }
@@ -755,7 +799,6 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
             headTop.set(0, 6.35 + dummy.root.position.y, 0).project(camera);
             onLabel((headTop.x * 0.5 + 0.5) * W, (-headTop.y * 0.5 + 0.5) * H);
         }
-        requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
 
@@ -763,12 +806,13 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         setAura,
         resize,
         setRolling(v) { rolling = v; },
+        setLowPower(v) { lowPower = v; },
         flash() { flash = 1; },
         shake(amount = 0.35) { shakeAmt = amount; flash = 1; },
         // 3D 컷씬 재생. cfg = { hit, hit2, total, tier }, getTime() = 지금 컷씬 몇 초인지
         async playCutscene(aura, cfg, getTime) {
             if (!cine) {
-                const { createCutscene } = await import('./cutscene3d.js?v=8');
+                const { createCutscene } = await import('./cutscene3d.js?v=9');
                 cine = createCutscene(cineCtx);
             }
             return cine.play(aura, cfg, getTime, { shake: a => { shakeAmt = Math.max(shakeAmt, a); } });
