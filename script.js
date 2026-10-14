@@ -1,6 +1,6 @@
-import { AURA_DATA } from './auras.js?v=13';
-import { CRAFT_ITEMS } from './craftItems.js?v=13';
-import { createMusicPlayer, coverArt } from './music.js?v=13';
+import { AURA_DATA } from './auras.js?v=14';
+import { CRAFT_ITEMS } from './craftItems.js?v=14';
+import { createMusicPlayer, coverArt } from './music.js?v=14';
 
 /* =========================================================
    📦 게임 데이터
@@ -497,7 +497,8 @@ async function finishRoll() {
     } else {
         gameState.inventory[rolled.id] = (gameState.inventory[rolled.id] || 0) + 1;
         const equipped = AURA_BY_ID[gameState.equippedAura];
-        if (!equipped || rolled.in > equipped.in) {
+        // 처음 뽑은 칭호만 자동 장착 (두 번째부터는 그대로)
+        if (isNew && (!equipped || rolled.in > equipped.in)) {
             gameState.equippedAura = rolled.id;
             applyEquippedAura();
             soldHtml = `<div class="result-equip">아우라 장착</div>`;
@@ -1396,7 +1397,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=13')
+import('./aura3d.js?v=14')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
