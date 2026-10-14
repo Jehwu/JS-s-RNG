@@ -291,5 +291,103 @@ export const POSES = {
         d.head.rotation.x = mix(0, 0.3, bow) - reveal * 0.2;
         set(d.legL, mix(0, -0.35, bow), 0, -0.06); set(d.legR, mix(0, 0.25, bow), 0, 0.06);
         d.root.position.y += 0.25 + S(t * 1.6) * 0.1 + reveal * 0.4;
+    },
+
+    /* ---------- 새 칭호 ---------- */
+    // 배고픈 김가은: 배를 문지르며 축 처짐, 가끔 꼬르륵 들썩
+    com_hungry_gaeun(t, d) {
+        const k = pulse(t, 4, 0.5);
+        set(d.armL, -0.55 + S(t * 3) * 0.08, 0, 0.35); set(d.armR, -0.5, 0, -0.3);
+        d.root.rotation.x = 0.12 + k * 0.1;
+        d.head.rotation.x = 0.25;
+        d.root.position.y -= k * 0.08;
+    },
+    // 폰만 보는 김티비: 고개 숙이고 두 손으로 폰, 엄지만 바쁨
+    com_phone_tv(t, d) {
+        set(d.armL, -1.15, 0, 0.32 + S(t * 9) * 0.03); set(d.armR, -1.15, 0, -0.32 - S(t * 9 + 1) * 0.03);
+        d.head.rotation.x = 0.45;
+        d.root.rotation.y = S(t * 0.3) * 0.1;
+    },
+    // 산책하는 공병은: 제자리 걸음, 팔 흔들기
+    unc_walk_byungeun(t, d) {
+        const w = S(t * 3.2);
+        set(d.armL, w * 0.45, 0, -0.06); set(d.armR, -w * 0.45, 0, 0.06);
+        set(d.legL, -w * 0.4, 0, 0); set(d.legR, w * 0.4, 0, 0);
+        d.root.position.y += Math.abs(w) * 0.06;
+        d.head.rotation.y = S(t * 0.5) * 0.3;
+    },
+    // PC방 박지성: 키보드 연타 + 마우스 휙휙, 가끔 승리 만세
+    unc_pc_jisung(t, d) {
+        const win = pulse(t, 6, 1.2);
+        set(d.armL, mix(-1.2 + S(t * 22) * 0.05, -0.3, win), 0, mix(0.15, -2.6, win));
+        set(d.armR, mix(-1.2, -0.3, win), 0, mix(-0.15 + S(t * 4) * 0.12, 2.6, win));
+        d.root.rotation.x = mix(0.18, -0.1, win);
+        d.head.rotation.x = mix(0.1, -0.3, win);
+    },
+    // 축구부 주장 김민채: 공 리프팅 (오른발 툭툭) + 왼팔로 지휘
+    rare_captain_minchae(t, d) {
+        const k = Math.max(0, S(t * 5));
+        set(d.legR, -k * 0.7, 0, 0.04); set(d.legL, 0, 0, -0.06);
+        set(d.armL, -1.4 - S(t * 0.8) * 0.2, 0, 0.3); set(d.armR, 0, 0, 0.35);
+        d.head.rotation.x = 0.2;
+    },
+    // 야자 탈출 김티비: 몰래 뛰는 자세, 두리번
+    rare_escape_tv(t, d) {
+        const w = S(t * 7);
+        set(d.armL, w * 0.8, 0, -0.1); set(d.armR, -w * 0.8, 0, 0.1);
+        set(d.legL, -w * 0.6, 0, 0); set(d.legR, w * 0.6, 0, 0);
+        d.root.rotation.x = 0.25;
+        d.head.rotation.y = S(t * 1.3) * 0.6;
+        d.root.position.y += Math.abs(w) * 0.12;
+    },
+    // 불꽃 슛 박지성: 3초마다 크게 뒤로 젖혔다 슛
+    ep_fire_jisung(t, d) {
+        const c = t % 3;
+        const wind = c < 1.2 ? c / 1.2 : 0, kick = c >= 1.2 && c < 1.6 ? 1 - (c - 1.2) / 0.4 : 0;
+        set(d.legR, mix(0, 0.9, wind) - kick * 1.6, 0, 0.05);
+        set(d.armL, -0.6 * wind - kick * 0.8, 0, -0.5); set(d.armR, 0.4 * wind, 0, 0.6);
+        d.root.rotation.x = -0.15 * wind + kick * 0.2;
+    },
+    // 흑염룡 김티비: 한 손으로 얼굴 가리고, 다른 팔엔 봉인된 용 (부들부들)
+    ep_darkdragon_tv(t, d) {
+        const shake = S(t * 30) * 0.04;
+        set(d.armR, -2.1, 0, -0.55); set(d.armL, -0.6 + shake, 0, -0.9 + shake);
+        d.head.rotation.x = 0.15; d.head.rotation.y = -0.2;
+        d.root.rotation.y = 0.3;
+        set(d.legL, -0.2, 0, -0.15); set(d.legR, 0.15, 0, 0.12);
+    },
+    // 폭풍의 김가은: 한 팔 높이 들고 빙글 회전하며 폭풍을 부림
+    leg_storm_gaeun(t, d) {
+        set(d.armR, -0.2, 0, 2.7 + S(t * 2) * 0.15); set(d.armL, 0, 0, -1.2 - S(t * 2) * 0.2);
+        d.root.rotation.y = t * 1.2;
+        d.root.position.y += 0.5 + S(t * 1.5) * 0.15;
+        set(d.legL, -0.3, 0, -0.1); set(d.legR, 0.2, 0, 0.1);
+        d.head.rotation.x = -0.2;
+    },
+    // 심해의 공병은: 물속에 떠서 천천히 헤엄
+    myth_abyss_byungeun(t, d, _r, sig) {
+        const sw = sig?.swimK ?? S(t * 1.4);
+        set(d.armL, -0.3 + sw * 0.3, 0, -1.1 - sw * 0.4); set(d.armR, -0.3 - sw * 0.3, 0, 1.1 + sw * 0.4);
+        set(d.legL, S(t * 1.4) * 0.35, 0, -0.08); set(d.legR, -S(t * 1.4) * 0.35, 0, 0.08);
+        d.root.position.y += 0.9 + S(t * 0.7) * 0.25;
+        d.root.rotation.x = 0.1 + S(t * 0.7) * 0.06;
+        d.root.rotation.z = S(t * 0.5) * 0.06;
+    },
+    // 멸종의 김민채: 팔을 들어 유성을 부르고, 떨어질 때 내려찍음
+    anc_extinct_minchae(t, d, _r, sig) {
+        const k = sig?.callK ?? 0;
+        set(d.armR, -0.3 - k * 0.3, 0, mix(0.35, 2.8, k)); set(d.armL, mix(0.2, -0.8, k), 0, -0.45);
+        d.head.rotation.x = mix(0.05, -0.4, k);
+        d.root.rotation.y = -0.2 + S(t * 0.4) * 0.15;
+        set(d.legL, -0.15, 0, -0.14); set(d.legR, 0.1, 0, 0.14);
+    },
+    // 마지막 기관사 김건우: 랜턴을 든 채 차렷, 기적이 울리면 랜턴을 높이 흔들고 반대 손으로 '출발' 지적
+    abs_last_conductor(t, d, _r, sig) {
+        const k = sig?.whistleK ?? 0;
+        set(d.armR, mix(-0.25, -0.5, k), 0, mix(0.12, 2.5 + S(t * 9) * 0.25 * k, k));
+        set(d.armL, mix(0.05, -1.55, k), mix(0, -0.35, k), mix(-0.05, -0.15, k));
+        d.head.rotation.x = mix(0.02, -0.12, k);
+        d.head.rotation.y = mix(S(t * 0.4) * 0.25, -0.2, k);
+        d.root.rotation.y = mix(0, 0.15, k);
     }
 };

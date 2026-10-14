@@ -1,6 +1,6 @@
-import { AURA_DATA } from './auras.js?v=14';
-import { CRAFT_ITEMS } from './craftItems.js?v=14';
-import { createMusicPlayer, coverArt } from './music.js?v=14';
+import { AURA_DATA } from './auras.js?v=15';
+import { CRAFT_ITEMS } from './craftItems.js?v=15';
+import { createMusicPlayer, coverArt } from './music.js?v=15';
 
 /* =========================================================
    📦 게임 데이터
@@ -1397,7 +1397,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=14')
+import('./aura3d.js?v=15')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

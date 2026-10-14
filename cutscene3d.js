@@ -14,6 +14,8 @@
      hit2 : JXS만. 두 번째 클라이맥스. hit~hit2 동안은 각성 직전 단계
    ========================================================= */
 
+import { buildLocomotive } from './auraSignatures.js?v=15';
+
 export function createCutscene(ctx) {
     const { THREE, scene, camera, dummy, floor, stars, kit, bloom, stageApi } = ctx;
     const { BOX, glowMat, square, rand, bolt, sword, ghost } = kit;
@@ -144,6 +146,111 @@ export function createCutscene(ctx) {
        update(time, phase, k, dt)  phase: 'build' | 'phase2' | 'reveal'
        ========================================================= */
     const MOTIFS = {
+        // 멸종의 김민채: 하늘 끝에서 거대한 불덩이 유성이 별을 향해 떨어지고, 작은 유성들이 함께 쏟아짐
+        extinction({ g, colors }) {
+            const rock = new THREE.MeshStandardMaterial({ color: 0x3a160a, emissive: colors[0], emissiveIntensity: 0.55, roughness: 0.8 });
+            const big = new THREE.Group();
+            for (let i = 0; i < 7; i++) {
+                const m = new THREE.Mesh(BOX, rock);
+                m.scale.setScalar(i ? rand(1.2, 1.9) : 2.6);
+                m.position.set(i ? rand(-1, 1) : 0, i ? rand(-1, 1) : 0, i ? rand(-1, 1) : 0);
+                m.rotation.set(rand(0, 3), rand(0, 3), 0);
+                big.add(m);
+            }
+            g.add(big);
+            const TR = 40;
+            const trail = new THREE.InstancedMesh(BOX, glowMat(colors[1], 0.85), TR);
+            g.add(trail);
+            const S = 14;
+            const smalls = new THREE.InstancedMesh(BOX, glowMat(colors[0], 1), S);
+            const sd = Array.from({ length: S }, () => ({ x: rand(-30, 30), z: rand(-40, 5), ph: rand(0, 1), v: rand(0.35, 0.6) }));
+            g.add(smalls);
+            const from = new THREE.Vector3(16, 30, -48), to = new THREE.Vector3(0, 3.5, -4), dir = new THREE.Vector3().subVectors(to, from).normalize();
+            const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3();
+            return {
+                hideStar: true, bloom: 0.7,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    big.visible = trail.visible = smalls.visible = vis;
+                    if (!vis) return;
+                    const f = ease.inOut(clamp01(k / 0.97));
+                    big.position.lerpVectors(from, to, f);
+                    big.rotation.set(time * 1.3, time * 0.9, 0);
+                    big.scale.setScalar(0.5 + f * 0.45);
+                    for (let i = 0; i < TR; i++) {
+                        p.copy(big.position).addScaledVector(dir, -(i * 0.8 + 1.4) * (0.6 + f * 0.4));
+                        p.x += Math.sin(time * 9 + i) * 0.25 * (i / TR); p.y += Math.cos(time * 7 + i) * 0.25 * (i / TR);
+                        q.setFromEuler(e.set(time * 4 + i, time * 3, i));
+                        sc.setScalar((1.5 - (i / TR) * 1.35) * (0.5 + f * 0.5));
+                        trail.setMatrixAt(i, m4.compose(p, q, sc));
+                    }
+                    trail.instanceMatrix.needsUpdate = true;
+                    sd.forEach((d, i) => {
+                        const c = ((time * d.v + d.ph) % 1);
+                        p.set(d.x + 18 - c * 18, 40 - c * 44, d.z);
+                        q.setFromEuler(e.set(0, 0, -0.8));
+                        sc.set(0.25, 2.2, 0.25);
+                        smalls.setMatrixAt(i, m4.compose(p, q, sc));
+                    });
+                    smalls.instanceMatrix.needsUpdate = true;
+                }
+            };
+        },
+
+        // 마지막 기관사: 끝없는 철로와 빛나는 터널 문, 저 멀리서 기관차가 헤드라이트를 켜고 달려와 별과 부딪힘
+        lastConductor({ g, colors }) {
+            const pick = i => colors[i % colors.length];
+            const N = 150;
+            const ties = new THREE.InstancedMesh(BOX, new THREE.MeshStandardMaterial({ color: 0x4a3222, roughness: 0.9 }), N);
+            const rails = new THREE.InstancedMesh(BOX, new THREE.MeshStandardMaterial({ color: 0xc8ccd8, metalness: 0.85, roughness: 0.2, emissive: colors[0], emissiveIntensity: 0.25 }), 2);
+            const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3(), e = new THREE.Euler();
+            for (let i = 0; i < N; i++) ties.setMatrixAt(i, m4.compose(p.set(0, 0.6, 12 - i * 1.0), q, sc.set(2.8, 0.2, 0.45)));
+            rails.setMatrixAt(0, m4.compose(p.set(-0.85, 0.78, -63), q, sc.set(0.15, 0.18, 150)));
+            rails.setMatrixAt(1, m4.compose(p.set(0.85, 0.78, -63), q, sc.set(0.15, 0.18, 150)));
+            g.add(ties, rails);
+            const arches = [];
+            for (let i = 0; i < 12; i++) {
+                const a = new THREE.Group();
+                for (const [w, h, x, y] of [[6.4, 0.3, 0, 7.4], [0.3, 7, 3.1, 3.9], [0.3, 7, -3.1, 3.9]]) {
+                    const b = new THREE.Mesh(BOX, glowMat(i % 2 ? colors[0] : colors[2] || colors[0], 0.9)); b.scale.set(w, h, 0.3); b.position.set(x, y, 0); a.add(b);
+                }
+                a.position.z = -6 - i * 10;
+                g.add(a); arches.push(a);
+            }
+            const loco = buildLocomotive(kit, pick);
+            loco.g.scale.setScalar(1.25);
+            g.add(loco.g);
+            g.rotation.y = 0.5;   // 비스듬히 봐서 기관차 옆모습까지 보이게
+            const PUFF = 24;
+            const puffs = new THREE.InstancedMesh(BOX, glowMat(new THREE.Color('#d9dce6'), 0.35), PUFF);
+            g.add(puffs);
+            return {
+                hideStar: true, bloom: 0.55, noPillars: true,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    const f = ease.inOut(clamp01(k / 0.98));
+                    loco.g.position.set(0, 0.35, THREE.MathUtils.lerp(-120, -8, f));
+                    const ang = -time * (6 + f * 30);
+                    loco.wheels.forEach(w => { w.rotation.x = ang; });
+                    loco.rods.forEach(r => { r.position.y = r.userData.y + Math.sin(ang) * 0.3; r.position.z = r.userData.z + Math.cos(ang) * 0.3; });
+                    arches.forEach((a, i) => {
+                        const on = Math.sin(time * 6 - i * 0.7) > 0;
+                        a.children.forEach(c => { c.material.opacity = (on ? 0.5 : 0.18) * (0.4 + k * 0.6); });
+                    });
+                    for (let i = 0; i < PUFF; i++) {
+                        const c = (time * 1.2 + i / PUFF) % 1;
+                        p.set(Math.sin(i * 3.1) * c * 1.5, loco.g.position.y + 5 + c * 4, loco.g.position.z + 2.4 - c * (6 + f * 30));
+                        q.setFromEuler(e.set(i, c * 3, 0));
+                        sc.setScalar(0.6 + c * 2.2);
+                        puffs.setMatrixAt(i, m4.compose(p, q, sc));
+                    }
+                    puffs.instanceMatrix.needsUpdate = true;
+                }
+            };
+        },
+
         // 절대여제: 황금 계단이 한 칸씩 솟아 별까지 이어지고, 거대한 왕관이 내려와 별에 씌워짐
         empress({ g, colors }) {
             const gold = new THREE.MeshStandardMaterial({ color: 0xffd34d, emissive: 0xffb800, emissiveIntensity: 0.6, roughness: 0.4 });
@@ -436,7 +543,8 @@ export function createCutscene(ctx) {
             aura, cfg, getTime, hooks, resolve, star, streaks, floorLight, motif, colors,
             stage: 0, bloomBase: bloom.strength, spin: 0, center: new THREE.Vector3(0, 3.5, 0)
         };
-        bloom.strength = tier === 'MYTHIC' ? 0.9 : 1.15;
+        bloom.strength = motif?.bloom ?? (tier === 'MYTHIC' ? 0.9 : 1.15);   // 모양이 큰 motif 는 번짐을 줄여서 형태가 보이게
+        if (motif?.noPillars && floorLight) floorLight.g.visible = false;
         api.active = true;
     });
 
