@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=15">
-    <link rel="stylesheet" href="rarity.css?v=15">
+    <link rel="stylesheet" href="style.css?v=16">
+    <link rel="stylesheet" href="rarity.css?v=16">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -297,6 +297,23 @@
     </div>
 
     <!-- ❓ 확인 / 입력 -->
+    <!-- 칭호 정보 (가방에서 누르면) -->
+    <div id="aura-dialog" class="dialog-backdrop hidden">
+        <div class="dialog aura-dlg">
+            <div id="ad-card"></div>
+            <div class="ad-stats">
+                <div><span>확률</span><b id="ad-odds"></b></div>
+                <div><span>보유</span><b id="ad-have"></b></div>
+                <div><span>개당</span><b id="ad-value" class="gold"></b></div>
+            </div>
+            <div class="dialog-actions">
+                <button id="ad-sell" class="btn">판매</button>
+                <button id="ad-equip" class="btn btn-primary">장착</button>
+            </div>
+            <button class="ad-close" data-ad="close" aria-label="닫기">✕</button>
+        </div>
+    </div>
+
     <div id="ask-dialog" class="dialog-backdrop hidden">
         <div class="dialog">
             <div id="ask-title" class="dialog-title"></div>
@@ -311,6 +328,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=15"></script>
+    <script type="module" src="script.js?v=16"></script>
 </body>
 </html>

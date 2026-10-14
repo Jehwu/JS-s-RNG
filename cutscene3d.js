@@ -14,7 +14,7 @@
      hit2 : JXS만. 두 번째 클라이맥스. hit~hit2 동안은 각성 직전 단계
    ========================================================= */
 
-import { buildLocomotive } from './auraSignatures.js?v=15';
+import { buildLocomotive } from './auraSignatures.js?v=16';
 
 export function createCutscene(ctx) {
     const { THREE, scene, camera, dummy, floor, stars, kit, bloom, stageApi } = ctx;
@@ -146,6 +146,182 @@ export function createCutscene(ctx) {
        update(time, phase, k, dt)  phase: 'build' | 'phase2' | 'reveal'
        ========================================================= */
     const MOTIFS = {
+        // 태극권: 별 대신 픽셀 태극이 커지며 점점 빨리 돌고, 팔괘가 둘레를 감쌈
+        taichi({ g, colors }) {
+            const N = 22, S = 0.34, R = (N / 2) * S;
+            const cells = [];
+            for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+                const x = (i - N / 2 + 0.5) * S, y = (j - N / 2 + 0.5) * S, d = Math.hypot(x, y);
+                if (d > R) continue;
+                let w = x > 0;
+                if (Math.hypot(x, y - R / 2) < R / 2) w = true;
+                if (Math.hypot(x, y + R / 2) < R / 2) w = false;
+                if (Math.hypot(x, y - R / 2) < R / 6) w = false;
+                if (Math.hypot(x, y + R / 2) < R / 6) w = true;
+                cells.push({ x, y, c: d > R - S ? 2 : w ? 1 : 0 });
+            }
+            // 같은 색이 이어지는 칸은 한 막대로 합쳐서 그림 (상자 수를 줄임)
+            const mats = [new THREE.MeshBasicMaterial({ color: '#14182a' }), new THREE.MeshBasicMaterial({ color: '#c9d2e6' }), new THREE.MeshBasicMaterial({ color: '#e0a94a' })];
+            const disc = new THREE.Group();
+            const rows = {};
+            cells.forEach(c => { (rows[c.y.toFixed(3)] = rows[c.y.toFixed(3)] || []).push(c); });
+            Object.values(rows).forEach(row => {
+                row.sort((a, b) => a.x - b.x);
+                let run = [row[0]];
+                const flush = () => {
+                    const x0 = run[0].x, x1 = run[run.length - 1].x;
+                    const m = new THREE.Mesh(BOX, mats[run[0].c]);
+                    m.scale.set(x1 - x0 + S * 0.94, S * 0.94, 0.3); m.position.set((x0 + x1) / 2, run[0].y, 0);
+                    disc.add(m);
+                };
+                for (let i = 1; i < row.length; i++) {
+                    if (row[i].c === run[0].c && Math.abs(row[i].x - run[run.length - 1].x - S) < 1e-3) run.push(row[i]);
+                    else { flush(); run = [row[i]]; }
+                }
+                flush();
+            });
+            disc.position.set(0, 3.5, 0); g.add(disc);
+            const TRI = ['111', '110', '101', '100', '011', '010', '001', '000'];
+            const ring = new THREE.Group(); ring.position.set(0, 3.5, 0); g.add(ring);
+            TRI.forEach((code, i) => {
+                const a = (i / 8) * Math.PI * 2;
+                const tg = new THREE.Group();
+                [...code].forEach((b, k) => {
+                    const r = 3.0 + k * 0.32;
+                    const mat = glowMat(i % 2 ? colors[1] : colors[2], 1);
+                    if (b === '1') { const m = new THREE.Mesh(BOX, mat); m.scale.set(1.2, 0.14, 0.1); m.position.y = r; tg.add(m); }
+                    else for (const sx of [-0.37, 0.37]) { const m = new THREE.Mesh(BOX, mat); m.scale.set(0.46, 0.14, 0.1); m.position.set(sx, r, 0); tg.add(m); }
+                });
+                tg.rotation.z = a;
+                ring.add(tg);
+            });
+            return {
+                hideStar: true, bloom: 0.7,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    disc.scale.setScalar(0.22 + ease.out(k) * 0.16);
+                    disc.rotation.z = time * (0.4 + k * k * 9);
+                    ring.rotation.z = -time * (0.2 + k * 2);
+                    ring.scale.setScalar(THREE.MathUtils.lerp(1.5, 0.85, ease.inOut(k)));
+                    ring.children.forEach((tg, i) => { tg.visible = k > i / 10; });
+                }
+            };
+        },
+
+        // 대악마: 어둠 속에서 거대한 눈이 서서히 뜨이고, 사방에서 사슬이 별로 뻗어와 묶음
+        archdemon({ g, colors }) {
+            const eyes = new THREE.Group(); eyes.position.set(0, 7.5, -18); g.add(eyes);
+            const eyeL = new THREE.Mesh(BOX, glowMat(colors[0], 1)), eyeR = new THREE.Mesh(BOX, glowMat(colors[0], 1));
+            eyeL.position.x = -6; eyeR.position.x = 6; eyeL.rotation.z = 0.18; eyeR.rotation.z = -0.18;
+            eyes.add(eyeL, eyeR);
+            const linkM = new THREE.MeshStandardMaterial({ color: 0x5a5560, metalness: 0.9, roughness: 0.3, emissive: colors[0], emissiveIntensity: 0.2 });
+            const chains = [];
+            for (let c = 0; c < 8; c++) {
+                const a = (c / 8) * Math.PI * 2 + 0.2;
+                const from = new THREE.Vector3(Math.cos(a) * 18, 3.5 + Math.sin(a) * 12, -6 + (c % 3) * 3);
+                const ch = new THREE.Group();
+                const links = [];
+                for (let k = 0; k < 24; k++) { const l = new THREE.Mesh(BOX, linkM); l.scale.set(0.35, 0.7, 0.12); ch.add(l); links.push(l); }
+                g.add(ch); chains.push({ from, links });
+            }
+            const sig = [0, 1, 2].map(i => { const r = square(2.2 + i * 0.9, 0.06, glowMat(colors[i % 2], 0.7)); r.position.set(0, 3.5, 0); g.add(r); return r; });
+            const center = new THREE.Vector3(0, 3.5, 0), tmp = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), dir = new THREE.Vector3();
+            return {
+                bloom: 0.8,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    const open = ease.inOut(clamp01((k - 0.15) / 0.6));
+                    eyeL.scale.set(7, 0.12 + open * 1.6, 0.2); eyeR.scale.copy(eyeL.scale);
+                    chains.forEach((c, i) => {
+                        const reach = ease.out(clamp01((k - i * 0.04) / 0.7));
+                        dir.subVectors(center, c.from);
+                        const len = dir.length() * reach;
+                        dir.normalize();
+                        c.links.forEach((l, j) => {
+                            const d = j * 0.65;
+                            l.visible = d < len;
+                            tmp.copy(c.from).addScaledVector(dir, d);
+                            if (k > 0.85) tmp.x += Math.sin(time * 40 + j) * 0.06;
+                            l.position.copy(tmp);
+                            l.quaternion.setFromUnitVectors(up, dir);
+                            l.rotateY(j % 2 ? Math.PI / 2 : 0);
+                        });
+                    });
+                    sig.forEach((r, i) => {
+                        r.rotation.x = Math.PI / 2;
+                        r.rotation.z = time * (i % 2 ? -1 : 1) * (0.5 + k * 3) + i * 0.4;
+                        r.scale.setScalar(0.5 + k * 0.4);
+                    });
+                }
+            };
+        },
+
+        // 샌즈: 별 둘레에 가스터 블래스터가 하나씩 나타나 입을 벌리고, 터지는 순간 한가운데로 일제히 발사.
+        //       각성 단계엔 바닥에서 뼈 벽이 솟아오름
+        sans({ g, colors }) {
+            const skullM = new THREE.MeshStandardMaterial({ color: 0xf4f4f4, roughness: 0.5 });
+            const darkM = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const center = new THREE.Vector3(0, 3.5, 0);
+            const blasters = [];
+            for (let i = 0; i < 6; i++) {
+                const root = new THREE.Group();
+                const b = (m, w, h, d, x, y, z, p = root) => { const o = new THREE.Mesh(BOX, m); o.scale.set(w, h, d); o.position.set(x, y, z); p.add(o); return o; };
+                b(skullM, 1.8, 1.3, 1.6, 0, 0.2, -0.3); b(skullM, 1.3, 0.55, 1.4, 0, 0.15, 1.0);
+                b(darkM, 0.42, 0.38, 0.1, -0.45, 0.45, 0.51); b(darkM, 0.42, 0.38, 0.1, 0.45, 0.45, 0.51);
+                b(glowMat(colors[0], 1), 0.16, 0.16, 0.06, -0.45, 0.45, 0.56); b(glowMat(colors[0], 1), 0.16, 0.16, 0.06, 0.45, 0.45, 0.56);
+                for (const s of [-1, 1]) { const h = b(skullM, 0.3, 0.9, 0.3, s * 0.8, 0.6, -1.0); h.rotation.x = -0.9; }
+                const jaw = new THREE.Group(); jaw.position.set(0, -0.15, -0.2); root.add(jaw);
+                b(skullM, 1.25, 0.32, 1.9, 0, -0.18, 0.85, jaw);
+                const glow = b(glowMat(colors[2] || colors[0], 0), 0.9, 0.35, 0.3, 0, -0.1, 1.4);
+                const beam = b(glowMat(new THREE.Color('#ffffff'), 1), 1, 1, 1, 0, -0.1, 1.5);
+                const a = (i / 6) * Math.PI * 2;
+                root.userData.home = new THREE.Vector3(Math.cos(a) * 5, 3.5 + Math.sin(a) * 3.6, -1.5);
+                root.scale.setScalar(1.0);
+                g.add(root);
+                blasters.push({ root, jaw, glow, beam, i });
+            }
+            const NB = 28;
+            const bones = new THREE.InstancedMesh(BOX, skullM, NB);
+            g.add(bones);
+            const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3();
+            return {
+                hideStar: true, bloom: 0.7,
+                update(time, phase, k) {
+                    const build = phase === 'build';
+                    blasters.forEach(bl => {
+                        const show = build && k > bl.i * 0.1;
+                        bl.root.visible = show;
+                        if (!show) return;
+                        const app = ease.out(clamp01((k - bl.i * 0.1) / 0.15));
+                        bl.root.position.copy(bl.root.userData.home).multiplyScalar(1 + (1 - app) * 1.5);
+                        bl.root.lookAt(center);
+                        const charge = clamp01((k - 0.55) / 0.35);
+                        bl.jaw.rotation.x = charge * 0.6;
+                        bl.glow.material.opacity = charge;
+                        const fire = k > 0.96;
+                        bl.beam.visible = fire;
+                        const len = bl.root.position.distanceTo(center);
+                        bl.beam.scale.set(0.3 + Math.sin(time * 40) * 0.06, 0.3, len);
+                        bl.beam.position.z = 1.5 + len / 2;
+                    });
+                    const wall = phase === 'phase2' ? ease.out(clamp01(k / 0.5)) : 0;
+                    bones.visible = wall > 0;
+                    for (let i = 0; i < NB; i++) {
+                        const a = (i / NB) * Math.PI * 2;
+                        const h = (1 + Math.abs(Math.sin(i * 3.7)) * 1.6) * wall;
+                        p.set(Math.cos(a) * 2.6, h / 2, Math.sin(a) * 2.6);
+                        sc.set(0.16, Math.max(0.001, h), 0.16);
+                        bones.setMatrixAt(i, m4.compose(p, q, sc));
+                    }
+                    bones.instanceMatrix.needsUpdate = true;
+                }
+            };
+        },
+
         // 멸종의 김민채: 하늘 끝에서 거대한 불덩이 유성이 별을 향해 떨어지고, 작은 유성들이 함께 쏟아짐
         extinction({ g, colors }) {
             const rock = new THREE.MeshStandardMaterial({ color: 0x3a160a, emissive: colors[0], emissiveIntensity: 0.55, roughness: 0.8 });

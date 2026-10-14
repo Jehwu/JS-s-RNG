@@ -1,6 +1,6 @@
-import { AURA_DATA } from './auras.js?v=15';
-import { CRAFT_ITEMS } from './craftItems.js?v=15';
-import { createMusicPlayer, coverArt } from './music.js?v=15';
+import { AURA_DATA } from './auras.js?v=16';
+import { CRAFT_ITEMS } from './craftItems.js?v=16';
+import { createMusicPlayer, coverArt } from './music.js?v=16';
 
 /* =========================================================
    📦 게임 데이터
@@ -140,8 +140,14 @@ function roseDeco() {
     const petal = x => `<rect class="petal" x="${x}" y="0" width="3" height="2" fill="#ff3d63"/>`;
     return `<svg class="fr-deco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${rose(4, 4)}${rose(96, 96)}${petal(20)}${petal(50)}${petal(75)}${petal(35)}</svg>`;
 }
+function sansDeco() {
+    const bone = x => `<g class="bone"><rect x="${x}" y="82" width="2.4" height="16" fill="#fff"/><rect x="${x - 1}" y="80" width="2" height="3" fill="#fff"/><rect x="${x + 1.4}" y="80" width="2" height="3" fill="#fff"/></g>`;
+    const heart = ['0110110', '1111111', '1111111', '0111110', '0011100', '0001000'].map((row, r) => [...row].map((c, k) => c === '1' ? `<rect x="${4 + k * 1.1}" y="${5 + r * 1.1}" width="1.1" height="1.1" fill="#ff1a1a"/>` : '').join('')).join('');
+    return `<svg class="fr-deco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${[14, 30, 46, 62, 78, 90].map(bone).join('')}<g class="soul">${heart}</g><rect class="eye" x="90" y="5" width="4" height="4"/></svg>`;
+}
 function frameDeco(grade, unique) {
     if (unique === 'void') return voidCracks();
+    if (unique === 'sans') return sansDeco();
     if (unique === 'rose') return roseDeco();
     if (unique === 'voidpotion') return '';
     return grade === 'JXS' ? boltSvg() : '';
@@ -774,18 +780,13 @@ function renderInventory() {
         if (!owned.length) continue;
         html += gradeHeader(grade);
         for (const a of owned) {
+            const on = gameState.equippedAura === a.id;
             html += `
-            <div ${frameAttrs(a.grade, auraColors(a), a.frame).replace('class="', 'class="card ')}>${frameDeco(a.grade, a.frame)}
+            <button type="button" ${frameAttrs(a.grade, auraColors(a), a.frame).replace('class="', `class="card bag-card ${on ? 'is-on' : ''} `)} data-aura="${a.id}">${frameDeco(a.grade, a.frame)}
+                ${on ? '<span class="eq-tag">장착 중</span>' : ''}
                 <div class="card-name">${auraNameHtml(a)}</div>
                 <div class="card-have">×${fmt(gameState.inventory[a.id])}</div>
-                <div class="card-meta">개당 ${fmt(a.jcValue)} JC</div>
-                <div class="card-actions">
-                    ${gameState.equippedAura === a.id
-                        ? `<button class="btn btn-sm" disabled>장착 중</button>`
-                        : `<button class="btn btn-sm btn-primary" data-equip-aura="${a.id}">장착</button>`}
-                    <button class="btn btn-sm" data-sell="${a.id}">판매</button>
-                </div>
-            </div>`;
+            </button>`;
         }
     }
     ui.inventoryGrid.classList.add('card-grid');
@@ -794,17 +795,27 @@ function renderInventory() {
 
 function renderPotions() {
     const ids = Object.keys(gameState.itemInventory).filter(id => SHOP_BY_ID[id] && gameState.itemInventory[id] > 0);
-    ui.potionGrid.classList.add('card-grid');
+    ui.potionGrid.classList.add('row-list');
     ui.potionGrid.innerHTML = ids.length ? ids.map(id => {
         const item = SHOP_BY_ID[id];
         return `
-        <div ${frameAttrs(item.frame, [item.color, item.color2 || item.color, item.color], item.unique).replace('class="', 'class="card ')}>${frameDeco(item.frame, item.unique)}
-            <div class="card-name">${item.name}</div>
-            <div class="card-desc">${item.desc}</div>
-            <div class="card-have">×${fmt(gameState.itemInventory[id])}</div>
-            <button class="btn btn-sm btn-green" data-use="${id}">사용</button>
+        <div ${frameAttrs(item.frame, [item.color, item.color2 || item.color, item.color], item.unique).replace('class="', 'class="row ')}>${frameDeco(item.frame, item.unique)}
+            ${vialHtml(item)}
+            <div class="row-main">
+                <div class="row-name">${item.name}</div>
+                <div class="row-desc">${item.desc}</div>
+            </div>
+            <div class="row-side">
+                <div class="row-have">×${fmt(gameState.itemInventory[id])}</div>
+                <button class="btn btn-sm btn-green" data-use="${id}">사용</button>
+            </div>
         </div>`;
     }).join('') : `<div class="empty">물약이 없습니다.<br>상점에서 구매할 수 있어요.</div>`;
+}
+
+// 네모 물약병 아이콘
+function vialHtml(item) {
+    return `<div class="vial" style="--c1:${item.color};--c2:${item.color2 || item.color}"><i class="vial-neck"></i><i class="vial-body"><i class="vial-liquid"></i></i></div>`;
 }
 
 let craftTab = "gauntlet";
@@ -849,14 +860,22 @@ function renderCraft() {
 }
 
 function renderShop() {
-    ui.shopGrid.classList.add('card-grid');
-    ui.shopGrid.innerHTML = SHOP_ITEMS.map(item => `
-        <div ${frameAttrs(item.frame, [item.color, item.color2 || item.color, item.color], item.unique).replace('class="', 'class="card ')}>${frameDeco(item.frame, item.unique)}
-            <div class="card-name">${item.name}</div>
-            <div class="card-desc">${item.desc}</div>
-            <div class="shop-price">${fmt(item.price)} JC</div>
-            <button class="btn btn-sm btn-gold" data-buy="${item.id}" ${gameState.jc < item.price ? 'disabled' : ''}>구매</button>
-        </div>`).join('');
+    ui.shopGrid.classList.add('row-list');
+    ui.shopGrid.innerHTML = SHOP_ITEMS.map(item => {
+        const have = gameState.itemInventory[item.id] || 0;
+        return `
+        <div ${frameAttrs(item.frame, [item.color, item.color2 || item.color, item.color], item.unique).replace('class="', 'class="row ')}>${frameDeco(item.frame, item.unique)}
+            ${vialHtml(item)}
+            <div class="row-main">
+                <div class="row-name">${item.name}</div>
+                <div class="row-desc">${item.desc}${have ? ` · 보유 ${fmt(have)}` : ''}</div>
+            </div>
+            <div class="row-side">
+                <div class="row-price">${fmt(item.price)} <small>JC</small></div>
+                <button class="btn btn-sm btn-gold" data-buy="${item.id}" ${gameState.jc < item.price ? 'disabled' : ''}>구매</button>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function questState(quest) {
@@ -1065,16 +1084,48 @@ ui.quickBtn.addEventListener('click', () => {
 
 /* ---------- 판매 ---------- */
 ui.inventoryGrid.addEventListener('click', e => {
-    const eq = e.target.dataset.equipAura;
-    if (eq) {
-        gameState.equippedAura = eq;
-        saveGame(); applyEquippedAura(); renderInventory();
-        ui.inventoryGrid.querySelector(`[data-sell="${eq}"]`)?.closest('.card')?.classList.add('just-equipped');
-        toast(`${AURA_BY_ID[eq].name} 장착`, 'good');
-        return;
-    }
-    const id = e.target.dataset.sell;
+    const card = e.target.closest('[data-aura]');
+    if (card) openAuraDialog(card.dataset.aura);
+});
+
+// 칭호를 누르면 뜨는 창: 정보 + 장착 / 판매
+let auraDlgId = null;
+function openAuraDialog(id) {
+    const a = AURA_BY_ID[id];
+    if (!a || !gameState.inventory[id]) return;
+    auraDlgId = id;
+    const on = gameState.equippedAura === id;
+    $('ad-card').innerHTML = `<div ${frameAttrs(a.grade, auraColors(a), a.frame).replace('class="', 'class="ad-preview ')}>${frameDeco(a.grade, a.frame)}
+        <div class="ad-grade ${gradeCol(a.grade)}">${a.grade}</div>
+        <div class="ad-name">${auraNameHtml(a)}</div>
+        ${a.line ? `<div class="ad-line">${a.line}</div>` : ''}
+    </div>`;
+    $('ad-odds').textContent = `1 in ${fmt(a.in)}`;
+    $('ad-have').textContent = `×${fmt(gameState.inventory[id])}`;
+    $('ad-value').textContent = `${fmt(a.jcValue)} JC`;
+    const eq = $('ad-equip');
+    eq.disabled = on;
+    eq.textContent = on ? '장착 중' : '장착';
+    $('aura-dialog').classList.remove('hidden');
+}
+function closeAuraDialog() { $('aura-dialog').classList.add('hidden'); auraDlgId = null; }
+$('aura-dialog').addEventListener('click', e => {
+    if (e.target.id === 'aura-dialog' || e.target.closest('[data-ad="close"]')) { closeAuraDialog(); return; }
+    const id = auraDlgId;
     if (!id) return;
+    if (e.target.closest('#ad-equip')) {
+        gameState.equippedAura = id;
+        saveGame(); applyEquippedAura(); renderInventory();
+        ui.inventoryGrid.querySelector(`[data-aura="${id}"]`)?.classList.add('just-equipped');
+        toast(`${AURA_BY_ID[id].name} 장착`, 'good');
+        closeAuraDialog();
+    } else if (e.target.closest('#ad-sell')) {
+        closeAuraDialog();
+        sellAura(id);
+    }
+});
+
+function sellAura(id) {
     const a = AURA_BY_ID[id], count = gameState.inventory[id];
     if (!a || !count) return;
     openQtyDialog({
@@ -1098,7 +1149,7 @@ ui.inventoryGrid.addEventListener('click', e => {
             toast(`${fmt(n)}개 판매  +${fmt(a.jcValue * n)} JC`, 'gold');
         }
     });
-});
+}
 
 /* ---------- 구매 ---------- */
 ui.shopGrid.addEventListener('click', e => {
@@ -1397,7 +1448,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=15')
+import('./aura3d.js?v=16')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

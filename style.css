@@ -853,3 +853,73 @@ body.cine-on #nametag, body.cine-on #ambient { opacity: 0 !important; }
 .q-del { width: 30px; height: 30px; border: none; background: none; color: var(--faint); cursor: pointer; flex: none; }
 .add-music { display: flex; justify-content: center; cursor: pointer; }
 .hint-small { font-size: 11px; color: var(--faint); margin: 8px 0 0; text-align: center; }
+
+/* =========================================================
+   가방 카드 (누르면 정보창) / 가로형 목록 (상점, 물약)
+   ========================================================= */
+.bag-card {
+    font: inherit; color: inherit; cursor: pointer;
+    min-height: 92px;
+    justify-content: center;
+    transition: transform 0.12s;
+    -webkit-tap-highlight-color: transparent;
+}
+.bag-card:active { transform: scale(0.97); }
+.bag-card .card-have { color: var(--muted); font-size: 12px; }
+.bag-card.is-on { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mint) 70%, transparent), 0 0 18px color-mix(in srgb, var(--mint) 18%, transparent); }
+.eq-tag {
+    position: absolute; top: 6px; left: 6px; z-index: 2;
+    font-size: 9px; letter-spacing: 0.12em;
+    padding: 2px 6px;
+    color: #06140e; background: var(--mint);
+}
+
+.row-list { display: flex; flex-direction: column; gap: 8px; }
+.row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 12px 12px 14px;
+    border-radius: 4px;
+    text-align: left;
+    min-width: 0;
+}
+.row > * { position: relative; z-index: 1; }
+.row-main { min-width: 0; }
+.row-name { font-family: var(--display); font-size: 17px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-desc { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.row-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.row-side .btn { min-width: 68px; margin: 0; }
+.row-price { font-size: 14px; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.row-price small { font-size: 10px; opacity: 0.7; }
+.row-have { font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* 네모 물약병 */
+.vial { width: 30px; height: 40px; display: flex; flex-direction: column; align-items: center; flex: none; }
+.vial i { display: block; }
+.vial-neck { width: 10px; height: 8px; border: 2px solid rgba(255, 255, 255, 0.55); border-bottom: none; }
+.vial-body { position: relative; width: 26px; height: 30px; border: 2px solid rgba(255, 255, 255, 0.55); overflow: hidden; }
+.vial-liquid {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 62%;
+    background: linear-gradient(180deg, var(--c1), var(--c2));
+    box-shadow: 0 0 12px var(--c1);
+    animation: vial-slosh 2.6s ease-in-out infinite;
+}
+.vial-liquid::before { content: ''; position: absolute; left: 4px; top: 4px; width: 4px; height: 4px; background: rgba(255, 255, 255, 0.7); box-shadow: 8px 6px 0 -1px rgba(255, 255, 255, 0.45); animation: vial-bubble 2.2s linear infinite; }
+@keyframes vial-slosh { 50% { height: 54%; } }
+@keyframes vial-bubble { from { transform: translateY(10px); opacity: 0; } 30% { opacity: 1; } to { transform: translateY(-6px); opacity: 0; } }
+
+/* 칭호 정보창 */
+.aura-dlg { gap: 12px; }
+.ad-preview { padding: 22px 14px 18px; text-align: center; border-radius: 4px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.ad-preview > * { position: relative; z-index: 1; }
+.ad-grade { font-size: 10px; letter-spacing: 0.4em; }
+.ad-name { font-family: var(--display); font-size: 25px; line-height: 1.2; word-break: keep-all; }
+.ad-line { font-size: 11.5px; color: var(--muted); }
+.ad-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ad-stats > div { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line); }
+.ad-stats span { font-size: 10px; letter-spacing: 0.2em; color: var(--faint); }
+.ad-stats b { font-weight: 400; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ad-stats b.gold { color: var(--gold); }
+.ad-close { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border: none; background: none; color: var(--muted); cursor: pointer; z-index: 3; }

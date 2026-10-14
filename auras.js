@@ -1,5 +1,5 @@
 /* =========================================================
-   🌟 칭호 데이터 (42개)
+   🌟 칭호 데이터 (55개)
 
    in    : 1 in N 확률
    line  : 컷씬 마지막에 칭호 아래 뜨는 한 줄 (MYTHIC 이상)
@@ -48,6 +48,10 @@ export const AURA_DATA = [
       fx: { particles: 12, rise: 0.8, glow: 0.4 } },
     { id: "unc_pc_jisung", name: "PC방 박지성", grade: "UNCOMMON", in: 24, color: "#48e0d0",
       fx: { particles: 14, rise: 0.7, orbit: 2, glow: 0.45 } },
+    { id: "unc_lunch_gunwoo", name: "급식실 김건우", grade: "UNCOMMON", in: 13, color: "#8be36b",
+      fx: { particles: 12, rise: 0.6, glow: 0.4 } },
+    { id: "unc_late_gaeun", name: "지각한 김가은", grade: "UNCOMMON", in: 22, color: "#5ad1a0",
+      fx: { particles: 16, rise: 1.6, glow: 0.45 } },
 
     // 3. RARE
     { id: "rare_soldier", name: "예비군 공병은", grade: "RARE", in: 28, color: "#6495ed",
@@ -62,6 +66,10 @@ export const AURA_DATA = [
       fx: { particles: 18, rise: 1.0, orbit: 3, rings: 1, glow: 0.7 } },
     { id: "rare_escape_tv", name: "야자 탈출 김티비", grade: "RARE", in: 66, color: "#8c7bff",
       fx: { particles: 20, rise: 1.8, rings: 1, glow: 0.7 } },
+    { id: "rare_president_byungeun", name: "반장 공병은", grade: "RARE", in: 33, color: "#5b8cff",
+      fx: { particles: 16, rise: 0.8, orbit: 2, rings: 1, glow: 0.65 } },
+    { id: "rare_karaoke_minchae", name: "노래방 김민채", grade: "RARE", in: 77, color: "#ff6fd8",
+      fx: { colors: ["#ff6fd8", "#6fe3ff", "#ffe36f"], particles: 22, rise: 1.2, orbit: 4, glow: 0.75 } },
 
     // 4. EPIC
     { id: "ep_baksisung", name: "밪지성", grade: "EPIC", in: 100, color: "#2ecc71",
@@ -74,6 +82,10 @@ export const AURA_DATA = [
       fx: { colors: ["#ff6b2b", "#ffd23f"], particles: 34, rise: 2.2, orbit: 5, rings: 1, glow: 1.1 } },
     { id: "ep_darkdragon_tv", name: "흑염룡 김티비", grade: "EPIC", in: 444, color: "#8a3bff",
       fx: { colors: ["#8a3bff", "#ff2bd6"], particles: 28, rise: 1.2, orbit: 6, rings: 2, void: true, glow: 1.1 } },
+    { id: "ep_blackbelt_gunwoo", name: "검은 띠 김건우", grade: "EPIC", in: 150, color: "#e8e8f0",
+      fx: { colors: ["#e8e8f0", "#ff3b3b"], particles: 26, rise: 1.4, orbit: 4, rings: 1, glow: 1.0 } },
+    { id: "ep_mushroom_tv", name: "독버섯 김티비", grade: "EPIC", in: 313, color: "#b04dff",
+      fx: { colors: ["#b04dff", "#6dff4d"], particles: 32, rise: 0.5, orbit: 5, rings: 1, glow: 1.0 } },
 
     // 5. LEGEND
     { id: "ep_crazykong", name: "크레이지콩", grade: "LEGEND", in: 758, color: "#ff7a1a",
@@ -86,6 +98,10 @@ export const AURA_DATA = [
       fx: { signature: "gunwooTribe", colors: ["#ff9a3c", "#ffdd55", "#c23b22"], glow: 1.0 } },
     { id: "leg_storm_gaeun", name: "폭풍의 김가은", grade: "LEGEND", in: 4444, color: "#7fd4ff",
       fx: { signature: "stormDancer", colors: ["#7fd4ff", "#ffffff", "#4a6cff"], glow: 0.9 } },
+    { id: "leg_ninja_jisung", name: "닌자 박지성", grade: "LEGEND", in: 2222, color: "#9b7bff",
+      fx: { signature: "ninja", colors: ["#9b7bff", "#e0e0ff", "#2a1a4a"], glow: 0.8 } },
+    { id: "leg_pirate_byungeun", name: "해적선장 공병은", grade: "LEGEND", in: 8888, color: "#ffb347",
+      fx: { signature: "pirate", colors: ["#ffb347", "#d63b2b", "#f2e6c9"], glow: 0.9 } },
 
     // 6. MYTHIC
     { id: "gemini_basic", name: "김민제미나이", grade: "MYTHIC", in: 10101, color: "#00ffff", line: "계산은 이미 끝났다",
@@ -98,6 +114,10 @@ export const AURA_DATA = [
       fx: { signature: "heavy170", colors: ["#c0ff3e", "#ffde3e", "#5a7d1a"], glow: 1.0 } },
     { id: "myth_abyss_byungeun", name: "심해의 공병은", grade: "MYTHIC", in: 55555, color: "#1fb8ff", line: "빛이 닿지 않는 곳에서 올라왔다",
       fx: { signature: "deepSea", colors: ["#1fb8ff", "#00ffd5", "#0a2a6b"], glow: 0.8 } },
+    { id: "myth_midas_gaeun", name: "황금손 김가은", grade: "MYTHIC", in: 77777, color: "#ffd34d", line: "손끝이 닿는 모든 것이 금이 된다",
+      fx: { signature: "midas", colors: ["#ffd34d", "#fff2b0", "#c28a00"], glow: 1.0 } },
+    { id: "myth_time_minchae", name: "시간여행자 김민채", grade: "MYTHIC", in: 250000, color: "#7affd1", line: "어제의 나와 내일의 나가 함께 걷는다",
+      fx: { signature: "timeTraveler", colors: ["#7affd1", "#c7a6ff", "#ffffff"], glow: 1.0 } },
 
     // 7. ANCIENT
     { id: "divine_god", name: "초월자 김건우", grade: "ANCIENT", in: 5000000, color: "#ffe14d", line: "한계를 넘어선 자",
@@ -106,12 +126,16 @@ export const AURA_DATA = [
       fx: { signature: "holySword", colors: ["#fff6b0", "#9fe8ff", "#ffffff"], glow: 1.0 } },
     { id: "anc_extinct_minchae", name: "멸종의 김민채", grade: "ANCIENT", in: 6700000, color: "#ff5a1f", line: "하늘에서 마지막 별이 떨어진다",
       fx: { signature: "extinction", colors: ["#ff5a1f", "#ffb02e", "#4a1a0a"], glow: 1.0 } },
+    { id: "anc_taichi_jisung", name: "태극권 박지성", grade: "ANCIENT", in: 7900000, color: "#e8f4ff", line: "부드러움이 강함을 이긴다",
+      fx: { signature: "taichi", colors: ["#e8f4ff", "#ff3b4a", "#2a6bff"], glow: 0.5 } },
     { id: "anc_empress_gaen", name: "절대여제 김가은", grade: "ANCIENT", in: 17171717, color: "#c77dff", line: "무릎 꿇어라",
       fx: { signature: "empress", colors: ["#c77dff", "#ffd34d", "#ff6ad5"], glow: 1.2 } },
 
     // 8. ABSOLUTE
     { id: "legend_gonjiam", name: "곤지암병은", grade: "ABSOLUTE", in: 29999999, color: "#00e676", line: "...거기 누구 있어요?",
       fx: { signature: "haunted", colors: ["#00e676", "#8affc1"], glow: 0.9 } },
+    { id: "abs_archdemon_tv", name: "대악마 김티비", grade: "ABSOLUTE", in: 38383838, color: "#ff1f3d", line: "지옥의 문은 안쪽에서 열린다",
+      fx: { signature: "archdemon", colors: ["#ff1f3d", "#ff8a00", "#ff5a7a"], glow: 1.0 } },
     { id: "abs_last_conductor", name: "마지막 기관사 김건우", grade: "ABSOLUTE", in: 66666666, color: "#ffb347", line: "종착역은 없다. 이 열차는 멈추지 않는다",
       fx: { signature: "lastConductor", colors: ["#ffb347", "#ff4d2e", "#ffe2a0"], glow: 0.9 } },
     { id: "cosmic_steel_emperor", name: "강철검 공병은 : 강철검제", grade: "ABSOLUTE", in: 99999999, color: "#00b0ff", line: "만 개의 검이 단 하나의 주인을 따른다",
@@ -124,4 +148,6 @@ export const AURA_DATA = [
       fx: { signature: "phantomRose", colors: ["#ff1744", "#ffd34d", "#ff8fa8"], particles: 30, rise: 0.8, glow: 0.8 } },
     { id: "js_lightning_jisung", name: "번개의 좌 박지성", grade: "JXS", in: 300000000, color: "#00ffff", line: "하늘이 그의 이름을 부른다", frame: "zeus",
       fx: { signature: "thunderThrone", colors: ["#00ffff", "#7c4dff", "#ffffff"], particles: 28, rise: 1.4, glow: 1.0 } }
+    ,{ id: "jxs_sans_tv", name: "샌즈. 김티비", grade: "JXS", in: 440000000, color: "#4fc3ff", line: "* 오늘 너는 아주 끔찍한 시간을 보내게 될 거야.", frame: "sans",
+      fx: { signature: "sans", colors: ["#4fc3ff", "#ffe14d", "#ffffff"], particles: 6, rise: 0.4, glow: 0.25 } }
 ];

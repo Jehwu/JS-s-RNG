@@ -389,5 +389,108 @@ export const POSES = {
         d.head.rotation.x = mix(0.02, -0.12, k);
         d.head.rotation.y = mix(S(t * 0.4) * 0.25, -0.2, k);
         d.root.rotation.y = mix(0, 0.15, k);
+    },
+
+    // 급식실 김건우: 식판 들고 두리번, 가끔 한 입
+    unc_lunch_gunwoo(t, d) {
+        const bite = pulse(t, 3.5, 0.6);
+        set(d.armL, -1.3, 0, 0.25); set(d.armR, mix(-1.3, -2.4, bite), 0, mix(-0.25, -0.6, bite));
+        d.head.rotation.y = S(t * 0.9) * 0.35 * (1 - bite);
+        d.head.rotation.x = -bite * 0.15;
+    },
+    // 지각한 김가은: 허겁지겁 달리기 + 손목시계 확인
+    unc_late_gaeun(t, d) {
+        const w = S(t * 9), look = pulse(t, 2.5, 0.6);
+        set(d.armL, mix(w * 1.0, -1.6, look), 0, mix(-0.1, 0.5, look)); set(d.armR, -w * 1.0, 0, 0.1);
+        set(d.legL, -w * 0.8, 0, 0); set(d.legR, w * 0.8, 0, 0);
+        d.root.rotation.x = 0.3; d.head.rotation.x = look * 0.3;
+        d.root.position.y += Math.abs(w) * 0.15;
+    },
+    // 반장 공병은: 뒷짐 지고 손가락으로 지시
+    rare_president_byungeun(t, d) {
+        const k = pulse(t, 3, 0.8);
+        set(d.armR, mix(0.3, -1.5, k), 0, mix(-0.2, 0.1, k)); set(d.armL, 0.35, 0, 0.2);
+        d.head.rotation.x = -0.1; d.root.rotation.y = S(t * 0.5) * 0.2;
+    },
+    // 노래방 김민채: 마이크 잡고 열창, 고개 흔들기
+    rare_karaoke_minchae(t, d) {
+        const hi = pulse(t, 4, 1.2);
+        set(d.armL, -2.2, 0, 0.5); set(d.armR, -0.3, 0, mix(0.4 + S(t * 4) * 0.2, 2.6, hi));
+        d.head.rotation.z = S(t * 4) * 0.18; d.head.rotation.x = -0.15 - hi * 0.2;
+        d.root.rotation.z = S(t * 2) * 0.05;
+        d.root.position.y += Math.abs(S(t * 4)) * 0.06;
+    },
+    // 검은 띠 김건우: 정권 지르기 반복
+    ep_blackbelt_gunwoo(t, d) {
+        const c = (t * 1.6) % 2, left = c < 1, k = S((c % 1) * Math.PI);
+        set(d.armL, left ? -1.57 * k - 0.2 : -0.4, 0, 0.1); set(d.armR, left ? -0.4 : -1.57 * k - 0.2, 0, -0.1);
+        set(d.legL, -0.4, 0, -0.25); set(d.legR, 0.3, 0, 0.25);
+        d.root.position.y -= 0.25; d.root.rotation.y = (left ? 0.15 : -0.15) * k;
+    },
+    // 독버섯 김티비: 비틀비틀 어지러움
+    ep_mushroom_tv(t, d) {
+        set(d.armL, S(t * 1.3) * 0.4, 0, -0.5 - S(t) * 0.3); set(d.armR, -S(t * 1.1) * 0.4, 0, 0.5 + S(t * 1.2) * 0.3);
+        d.root.rotation.z = S(t * 1.1) * 0.12; d.root.rotation.x = S(t * 0.7) * 0.08;
+        d.head.rotation.z = S(t * 1.7) * 0.25;
+    },
+    // 닌자 박지성: 낮은 자세, 분신술 순간에 인 맺기
+    leg_ninja_jisung(t, d, _r, sig) {
+        const seal = sig?.sealK ?? 0;
+        set(d.armL, mix(0.4, -1.3, seal), 0, mix(-0.5, 0.45, seal)); set(d.armR, mix(-0.9, -1.3, seal), 0, mix(0.2, -0.45, seal));
+        set(d.legL, -0.55, 0, -0.3); set(d.legR, 0.45, 0, 0.3);
+        d.root.position.y -= 0.45; d.root.rotation.x = 0.2; d.head.rotation.x = -0.15;
+        d.root.rotation.y = S(t * 0.6) * 0.3;
+    },
+    // 해적선장 공병은: 칼을 앞으로 겨누고 한 발 올림
+    leg_pirate_byungeun(t, d) {
+        const k = pulse(t, 4, 0.8);
+        set(d.armL, mix(-1.3, -2.5, k), 0, 0.15); set(d.armR, 0.2, 0, 0.5);
+        set(d.legL, -0.9, 0, -0.1); set(d.legR, 0.1, 0, 0.12);
+        d.root.rotation.y = -0.3 + S(t * 0.7) * 0.1; d.head.rotation.x = -0.15;
+        d.root.rotation.z = S(t * 1.2) * 0.04;   // 배 위처럼 흔들
+    },
+    // 황금손 김가은: 두 손을 앞으로 펼쳐 보이며 천천히 돎
+    myth_midas_gaeun(t, d) {
+        const k = pulse(t, 4, 1.4);
+        set(d.armL, mix(-1.2, -1.9, k), 0, mix(0.45, -0.3, k)); set(d.armR, mix(-1.2, -1.9, k), 0, mix(-0.45, 0.3, k));
+        d.root.rotation.y = S(t * 0.4) * 0.5; d.head.rotation.x = 0.15 - k * 0.3;
+        d.root.position.y += 0.3 + S(t * 0.9) * 0.1;
+    },
+    // 시간여행자 김민채: 회중시계 들여다보다 손을 휘저어 시간을 감음
+    myth_time_minchae(t, d) {
+        const k = pulse(t, 5, 1.6);
+        set(d.armL, -1.3, 0, 0.35); set(d.armR, mix(-1.2, -0.6, k), 0, mix(-0.2, 1.4 + S(t * 6) * 0.6 * k, k));
+        d.head.rotation.x = mix(0.35, -0.2, k);
+        d.root.position.y += 0.4 + S(t * 0.8) * 0.12;
+        d.root.rotation.y = mix(0, S(t * 3) * 0.3, k);
+    },
+    // 태극권 박지성: 마보 자세로 천천히 운수(구름 손) — 두 손이 원을 그리며 엇갈림
+    anc_taichi_jisung(t, d) {
+        const a = t * 0.9;
+        set(d.armL, -1.1 + S(a) * 0.55, 0, 0.6 + C(a) * 0.55);
+        set(d.armR, -1.1 - S(a) * 0.55, 0, -0.6 - C(a) * 0.55);
+        set(d.legL, -0.15, 0, -0.32); set(d.legR, 0.15, 0, 0.32);
+        d.root.position.y -= 0.35 + S(a * 0.5) * 0.08;
+        d.root.rotation.y = S(a) * 0.35; d.head.rotation.y = -S(a) * 0.25;
+        d.root.position.x += S(a * 0.5) * 0.15;
+    },
+    // 대악마 김티비: 공중에 떠서 내려다봄, 분노가 차면 두 팔을 활짝 펴고 고개를 젖힘
+    abs_archdemon_tv(t, d, _r, sig) {
+        const r = sig?.rageK ?? 0;
+        set(d.armL, mix(-0.3, -0.5, r), 0, mix(-0.55, -2.3, r)); set(d.armR, mix(-0.3, -0.5, r), 0, mix(0.55, 2.3, r));
+        d.head.rotation.x = mix(0.25, -0.35, r);
+        set(d.legL, 0.15, 0, -0.08); set(d.legR, -0.1, 0, 0.08);
+        d.root.position.y += 0.6 + S(t * 1.1) * 0.15;
+        d.root.rotation.x = mix(0.08, -0.1, r);
+    },
+    // 샌즈. 김티비: 주머니에 손, 건들건들. 블래스터 부를 땐 한 손을 들고, 4초마다 옆으로 슥 피함
+    jxs_sans_tv(t, d, _r, sig) {
+        const c = sig?.castK ?? 0, dg = sig?.dodge ?? 0;
+        set(d.armL, 0.18, 0, 0.12); set(d.armR, mix(0.18, -0.4, c), 0, mix(-0.12, 2.0, c));
+        d.head.rotation.z = S(t * 0.9) * 0.08 * (1 - c); d.head.rotation.x = 0.08 - c * 0.12;
+        d.root.rotation.z = S(t * 0.9) * 0.03;
+        d.root.position.x += dg * 1.4;
+        d.root.rotation.y = -dg * 0.25;
+        set(d.legL, 0, 0, -0.04); set(d.legR, 0, 0, 0.04);
     }
 };
