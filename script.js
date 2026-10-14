@@ -36,8 +36,8 @@ const SHOP_ITEMS = [
 const QUEST_DATA = [
     {
         id: "quest_swift", name: "신속하게", repeatable: false,
-        desc: "빠른 뽑기를 쓸 자격이 있는지 증명하기",
-        rewardDesc: "빠른 뽑기 해금 + 천상의 물약 5개",
+        desc: "빠른 롤을 쓸 자격을 증명하세요.",
+        rewardDesc: "빠른 롤 해금 + 천상의 물약 5개",
         reward: { unlockQuickRoll: true, items: { heaven_potion: 5 } },
         targets: { rolls: 5000, divine: 15, cosmic: 5, jc: 3000000, shopPurchases: 20 }
     },
@@ -139,7 +139,7 @@ function ask({ title, message = '', input = false, okText = '확인', danger = f
         $('ask-title').textContent = title;
         $('ask-msg').textContent = message;
         ok.textContent = okText;
-        ok.className = `btn ${danger ? 'btn-red' : 'btn-gold'}`;
+        ok.className = `btn ${danger ? 'btn-red' : 'btn-primary'}`;
         inp.classList.toggle('hidden', !input);
         inp.value = '';
         dlg.classList.remove('hidden');
@@ -399,6 +399,7 @@ function startRoll() {
     renderStats();
     saveGame();
 
+    ui.stage.classList.add('rolling');
     if (isQuickRollActive && gameState.quickRollUnlocked) { finishRoll(); return; }
 
     const maxTime = Math.max(400, 1200 * (1 - getSpeedBonus()));
@@ -478,10 +479,12 @@ async function finishRoll() {
     saveGame();
     renderStats();
 
+    ui.stage.classList.remove('rolling');
+    document.documentElement.style.setProperty('--aura', rolled.color);
     const glow = HIGH_GRADES.includes(rolled.grade) && !rolled.class ? `text-shadow:0 0 14px ${rolled.color}aa;` : '';
     ui.display.innerHTML = `
         <div class="result-pop">
-            <div class="result-grade ${gradeCol(rolled.grade)}">${rolled.grade}${isNew ? '<span class="new-tag">처음!</span>' : ''}</div>
+            <div class="result-grade ${gradeCol(rolled.grade)}">${rolled.grade}${isNew ? '<span class="new-tag">NEW</span>' : ''}</div>
             <div class="result-name"><span class="${rolled.class || ''}" style="${rolled.class ? '' : `color:${rolled.color};${glow}`}">${rolled.name}</span></div>
             <div class="result-chance">1 in ${fmt(rolled.in)}</div>
             ${soldHtml}
@@ -588,7 +591,7 @@ function playStarCutscene(rolled) {
 const ui = {
     rollCount: $('roll-count'), jcCount: $('jc-count'),
     luck: $('luck-multiplier'), speed: $('speed-multiplier'), buffs: $('active-buffs'),
-    display: $('aura-display'),
+    display: $('aura-display'), stage: document.querySelector('.stage'),
     rollBtn: $('roll-btn'), btnSub: $('btn-sub-text'), cooldownBar: $('cooldown-bar'),
     autoBtn: $('auto-roll-btn'), quickBtn: $('quick-roll-btn'),
     glowOverlay: $('border-glow-overlay'), starOverlay: $('star-cutscene-overlay'),
@@ -622,9 +625,9 @@ function renderBuffs() {
     const now = Date.now();
     const b = gameState.activeBuffs;
     const pills = [];
-    if (b.luckExpireTime > now) pills.push(`<span class="buff">행운물약 ${b.luckLevel}  ${Math.ceil((b.luckExpireTime - now) / 1000)}초</span>`);
-    if (b.speedExpireTime > now) pills.push(`<span class="buff">속도물약 ${b.speedLevel}  ${Math.ceil((b.speedExpireTime - now) / 1000)}초</span>`);
-    gameState.activeMultBuffs.forEach(m => pills.push(`<span class="buff mult">${m.name} ${m.uses}번 남음</span>`));
+    if (b.luckExpireTime > now) pills.push(`<span class="buff">행운 물약 ${b.luckLevel}  ${Math.ceil((b.luckExpireTime - now) / 1000)}s</span>`);
+    if (b.speedExpireTime > now) pills.push(`<span class="buff">속도 물약 ${b.speedLevel}  ${Math.ceil((b.speedExpireTime - now) / 1000)}s</span>`);
+    gameState.activeMultBuffs.forEach(m => pills.push(`<span class="buff mult">${m.name} ×${m.uses}</span>`));
     const gear = getGear();
     if (gear) pills.push(`<span class="buff gear">${gear.name}</span>`);
     if (gameState.amulet) pills.push(`<span class="buff gear">${CRAFT_BY_ID[gameState.amulet]?.name || ''}</span>`);
@@ -633,12 +636,10 @@ function renderBuffs() {
 
 function renderRollToggles() {
     ui.autoBtn.classList.toggle('active', isAutoRolling);
-    ui.autoBtn.textContent = isAutoRolling ? '자동 뽑기 켜짐' : '자동 뽑기 꺼짐';
+    ui.autoBtn.textContent = 'AUTO';
     ui.quickBtn.disabled = !gameState.quickRollUnlocked;
     ui.quickBtn.classList.toggle('active', isQuickRollActive);
-    ui.quickBtn.textContent = gameState.quickRollUnlocked
-        ? (isQuickRollActive ? '빠른 뽑기 켜짐' : '빠른 뽑기 꺼짐')
-        : '🔒 빠른 뽑기';
+    ui.quickBtn.textContent = gameState.quickRollUnlocked ? 'QUICK' : 'QUICK 🔒';
 }
 
 function gradeHeader(grade, extra = '') {
@@ -656,13 +657,13 @@ function renderInventory() {
             <div class="card ${getAuraBorderClass(a)}">
                 <div class="card-name">${auraNameHtml(a)}</div>
                 <div class="card-have">×${fmt(gameState.inventory[a.id])}</div>
-                <div class="card-meta">하나에 ${fmt(a.jcValue)} JC</div>
-                <button class="btn btn-sm" data-sell="${a.id}">팔기</button>
+                <div class="card-meta">개당 ${fmt(a.jcValue)} JC</div>
+                <button class="btn btn-sm" data-sell="${a.id}">판매</button>
             </div>`;
         }
     }
     ui.inventoryGrid.className = 'card-grid';
-    ui.inventoryGrid.innerHTML = html || `<div class="empty">가방이 비어 있어요.<br>뽑기부터 해 보세요!</div>`;
+    ui.inventoryGrid.innerHTML = html || `<div class="empty">아직 칭호가 없습니다.<br>ROLL로 첫 칭호를 뽑아 보세요.</div>`;
 }
 
 function renderPotions() {
@@ -677,7 +678,7 @@ function renderPotions() {
             <div class="card-have">×${fmt(gameState.itemInventory[id])}</div>
             <button class="btn btn-sm btn-green" data-use="${id}">사용</button>
         </div>`;
-    }).join('') : `<div class="empty">물약이 없어요.<br>매점에서 살 수 있어요.</div>`;
+    }).join('') : `<div class="empty">물약이 없습니다.<br>상점에서 구매할 수 있어요.</div>`;
 }
 
 let craftTab = "gauntlet";
@@ -728,7 +729,7 @@ function renderShop() {
             <div class="card-name">${item.name}</div>
             <div class="card-desc">${item.desc}</div>
             <div class="shop-price">${fmt(item.price)} JC</div>
-            <button class="btn btn-sm btn-gold" data-buy="${item.id}" ${gameState.jc < item.price ? 'disabled' : ''}>사기</button>
+            <button class="btn btn-sm btn-gold" data-buy="${item.id}" ${gameState.jc < item.price ? 'disabled' : ''}>구매</button>
         </div>`).join('');
 }
 
@@ -756,7 +757,7 @@ function renderQuests() {
         if (done) btn = `<button class="btn btn-block" disabled>완료됨</button>`;
         else if (active && canClaim) btn = `<button class="btn btn-block btn-green" data-claim="${q.id}">🎉 보상 받기</button>`;
         else if (active) btn = `<button class="btn btn-block" disabled>진행 중…</button>`;
-        else btn = `<button class="btn btn-block btn-gold" data-quest="${q.id}">이 숙제 하기</button>`;
+        else btn = `<button class="btn btn-block btn-primary" data-quest="${q.id}">진행하기</button>`;
 
         const reqHtml = done ? '' : `<div class="req-list">${rows.map(r => `
             <div class="req ${r.met ? 'met' : ''}">
@@ -772,7 +773,7 @@ function renderQuests() {
             <div class="reward">🎁 ${q.rewardDesc}</div>
             ${btn}
         </div>`;
-    }).join('') + `<div class="list-desc" style="text-align:center;margin-top:4px;">숙제는 한 번에 하나만 할 수 있어요. 바꿔도 해 둔 만큼은 남아요.</div>`;
+    }).join('') + `<div class="list-desc" style="text-align:center;margin-top:4px;">퀘스트는 한 번에 하나만 진행됩니다. 바꿔도 진행도는 유지돼요.</div>`;
 }
 
 function renderIndex() {
@@ -813,7 +814,7 @@ function renderSoundUI() {
         $(`vol-${key}-val`).textContent = v;
     }
     const btn = $('sound-toggle-btn');
-    btn.textContent = soundSettings.enabled ? '🔊 소리 켜짐' : '🔇 소리 꺼짐';
+    btn.textContent = soundSettings.enabled ? '사운드 켜짐' : '사운드 꺼짐';
     btn.className = `btn btn-block ${soundSettings.enabled ? 'btn-green' : 'btn-red'}`;
 }
 
@@ -899,21 +900,21 @@ ui.inventoryGrid.addEventListener('click', e => {
     const a = AURA_BY_ID[id], count = gameState.inventory[id];
     if (!a || !count) return;
     openQtyDialog({
-        title: `${a.name} 팔기`,
-        sub: `${a.grade} 칭호, 지금 ${fmt(count)}개 있어요`,
+        title: `${a.name}`,
+        sub: `${a.grade} 칭호 판매 (보유 ${fmt(count)}개)`,
         max: count, initial: count,
         priceEach: a.jcValue, totalLabel: '받는 금액',
-        okText: '팔기',
+        okText: '판매',
         onConfirm: async n => {
             if (HIGH_GRADES.includes(a.grade)) {
-                const ok = await ask({ title: `${a.grade} 칭호를 팔까요?`, message: `${a.name} ${fmt(n)}개를 팔아요.`, okText: '팔기', danger: true });
+                const ok = await ask({ title: `${a.grade} 칭호를 판매할까요?`, message: `${a.name} ${fmt(n)}개`, okText: '판매', danger: true });
                 if (!ok) return;
             }
             gameState.inventory[id] -= n;
             if (gameState.inventory[id] <= 0) delete gameState.inventory[id];
             gameState.jc += a.jcValue * n;
             saveGame(); renderStats(); renderInventory();
-            toast(`${fmt(n)}개 팔아서 ${fmt(a.jcValue * n)} JC 받았어요`, 'gold');
+            toast(`${fmt(n)}개 판매  +${fmt(a.jcValue * n)} JC`, 'gold');
         }
     });
 });
@@ -926,11 +927,11 @@ ui.shopGrid.addEventListener('click', e => {
     const max = Math.floor(gameState.jc / item.price);
     if (max < 1) { toast('JC가 부족해요', 'bad'); return; }
     openQtyDialog({
-        title: `${item.name} 사기`,
-        sub: `${item.desc}\n가진 JC ${fmt(gameState.jc)}`,
+        title: `${item.name}`,
+        sub: `${item.desc}\n보유 JC ${fmt(gameState.jc)}`,
         max, initial: 1,
         priceEach: item.price, totalLabel: '총',
-        okText: '사기',
+        okText: '구매',
         onConfirm: n => {
             const cost = n * item.price;
             if (gameState.jc < cost) { toast('JC가 부족해요', 'bad'); return; }
@@ -938,7 +939,7 @@ ui.shopGrid.addEventListener('click', e => {
             addItems({ [id]: n });
             trackQuestProgress("shopPurchases", n);
             saveGame(); renderStats(); renderShop();
-            toast(`${item.name} ${n}개 샀어요`, 'good');
+            toast(`${item.name} ${n}개 구매`, 'good');
         }
     });
 });
@@ -960,8 +961,8 @@ ui.potionGrid.addEventListener('click', e => {
 
     openQtyDialog({
         title: `${item.name} 사용`,
-        sub: `${item.desc}\n지금 ${fmt(count)}개 있어요. 여러 개 쓰면 시간이나 횟수가 늘어나요.`,
-        max: count, initial: 1, okText: '쓰기',
+        sub: `${item.desc}\n보유 ${fmt(count)}개. 여러 개 쓰면 시간이나 횟수가 늘어납니다.`,
+        max: count, initial: 1, okText: '사용',
         onConfirm: n => {
             if ((gameState.itemInventory[id] || 0) < n) return;
             gameState.itemInventory[id] -= n;
@@ -977,7 +978,7 @@ ui.potionGrid.addEventListener('click', e => {
                 gameState.activeMultBuffs.push({ name: item.name, bonus: item.value, uses: item.maxUses * n });
             }
             saveGame(); renderStats(); renderBuffs(); renderPotions();
-            toast(`${item.name} ${n}개 썼어요`, 'good');
+            toast(`${item.name} ${n}개 사용`, 'good');
         }
     });
 });
@@ -996,7 +997,7 @@ ui.craftGrid.addEventListener('click', e => {
         }
         gameState.craftedGears.push(gear.id);
         equip(gear);
-        toast(`${gear.name} 완성! 바로 장착했어요`, 'good');
+        toast(`${gear.name} 제작 완료, 장착했습니다`, 'good');
     } else if (d.equip) {
         equip(CRAFT_BY_ID[d.equip]);
     } else if (d.unequip) {
@@ -1029,7 +1030,7 @@ ui.questList.addEventListener('click', e => {
         if (q.reward.items) addItems(q.reward.items);
         if (q.reward.jc) gameState.jc += q.reward.jc;
         saveGame(); renderStats(); renderQuests(); renderRollToggles();
-        toast(`숙제 끝!\n${q.rewardDesc}`, 'gold');
+        toast(`퀘스트 완료\n${q.rewardDesc}`, 'gold');
     }
 });
 
@@ -1087,7 +1088,7 @@ $('dev-btn').addEventListener('click', async () => {
     }
     closeSheet('sheet-settings');
     openSheet('sheet-dev');
-    toast('개발자 모드를 켰어요. 끌 때까지 저장되지 않아요.', 'gold');
+    toast('개발자 모드 ON. 끌 때까지 저장되지 않습니다.', 'gold');
 });
 
 $('sheet-dev').addEventListener('click', e => {
@@ -1106,14 +1107,14 @@ $('sheet-dev').addEventListener('click', e => {
             gameState.questProgress[q.id] = { ...q.targets };
         });
         gameState.quickRollUnlocked = true;
-        toast('모든 숙제 조건을 채웠어요');
+        toast('모든 퀘스트 조건 달성');
     } else if (act === 'crafts') {
         CRAFT_ITEMS.forEach(i => { if (!gameState.craftedGears.includes(i.id)) gameState.craftedGears.push(i.id); });
         toast('모든 제작템 획득');
     } else if (act === 'next') {
         nextRollOverride = $('dev-aura-select').value;
         const a = AURA_BY_ID[nextRollOverride];
-        toast(`다음 뽑기는 [${a.grade}] ${a.name}`);
+        toast(`다음 롤: [${a.grade}] ${a.name}`);
     } else if (act === 'exit') {
         gameState = backupGameState;
         backupGameState = null;
@@ -1121,7 +1122,7 @@ $('sheet-dev').addEventListener('click', e => {
         saveGame();
         ui.mainDevBtn.classList.add('hidden');
         closeSheet('sheet-dev');
-        toast('개발자 모드를 껐어요. 원래 데이터로 돌아왔어요.', 'good');
+        toast('개발자 모드 OFF. 원래 데이터로 복구했습니다.', 'good');
     }
     renderAll();
 });
@@ -1138,6 +1139,44 @@ setInterval(() => {
     if (expired) { renderStats(); saveGame(); }
     renderBuffs();
 }, 1000);
+
+/* =========================================================
+   ✨ 별 배경 (천천히 떠다니며 반짝임)
+   ========================================================= */
+
+(function starfield() {
+    const cv = $('starfield'), ctx = cv.getContext('2d');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let w, h, dpr, stars = [];
+    function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = cv.width = innerWidth * dpr;
+        h = cv.height = innerHeight * dpr;
+        const count = Math.round(innerWidth * innerHeight / 3200);
+        stars = Array.from({ length: count }, () => ({
+            x: Math.random() * w, y: Math.random() * h,
+            r: (Math.random() ** 3 * 1.4 + 0.3) * dpr,
+            a: Math.random() * 0.6 + 0.2,
+            t: Math.random() * Math.PI * 2,
+            s: Math.random() * 0.012 + 0.004,
+            v: (Math.random() * 0.06 + 0.02) * dpr
+        }));
+    }
+    function draw() {
+        ctx.clearRect(0, 0, w, h);
+        for (const st of stars) {
+            st.t += st.s;
+            st.y -= st.v;
+            if (st.y < -2) { st.y = h + 2; st.x = Math.random() * w; }
+            ctx.globalAlpha = st.a * (0.55 + 0.45 * Math.sin(st.t));
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2); ctx.fill();
+        }
+        if (!reduce) requestAnimationFrame(draw);
+    }
+    addEventListener('resize', resize);
+    resize(); draw();
+})();
 
 /* =========================================================
    🔄 새 버전 자동 확인
@@ -1166,6 +1205,6 @@ renderSoundUI();
 renderGradeTable();
 renderAll();
 if (gameState.rolls > 0) {
-    $('lobby-save-info').textContent = `지난번까지 ${fmt(gameState.rolls)}번 뽑았어요`;
+    $('lobby-save-info').textContent = `${fmt(gameState.rolls)} ROLLS`;
 }
 playBgm('lobby');
