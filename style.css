@@ -750,3 +750,105 @@ body.cine-on #nametag, body.cine-on #ambient { opacity: 0 !important; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* 로고 2.0 */
+.logo-ver {
+    display: inline-block;
+    font-family: var(--ui);
+    font-size: 0.32em;
+    letter-spacing: 0.08em;
+    vertical-align: super;
+    margin-left: 0.18em;
+    padding: 0.12em 0.35em;
+    border: 1px solid currentColor;
+    color: var(--aura);
+    text-shadow: 0 0 12px var(--aura);
+}
+
+/* =========================================================
+   🎧 뮤직 플레이어
+   ========================================================= */
+.mini-player {
+    position: relative;
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 10px;
+    padding: 6px 4px 8px 6px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    cursor: pointer;
+    overflow: hidden;
+    animation: mp-in 0.6s cubic-bezier(.2, .9, .3, 1.2) both 0.3s;
+}
+@keyframes mp-in { from { opacity: 0; transform: translateY(-8px); } }
+.mini-player:active { background: rgba(255, 255, 255, 0.06); }
+.mp-cover { width: 34px; height: 34px; flex: none; position: relative; }
+.mp-cover img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.mini-player.playing .mp-cover { animation: cover-pulse 1.8s ease-in-out infinite; }
+@keyframes cover-pulse { 50% { box-shadow: 0 0 14px color-mix(in srgb, var(--aura) 60%, transparent); } }
+.mp-meta { flex: 1; min-width: 0; }
+.mp-title { overflow: hidden; white-space: nowrap; font-size: 13px; color: var(--text); }
+.mp-title span { display: inline-block; }
+.mp-title.scroll span { padding-right: 40px; animation: marquee 9s linear infinite; }
+@keyframes marquee { 0%, 15% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+.mp-artist { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-btn { width: 34px; height: 34px; flex: none; border: none; background: none; color: var(--text); padding: 8px; cursor: pointer; }
+.mp-btn svg, .np-btn svg { width: 100%; height: 100%; fill: currentColor; }
+.i-pause { display: none; }
+.playing .i-play { display: none; }
+.playing .i-pause { display: inline; }
+.mp-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255, 255, 255, 0.06); }
+#mp-progress-fill { height: 100%; background: linear-gradient(90deg, var(--aura), #fff); transform-origin: left; transform: scaleX(0); }
+
+/* 이퀄라이저 (네모 막대) */
+.mp-eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; width: 16px; flex: none; }
+.mp-eq i { flex: 1; height: 30%; background: var(--aura); }
+.playing .mp-eq i, .q-item .mp-eq:not(.stop) i { animation: eq 0.9s ease-in-out infinite; }
+.mp-eq i:nth-child(2) { animation-delay: -0.3s !important; }
+.mp-eq i:nth-child(3) { animation-delay: -0.6s !important; }
+.mp-eq i:nth-child(4) { animation-delay: -0.15s !important; }
+@keyframes eq { 0%, 100% { height: 25%; } 50% { height: 100%; } }
+.mini-player:not(.playing) .mp-eq { opacity: 0.35; }
+
+/* 전체 플레이어 */
+.np { display: flex; flex-direction: column; align-items: center; padding: 4px 4px 10px; }
+.np-cover-wrap { position: relative; width: min(64vw, 240px); aspect-ratio: 1; margin: 6px 0 18px; }
+.np-cover { position: relative; z-index: 1; width: 100%; height: 100%; display: block; image-rendering: pixelated;
+    border: 1px solid rgba(255, 255, 255, 0.12); transition: transform 0.5s cubic-bezier(.2, .9, .3, 1.2); transform: scale(0.9); }
+.np.playing .np-cover { transform: scale(1); }
+.np-cover-glow { position: absolute; inset: 8%; background: var(--aura); filter: blur(34px); opacity: 0.25; transition: opacity 0.5s; }
+.np.playing .np-cover-glow { opacity: 0.55; animation: glow-breathe 2.4s ease-in-out infinite; }
+@keyframes glow-breathe { 50% { opacity: 0.3; transform: scale(0.92); } }
+.np-title { font-family: var(--display); font-size: 24px; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.np-artist { font-size: 12px; color: var(--muted); letter-spacing: 0.12em; margin-top: 4px; }
+.np-seek { width: 100%; margin-top: 18px; }
+#np-seek {
+    --p: 0%;
+    width: 100%; height: 18px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer;
+}
+#np-seek::-webkit-slider-runnable-track { height: 3px; background: linear-gradient(90deg, #fff var(--p), rgba(255, 255, 255, 0.14) var(--p)); }
+#np-seek::-moz-range-track { height: 3px; background: linear-gradient(90deg, #fff var(--p), rgba(255, 255, 255, 0.14) var(--p)); }
+#np-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; background: #fff; border: none; box-shadow: 0 0 10px var(--aura); }
+#np-seek::-moz-range-thumb { width: 12px; height: 12px; background: #fff; border: none; border-radius: 0; }
+.np-time { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.np-controls { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 320px; margin-top: 10px; }
+.np-btn { position: relative; width: 48px; height: 48px; padding: 12px; border: none; background: none; color: var(--text); cursor: pointer; transition: transform 0.15s; }
+.np-btn:active { transform: scale(0.88); }
+.np-small { color: var(--faint); padding: 13px; }
+.np-small svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: square; }
+.np-small.on { color: var(--aura); filter: drop-shadow(0 0 6px var(--aura)); }
+.np-one { display: none; position: absolute; right: 8px; top: 8px; font-size: 9px; font-style: normal; color: var(--aura); }
+.np-small.one .np-one { display: block; }
+.np-main { width: 66px; height: 66px; padding: 20px; background: #fff; color: #0b0a18; box-shadow: 0 0 30px color-mix(in srgb, var(--aura) 55%, transparent); }
+
+.queue { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 12px; }
+.q-item { display: flex; align-items: center; gap: 12px; padding: 8px 6px; cursor: pointer; border-left: 2px solid transparent; transition: background 0.2s; }
+.q-item:active { background: rgba(255, 255, 255, 0.05); }
+.q-item.current { background: rgba(255, 255, 255, 0.04); border-left-color: var(--aura); }
+.q-cover { width: 42px; height: 42px; flex: none; image-rendering: pixelated; }
+.q-meta { flex: 1; min-width: 0; }
+.q-title { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-item.current .q-title { color: var(--aura); filter: brightness(1.6); }
+.q-artist { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.q-del { width: 30px; height: 30px; border: none; background: none; color: var(--faint); cursor: pointer; flex: none; }
+.add-music { display: flex; justify-content: center; cursor: pointer; }
+.hint-small { font-size: 11px; color: var(--faint); margin: 8px 0 0; text-align: center; }

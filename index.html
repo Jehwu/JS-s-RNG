@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache">
     <meta name="theme-color" content="#04040a">
-    <title>JS RNG</title>
+    <title>JS RNG 2.0</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=11">
-    <link rel="stylesheet" href="rarity.css?v=11">
+    <link rel="stylesheet" href="style.css?v=12">
+    <link rel="stylesheet" href="rarity.css?v=12">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -43,7 +43,7 @@
     <!-- 🏠 로비 -->
     <div id="lobby-screen">
         <div class="lobby-inner">
-            <div class="logo">JS RNG</div>
+            <div class="logo">JS RNG<span class="logo-ver">2.0</span></div>
             <div class="lobby-sub">운명은 한 번의 롤로 바뀐다</div>
             <button id="game-start-btn" class="start-btn">시작</button>
             <div id="lobby-save-info" class="lobby-save"></div>
@@ -66,6 +66,19 @@
                 </button>
             </div>
         </header>
+
+        <!-- 🎧 미니 플레이어 (누르면 전체 플레이어) -->
+        <div id="mini-player" class="mini-player" role="button" aria-label="뮤직 플레이어 열기">
+            <div class="mp-cover"><img id="mp-cover" alt=""></div>
+            <div class="mp-meta">
+                <div class="mp-title"><span id="mp-title">Abyss Drift</span></div>
+                <div class="mp-artist" id="mp-artist">JS RNG OST</div>
+            </div>
+            <div class="mp-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <button id="mp-play" class="mp-btn" aria-label="재생/일시정지"><svg viewBox="0 0 24 24"><path class="i-play" d="M7 5l12 7-12 7z"/><path class="i-pause" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+            <button id="mp-next" class="mp-btn" aria-label="다음 곡"><svg viewBox="0 0 24 24"><path d="M5 5l10 7-10 7zM16.5 5H19v14h-2.5z"/></svg></button>
+            <div class="mp-progress"><div id="mp-progress-fill"></div></div>
+        </div>
 
         <!-- 3D 캐릭터가 이 영역 가운데에 서 있음. 안의 글자는 전부 겹쳐 띄워서 크기가 변해도 아래 버튼이 안 움직임 -->
         <section class="stage">
@@ -165,6 +178,37 @@
     </div>
 
     <!-- ⚙️ 설정 -->
+    <!-- 🎧 뮤직 플레이어 -->
+    <div id="sheet-music" class="sheet-backdrop hidden">
+        <div class="sheet music-sheet">
+            <div class="sheet-head"><h2>NOW PLAYING</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
+            <div class="sheet-body">
+                <div class="np">
+                    <div class="np-cover-wrap"><img id="np-cover" class="np-cover" alt=""><div class="np-cover-glow"></div></div>
+                    <div class="np-title" id="np-title">Abyss Drift</div>
+                    <div class="np-artist" id="np-artist">JS RNG OST</div>
+                    <div class="np-seek">
+                        <input type="range" id="np-seek" min="0" max="1000" value="0" aria-label="재생 위치">
+                        <div class="np-time"><span id="np-cur">0:00</span><span id="np-dur">0:00</span></div>
+                    </div>
+                    <div class="np-controls">
+                        <button id="np-shuffle" class="np-btn np-small" aria-label="셔플"><svg viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></svg></button>
+                        <button id="np-prev" class="np-btn" aria-label="이전 곡"><svg viewBox="0 0 24 24"><path d="M19 5L9 12l10 7zM5 5h2.5v14H5z"/></svg></button>
+                        <button id="np-play" class="np-btn np-main" aria-label="재생/일시정지"><svg viewBox="0 0 24 24"><path class="i-play" d="M7 5l12 7-12 7z"/><path class="i-pause" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+                        <button id="np-next" class="np-btn" aria-label="다음 곡"><svg viewBox="0 0 24 24"><path d="M5 5l10 7-10 7zM16.5 5H19v14h-2.5z"/></svg></button>
+                        <button id="np-repeat" class="np-btn np-small" aria-label="반복"><svg viewBox="0 0 24 24"><path d="M4 11V8h14l-3-3M20 13v3H6l3 3"/></svg><b class="np-one">1</b></button>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="section-title">재생목록</div>
+                    <div id="queue-list" class="queue"></div>
+                    <label class="btn btn-block add-music">＋ 내 음악 추가 (mp3 등)<input type="file" id="music-file" accept="audio/*" multiple hidden></label>
+                    <p class="hint-small">추가한 곡은 이 기기에만 저장돼요. 메인 화면에선 고른 곡이 계속 나와요.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="sheet-settings" class="sheet-backdrop hidden">
         <div class="sheet">
             <div class="sheet-head"><h2>설정</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
@@ -174,6 +218,7 @@
                     <button id="sound-toggle-btn" class="btn btn-block">사운드 켜짐</button>
                     <div class="slider-row"><label>마스터 <span id="vol-master-val">100</span></label><input type="range" id="vol-master" min="0" max="100"></div>
                     <div class="slider-row"><label>BGM <span id="vol-bgm-val">70</span></label><input type="range" id="vol-bgm" min="0" max="100"></div>
+                    <button id="open-music-btn" class="btn btn-block">🎧 BGM 바꾸기</button>
                     <div class="slider-row"><label>컷씬 · 등장음 <span id="vol-cutscene-val">50</span></label><input type="range" id="vol-cutscene" min="0" max="100"></div>
                     <div class="slider-row"><label>클릭음 <span id="vol-click-val">100</span></label><input type="range" id="vol-click" min="0" max="100"></div>
                     <div class="slider-row"><label>롤링음 <span id="vol-roll-val">100</span></label><input type="range" id="vol-roll" min="0" max="100"></div>
@@ -260,6 +305,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=11"></script>
+    <script type="module" src="script.js?v=12"></script>
 </body>
 </html>

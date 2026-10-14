@@ -1,5 +1,6 @@
-import { AURA_DATA } from './auras.js?v=11';
-import { CRAFT_ITEMS } from './craftItems.js?v=11';
+import { AURA_DATA } from './auras.js?v=12';
+import { CRAFT_ITEMS } from './craftItems.js?v=12';
+import { createMusicPlayer, coverArt } from './music.js?v=12';
 
 /* =========================================================
    📦 게임 데이터
@@ -67,10 +68,7 @@ const QUEST_TARGET_LABELS = {
 };
 
 const COUPONS = {
-    RANKING: { items: { void_potion: 1 }, msg: "🧪 공허의 물약 1개" },
-    PROFILE: { jc: 1000000, items: { overcome_potion: 2 }, msg: "🪙 100만 JC + 🧪 극복의 물약 2개" },
-    QUEST1: { jc: 1000000, items: { limit_potion: 5, overcome_potion: 1 }, msg: "🪙 100만 JC + 🧪 한계의 물약 5개 + 극복의 물약 1개" },
-    SPEEEED: { items: { heaven_potion: 3 }, msg: "🧪 천상의 물약 3개" }
+    'JSRNG2.0': { jc: 500000, items: { limit_potion: 3, overcome_potion: 1, heaven_potion: 1 }, msg: "🪙 50만 JC + 🧪 한계의 물약 3개 + 극복의 물약 1개 + 천상의 물약 1개" }
 };
 
 const DEV_PASSWORD = "3699";
@@ -288,8 +286,6 @@ try { soundSettings = { ...soundSettings, ...JSON.parse(localStorage.getItem(SOU
 const saveSoundSettings = () => localStorage.setItem(SOUND_KEY, JSON.stringify(soundSettings));
 
 const audioFiles = {
-    lobbyBgm: new Audio('lobby_bgm.mp3'),
-    mainBgm: new Audio('main_bgm.mp3'),
     click: new Audio('click.mp3'),
     dropLegend: new Audio('drop_legend.mp3'),
     dropMythic: new Audio('drop_mythic.mp3'),
@@ -297,21 +293,14 @@ const audioFiles = {
     cosmic_all: new Audio('cosmic_full.mp3'),
     js_all: new Audio('js_full.mp3')
 };
-audioFiles.lobbyBgm.loop = true;
-audioFiles.mainBgm.loop = true;
-
-let currentBgm = null;
-function updateBgmVolume() {
-    if (currentBgm) currentBgm.volume = soundSettings.enabled ? soundSettings.master * soundSettings.bgm : 0;
-}
-function playBgm(type) {
-    stopBgm();
-    currentBgm = type === 'lobby' ? audioFiles.lobbyBgm : audioFiles.mainBgm;
-    updateBgmVolume();
-    if (soundSettings.enabled) currentBgm.play().catch(() => {});
-}
+const music = createMusicPlayer({
+    getVolume: () => soundSettings.master * soundSettings.bgm,
+    isEnabled: () => soundSettings.enabled
+});
+function updateBgmVolume() { music.updateVolume(); }
+function playBgm(type) { music.start(type); }
 function stopBgm() {
-    if (currentBgm) { currentBgm.pause(); currentBgm.currentTime = 0; currentBgm = null; }
+    music.stop();
 }
 
 let audioCtx = null;
@@ -359,7 +348,7 @@ function stopCutsceneAudio() {
 
 document.body.addEventListener('click', () => {
     initSynthAudio();
-    if (currentBgm && currentBgm.paused && soundSettings.enabled) currentBgm.play().catch(() => {});
+    music.unlock();
 }, { once: true });
 
 document.body.addEventListener('click', e => {
@@ -464,18 +453,14 @@ function pickAura() {
     const multBonus = getMultBonus();
     const totalLuck = baseLuck + multBonus;
 
-    // 특수 배수 물약이 켜져 있으면 행운보다 흔한 칭호는 후보에서 제외
-    let pool = AURA_DATA;
-    if (multBonus > 0) {
-        const filtered = AURA_DATA.filter(a => a.in >= totalLuck);
-        if (filtered.length) pool = filtered;
+    // 솔스 RNG 방식: 가장 희귀한 칭호부터 '행운 ÷ N' 확률로 판정.
+    // 배수 물약은 행운만 크게 올려 줌 → 희귀 칭호 확률이 행운만큼 올라가고,
+    // 행운보다 흔한 칭호 중 가장 희귀한 것이 바닥(보장)이 됨.
+    // (예전엔 행운보다 흔한 칭호를 통째로 빼서 특정 칭호 하나만 쏟아지던 버그)
+    for (let i = AURA_DATA.length - 1; i >= 0; i--) {
+        if (Math.random() < totalLuck / AURA_DATA[i].in) return AURA_DATA[i];
     }
-
-    // 가장 희귀한 칭호부터 차례로 판정
-    for (let i = pool.length - 1; i >= 0; i--) {
-        if (Math.random() < totalLuck / pool[i].in) return pool[i];
-    }
-    return pool[0];
+    return AURA_DATA[0];
 }
 
 async function finishRoll() {
@@ -503,7 +488,7 @@ async function finishRoll() {
         setTimeout(() => playDropSound(rolled.grade), 50);
     }
 
-    if (currentBgm && soundSettings.enabled) { updateBgmVolume(); currentBgm.play().catch(() => {}); }
+    music.unduck();
 
     let soldHtml = "";
     if (gameState.autoDelete[rolled.grade]) {
@@ -636,7 +621,7 @@ async function playCinematic(rolled) {
     cine.title.classList.remove('show', 'pre');
     cine.crack.classList.remove('show');
     document.body.classList.add('cine-on');
-    if (currentBgm) currentBgm.pause();
+    music.duck();
 
     // 시계 (사운드와 같이 감)
     const t0 = performance.now();
@@ -802,13 +787,13 @@ function renderInventory() {
             </div>`;
         }
     }
-    ui.inventoryGrid.className = 'card-grid';
+    ui.inventoryGrid.classList.add('card-grid');
     ui.inventoryGrid.innerHTML = html || `<div class="empty">아직 칭호가 없습니다.<br>ROLL로 첫 칭호를 뽑아 보세요.</div>`;
 }
 
 function renderPotions() {
     const ids = Object.keys(gameState.itemInventory).filter(id => SHOP_BY_ID[id] && gameState.itemInventory[id] > 0);
-    ui.potionGrid.className = 'card-grid';
+    ui.potionGrid.classList.add('card-grid');
     ui.potionGrid.innerHTML = ids.length ? ids.map(id => {
         const item = SHOP_BY_ID[id];
         return `
@@ -824,7 +809,7 @@ function renderPotions() {
 let craftTab = "gauntlet";
 function renderCraft() {
     const items = CRAFT_ITEMS.filter(g => (g.category || "gauntlet") === craftTab);
-    ui.craftGrid.className = 'list';
+    ui.craftGrid.classList.add('list');
     ui.craftGrid.innerHTML = items.map(gear => {
         const equipped = gear.category === "amulet" ? gameState.amulet === gear.id : gameState.gear === gear.id;
         const owned = gameState.craftedGears.includes(gear.id);
@@ -863,7 +848,7 @@ function renderCraft() {
 }
 
 function renderShop() {
-    ui.shopGrid.className = 'card-grid';
+    ui.shopGrid.classList.add('card-grid');
     ui.shopGrid.innerHTML = SHOP_ITEMS.map(item => `
         <div ${frameAttrs(item.frame, [item.color, item.color2 || item.color, item.color], item.unique).replace('class="', 'class="card ')}>${frameDeco(item.frame, item.unique)}
             <div class="card-name">${item.name}</div>
@@ -883,7 +868,7 @@ function questState(quest) {
 }
 
 function renderQuests() {
-    ui.questList.className = 'list';
+    ui.questList.classList.add('list');
     ui.questList.innerHTML = QUEST_DATA.map(q => {
         const done = !q.repeatable && gameState.completedQuests.includes(q.id);
         const active = gameState.activeQuest === q.id;
@@ -1399,7 +1384,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=11')
+import('./aura3d.js?v=12')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
@@ -1440,6 +1425,89 @@ fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' })
 
 loadGame();
 renderSoundUI();
+/* =========================================================
+   🎧 뮤직 플레이어 UI
+   ========================================================= */
+const fmtTime = sec => {
+    if (!isFinite(sec) || sec < 0) sec = 0;
+    const m = Math.floor(sec / 60), ss = Math.floor(sec % 60);
+    return `${m}:${String(ss).padStart(2, '0')}`;
+};
+let seeking = false;
+function renderMusic(kind) {
+    const t = music.current, el = music.el;
+    const frac = el.duration ? el.currentTime / el.duration : 0;
+    $('mp-progress-fill').style.transform = `scaleX(${frac})`;
+    if (!seeking) $('np-seek').value = Math.round(frac * 1000);
+    $('np-cur').textContent = fmtTime(el.currentTime);
+    $('np-dur').textContent = fmtTime(el.duration);
+    $('np-seek').style.setProperty('--p', `${frac * 100}%`);
+    if (kind === 'time') return;
+
+    const cover = coverArt(t);
+    for (const id of ['mp-cover', 'np-cover']) if ($(id).getAttribute('src') !== cover) $(id).src = cover;
+    $('mp-title').textContent = t.title; $('mp-artist').textContent = t.artist;
+    $('np-title').textContent = t.title; $('np-artist').textContent = t.artist;
+    // 제목이 길면 흘러가게
+    const box = $('mp-title').parentElement;
+    box.classList.toggle('scroll', $('mp-title').scrollWidth > box.clientWidth + 2);
+
+    const playing = music.playing;
+    document.querySelectorAll('.mini-player, .np').forEach(n => n.classList.toggle('playing', playing));
+    $('np-shuffle').classList.toggle('on', music.state.shuffle);
+    $('np-repeat').classList.toggle('on', music.state.repeat !== 'off');
+    $('np-repeat').classList.toggle('one', music.state.repeat === 'one');
+
+    const q = $('queue-list');
+    q.innerHTML = music.state.tracks.map(tr => `
+        <div class="q-item ${tr.id === t.id ? 'current' : ''}" data-id="${tr.id}">
+            <img class="q-cover" src="${coverArt(tr)}" alt="">
+            <div class="q-meta"><div class="q-title">${escapeHtml(tr.title)}</div><div class="q-artist">${escapeHtml(tr.artist)}</div></div>
+            ${tr.id === t.id ? `<div class="mp-eq ${playing ? '' : 'stop'}"><i></i><i></i><i></i><i></i></div>` : ''}
+            ${tr.builtin ? '' : `<button class="q-del" data-del="${tr.id}" aria-label="삭제">✕</button>`}
+        </div>`).join('');
+}
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+music.on(renderMusic);
+
+$('mini-player').addEventListener('click', e => {
+    if (e.target.closest('#mp-play')) { music.toggle(); return; }
+    if (e.target.closest('#mp-next')) { music.next(); return; }
+    openSheet('sheet-music');
+});
+$('np-play').addEventListener('click', () => music.toggle());
+$('np-next').addEventListener('click', () => music.next());
+$('np-prev').addEventListener('click', () => music.prev());
+$('np-shuffle').addEventListener('click', () => music.setShuffle());
+$('np-repeat').addEventListener('click', () => {
+    music.cycleRepeat();
+    toast(music.state.repeat === 'all' ? '🔁 전체 반복' : music.state.repeat === 'one' ? '🔂 한 곡 반복' : '반복 끔');
+});
+$('np-seek').addEventListener('input', e => {
+    seeking = true;
+    const el = music.el;
+    $('np-cur').textContent = fmtTime((e.target.value / 1000) * (el.duration || 0));
+    $('np-seek').style.setProperty('--p', `${e.target.value / 10}%`);
+});
+$('np-seek').addEventListener('change', e => { music.seek(e.target.value / 1000); seeking = false; });
+$('queue-list').addEventListener('click', e => {
+    const del = e.target.closest('[data-del]');
+    if (del) { music.remove(del.dataset.del); return; }
+    const item = e.target.closest('.q-item');
+    if (item) music.play(item.dataset.id);
+});
+$('music-file').addEventListener('change', async e => {
+    const files = [...e.target.files];
+    e.target.value = '';
+    if (!files.length) return;
+    const n = await music.addFiles(files);
+    toast(n ? `🎵 ${n}곡 추가됨` : '오디오 파일만 추가할 수 있어요');
+});
+$('open-music-btn').addEventListener('click', () => { closeSheet('sheet-settings'); setTimeout(() => openSheet('sheet-music'), 220); });
+renderMusic();
+
 renderGradeTable();
 renderAll();
 if (gameState.rolls > 0) {
