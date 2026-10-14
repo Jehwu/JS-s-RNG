@@ -1,5 +1,5 @@
-import { AURA_DATA } from './auras.js';
-import { CRAFT_ITEMS } from './craftItems.js';
+import { AURA_DATA } from './auras.js?v=7';
+import { CRAFT_ITEMS } from './craftItems.js?v=7';
 
 /* =========================================================
    📦 게임 데이터
@@ -1223,7 +1223,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=5')
+import('./aura3d.js?v=7')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

@@ -9,6 +9,7 @@ import { EffectComposer } from './lib/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './lib/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './lib/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './lib/jsm/postprocessing/OutputPass.js';
+import { SIGNATURES } from './auraSignatures.js?v=7';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -91,8 +92,84 @@ function glowMat(color, opacity = 1) {
     });
 }
 
+/* ---------- 고급 아우라용 도구 ---------- */
+function solidMat(color, glow = 1) {
+    return new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: glow, roughness: 0.5, metalness: 0.1 });
+}
+
+// 반투명 빛 더미 (잔상, 유령)
+function makeGhost(color, opacity) {
+    const g = new THREE.Group();
+    const mat = glowMat(color, opacity);
+    for (const [w, h, d, x, y] of [[0.98, 2, 1, -0.5, 1], [0.98, 2, 1, 0.5, 1], [2, 2, 1, 0, 3], [1, 2, 1, -1.5, 3], [1, 2, 1, 1.5, 3], [1.25, 1.2, 1.2, 0, 4.62]]) {
+        const m = new THREE.Mesh(BOX, mat);
+        m.scale.set(w, h, d); m.position.set(x, y, 0);
+        g.add(m);
+    }
+    return g;
+}
+
+// 블록 검: 칼끝이 원점, 날이 위로, 그 위에 손잡이
+function makeSword(len, bladeColor, accent, w = 0.4, metal = false) {
+    const g = new THREE.Group();
+    const bw = w * 0.55;
+    const bladeMat = metal
+        ? new THREE.MeshStandardMaterial({ color: 0xd5dce6, metalness: 0.75, roughness: 0.28 })
+        : solidMat(bladeColor, 1.6);
+    const tip = new THREE.Mesh(BOX, bladeMat);
+    tip.scale.set(bw * 0.72, bw * 0.72, bw * 0.18);
+    tip.rotation.z = Math.PI / 4;
+    tip.position.y = bw * 0.25;
+    const blade = new THREE.Mesh(BOX, bladeMat);
+    blade.scale.set(bw, len - bw * 0.4, bw * 0.18);
+    blade.position.y = bw * 0.4 + (len - bw * 0.4) / 2;
+    const accMat = solidMat(accent, metal ? 1.2 : 1);
+    const guard = new THREE.Mesh(BOX, accMat);
+    guard.scale.set(bw * 3.2, bw * 0.4, bw * 0.5);
+    guard.position.y = len;
+    const grip = new THREE.Mesh(BOX, accMat);
+    grip.scale.set(bw * 0.38, len * 0.18, bw * 0.38);
+    grip.position.y = len + len * 0.09 + bw * 0.2;
+    const pommel = new THREE.Mesh(BOX, accMat);
+    pommel.scale.setScalar(bw * 0.6);
+    pommel.position.y = len + len * 0.18 + bw * 0.4;
+    g.add(tip, blade, guard, grip, pommel);
+    if (metal) {
+        const edge = new THREE.LineSegments(new THREE.EdgesGeometry(BOX), new THREE.LineBasicMaterial({ color: accent, toneMapped: false }));
+        edge.scale.copy(blade.scale); edge.position.copy(blade.position);
+        g.add(edge);
+    }
+    return g;
+}
+
+// 꺾인 번개 줄기 (박스 여러 개). bolt.reshape(시작, 끝, 흔들림)
+function makeBolt(segments, mat) {
+    const g = new THREE.Group();
+    for (let i = 0; i < segments; i++) g.add(new THREE.Mesh(BOX, mat));
+    const a = new THREE.Vector3(), b = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), dir = new THREE.Vector3();
+    g.reshape = (from, to, jitter) => {
+        let px = from[0], py = from[1], pz = from[2];
+        g.children.forEach((seg, i) => {
+            const k = (i + 1) / segments;
+            const last = i === segments - 1;
+            const nx = from[0] + (to[0] - from[0]) * k + (last ? 0 : rand(-jitter, jitter));
+            const ny = from[1] + (to[1] - from[1]) * k + (last ? 0 : rand(-jitter, jitter) * 0.3);
+            const nz = from[2] + (to[2] - from[2]) * k + (last ? 0 : rand(-jitter, jitter));
+            a.set(px, py, pz); b.set(nx, ny, nz);
+            const len = a.distanceTo(b);
+            seg.scale.set(0.06, len, 0.06);
+            seg.position.copy(a).add(b).multiplyScalar(0.5);
+            seg.quaternion.setFromUnitVectors(up, dir.copy(b).sub(a).normalize());
+            px = nx; py = ny; pz = nz;
+        });
+    };
+    return g;
+}
+
+const KIT = { THREE, BOX, glowMat, solidMat, square: makeSquareRing, rand, ghost: makeGhost, sword: makeSword, bolt: makeBolt };
+
 /* ---------- 아우라 만들기 ---------- */
-function buildAura(aura, dummy) {
+function buildAura(aura, dummy, stage) {
     const fx = aura.fx || {};
     const colors = (fx.colors || [aura.color]).map(c => new THREE.Color(c));
     const c0 = colors[0];
@@ -305,6 +382,11 @@ function buildAura(aura, dummy) {
         });
     }
 
+    // 고급 칭호: 전용 연출
+    if (fx.signature && SIGNATURES[fx.signature]) {
+        SIGNATURES[fx.signature]({ group, tick: fn => updaters.push(fn), colors, pick, c0, dummy, kit: KIT, stage });
+    }
+
     return { group, updaters, color: c0, glow };
 }
 
@@ -381,7 +463,18 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     let flash = 0;
     let shakeAmt = 0;
 
+    const SKY = 0x03030a;
+    let clearFns = [];
+    const stageApi = {
+        scene,
+        setSky(hex) { scene.background.set(hex); scene.fog.color.set(hex); },
+        onClear(fn) { clearFns.push(fn); }
+    };
+
     function clearAura() {
+        clearFns.forEach(fn => fn()); clearFns = [];
+        scene.background.set(SKY); scene.fog.color.set(SKY);
+        dummy.root.position.set(0, 0, 0); dummy.root.rotation.set(0, 0, 0);
         if (!current) return;
         scene.remove(current.group);
         current.group.traverse(o => { if (o.material) o.material.dispose?.(); });
@@ -394,7 +487,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     function setAura(aura) {
         clearAura();
         if (!aura) return;
-        current = buildAura(aura, dummy);
+        current = buildAura(aura, dummy, stageApi);
         scene.add(current.group);
         gapGlow.material.color.copy(current.color).multiplyScalar(0.35 + Math.min(1, current.glow) * 0.4);
         rim.color.copy(current.color);
@@ -475,7 +568,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         composer.render();
 
         if (onLabel) {
-            headTop.set(0, 6.35, 0).project(camera);
+            headTop.set(0, 6.35 + dummy.root.position.y, 0).project(camera);
             onLabel((headTop.x * 0.5 + 0.5) * W, (-headTop.y * 0.5 + 0.5) * H);
         }
         requestAnimationFrame(tick);

@@ -17,6 +17,8 @@
      shards    주위를 떠다니는 큰 크리스탈 큐브 수
      lightning 번개 블록
      void      검은 큐브가 빨려드는 공허 효과
+     signature 고급 칭호 전용 연출 이름 (auraSignatures.js)
+               → 이게 있으면 위 효과들 대신 그 칭호만의 연출이 나옴
    ========================================================= */
 
 export const AURA_DATA = [
@@ -50,35 +52,35 @@ export const AURA_DATA = [
 
     // 5. LEGEND
     { id: "ep_crazykong", name: "크레이지콩", grade: "LEGEND", in: 758, color: "#ff7a1a",
-      fx: { colors: ["#ff7a1a", "#ffd23f"], particles: 36, rise: 1.4, orbit: 6, rings: 2, halo: true, glow: 1.4 } },
+      fx: { signature: "crazyBounce", colors: ["#ff7a1a", "#ffd23f"], glow: 0.8 } },
     { id: "legend_speed", name: "광속의 김민채", grade: "LEGEND", in: 1200, color: "#ff2a4a", class: "aura-legend-1",
-      fx: { colors: ["#ff2a4a", "#ffc300"], particles: 50, rise: 3.2, orbit: 8, rings: 2, halo: true, glow: 1.5 } },
+      fx: { signature: "lightspeed", colors: ["#ff2a4a", "#ffc300"], glow: 0.9 } },
     { id: "legend_wizard", name: "대마법사 공병은", grade: "LEGEND", in: 3500, color: "#ff2b2b", class: "aura-legend-3",
-      fx: { colors: ["#ff2b2b", "#7a2bff"], particles: 40, rise: 1, orbit: 6, rings: 2, halo: true, shards: 3, glow: 1.6 } },
+      fx: { signature: "archmage", colors: ["#ff2b2b", "#9b4dff"], glow: 1.0 } },
 
     // 6. MYTHIC
     { id: "gemini_basic", name: "김민제미나이", grade: "MYTHIC", in: 10101, color: "#00ffff", class: "aura-mythic-1",
-      fx: { colors: ["#00ffff", "#2a7bff"], particles: 50, rise: 1.3, orbit: 8, rings: 2, halo: true, shards: 4, pillar: true, glow: 1.8 } },
+      fx: { signature: "gemini", colors: ["#00ffff", "#2a7bff"], glow: 1.0 } },
     { id: "epic_monkey", name: "건숭이", grade: "MYTHIC", in: 13131, color: "#ffb02e", class: "aura-mythic-2",
-      fx: { colors: ["#ffb02e", "#ff4d2e"], particles: 56, rise: 1.8, orbit: 10, rings: 3, halo: true, shards: 4, glow: 1.9 } },
+      fx: { signature: "monkeyKing", colors: ["#ffb02e", "#ff3b1f"], glow: 0.8 } },
     { id: "mythic_heart", name: "두 개의 심장 박지성", grade: "MYTHIC", in: 100000, color: "#00fa9a", class: "aura-mythic-1",
-      fx: { colors: ["#00fa9a", "#ff3b5c"], particles: 60, rise: 1.5, orbit: 10, rings: 3, halo: true, shards: 6, pillar: true, glow: 2 } },
+      fx: { signature: "twoHearts", colors: ["#00fa9a", "#ff3b5c"], glow: 0.9 } },
 
     // 7. DIVINE
     { id: "divine_god", name: "초월자 김건우", grade: "DIVINE", in: 5000000, color: "#ffe14d", class: "aura-transcendent-gunwoo",
-      fx: { colors: ["#ffe14d", "#ffffff", "#ffb800"], particles: 70, rise: 1.6, orbit: 10, rings: 3, halo: true, shards: 6, pillar: true, wings: true, glow: 2.4 } },
+      fx: { signature: "transcend", colors: ["#ffe14d", "#ffffff", "#ffb800"], glow: 1.2 } },
     { id: "divine_knight_gaen_sword", name: "빛의 기사 김가은 : 성검의 소유자", grade: "DIVINE", in: 6780000, color: "#fff176", class: "aura-holy-sword",
-      fx: { colors: ["#fff6b0", "#9fe8ff", "#ffffff"], particles: 70, rise: 1.2, orbit: 8, rings: 3, halo: true, shards: 8, pillar: true, wings: true, glow: 2.4 } },
+      fx: { signature: "holySword", colors: ["#fff6b0", "#9fe8ff", "#ffffff"], glow: 1.0 } },
 
     // 8. COSMIC
     { id: "legend_gonjiam", name: "곤지암병은", grade: "COSMIC", in: 29999999, color: "#00e676", class: "aura-gonjiam-spooky",
-      fx: { colors: ["#00e676", "#004d40", "#00b0ff"], particles: 80, rise: 0.7, orbit: 12, rings: 4, halo: true, shards: 8, pillar: true, void: true, glow: 2.6 } },
+      fx: { signature: "haunted", colors: ["#00e676", "#0b3d2a"], glow: 0.9 } },
     { id: "cosmic_steel_emperor", name: "강철검 공병은 : 강철검제", grade: "COSMIC", in: 99999999, color: "#00b0ff", class: "aura-steel-emperor",
-      fx: { colors: ["#80d8ff", "#00b0ff", "#e0f7ff"], particles: 90, rise: 2, orbit: 14, rings: 4, halo: true, shards: 10, pillar: true, wings: true, glow: 2.8 } },
+      fx: { signature: "steelEmperor", colors: ["#80d8ff", "#00b0ff"], glow: 1.0 } },
 
     // 9. JS
     { id: "js_void_king", name: "공허왕 공허병은", grade: "JS", in: 111111111, color: "#ff0040", class: "aura-js-void",
-      fx: { colors: ["#ff0040", "#2b00ff", "#ffffff"], particles: 100, rise: 1.2, orbit: 14, rings: 5, halo: true, shards: 12, pillar: true, wings: true, void: true, glow: 3 } },
+      fx: { signature: "voidKing", colors: ["#ff0040", "#2b00ff", "#ff6a00"], glow: 1.1 } },
     { id: "js_lightning_jisung", name: "번개의 좌 박지성", grade: "JS", in: 300000000, color: "#00ffff", class: "aura-lightning",
-      fx: { colors: ["#00ffff", "#7c4dff", "#ffffff"], particles: 100, rise: 3, orbit: 14, rings: 5, halo: true, shards: 10, pillar: true, wings: true, lightning: true, glow: 3 } }
+      fx: { signature: "thunderThrone", colors: ["#00ffff", "#7c4dff", "#ffffff"], glow: 1.2 } }
 ];
