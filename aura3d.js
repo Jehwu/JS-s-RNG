@@ -9,8 +9,8 @@ import { EffectComposer } from './lib/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './lib/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './lib/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './lib/jsm/postprocessing/OutputPass.js';
-import { SIGNATURES } from './auraSignatures.js?v=9';
-import { POSES } from './poses.js?v=9';
+import { SIGNATURES } from './auraSignatures.js?v=11';
+import { POSES } from './poses.js?v=11';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -182,7 +182,30 @@ function makeBolt(segments, mat) {
 // 매 프레임 재사용하는 임시 객체 (new 를 반복하면 폰에서 버벅임)
 const TMP = { m4: new THREE.Matrix4(), q: new THREE.Quaternion(), p: new THREE.Vector3(), sc: new THREE.Vector3(), e: new THREE.Euler(), up: new THREE.Vector3(0, 1, 0), v: new THREE.Vector3() };
 
-const KIT = { TMP, THREE, BOX, glowMat, solidMat, square: makeSquareRing, rand, ghost: makeGhost, sword: makeSword, bolt: makeBolt };
+// 작은 사람 모형 (부족원, 신하 등). 관절은 피벗이라 rotation 으로 움직임
+function makeMini(color, { paint = null, scale = 0.45 } = {}) {
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+    const root = new THREE.Group();
+    const part = (w, h, d, x, y, py = 0, m = mat) => {
+        const pv = new THREE.Group(); pv.position.set(x, y + py, 0);
+        const mesh = new THREE.Mesh(BOX, m); mesh.scale.set(w, h, d); mesh.position.y = -py;
+        pv.add(mesh); root.add(pv); return pv;
+    };
+    const p = {
+        legL: part(0.98, 2, 1, -0.5, 1, 1), legR: part(0.98, 2, 1, 0.5, 1, 1),
+        torso: part(2, 2, 1, 0, 3), armL: part(1, 2, 1, -1.5, 3, 0.9), armR: part(1, 2, 1, 1.5, 3, 0.9),
+        head: part(1.25, 1.2, 1.2, 0, 4.62)
+    };
+    if (paint) {
+        const pm = new THREE.MeshBasicMaterial({ color: paint, toneMapped: false });
+        for (const y of [-0.15, 0.25]) { const st = new THREE.Mesh(BOX, pm); st.scale.set(1.28, 0.12, 0.05); st.position.set(0, y, 0.61); p.head.add(st); }
+        const belt = new THREE.Mesh(BOX, pm); belt.scale.set(2.05, 0.25, 1.05); belt.position.y = -0.85; p.torso.add(belt);
+    }
+    root.scale.setScalar(scale);
+    return { root, ...p };
+}
+
+const KIT = { TMP, THREE, BOX, mini: makeMini, glowMat, solidMat, square: makeSquareRing, rand, ghost: makeGhost, sword: makeSword, bolt: makeBolt };
 
 /* ---------- 아우라 만들기 ---------- */
 const SIGNATURE_PARTICLES = { LEGEND: 22, MYTHIC: 32, ANCIENT: 44, ABSOLUTE: 56, JXS: 80 };
@@ -530,7 +553,9 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
             dummy.faceMat.needsUpdate = true;
             dummy.edgeMat.color.set(eye || 0x5d6170);
         },
-        burst(fn) { burstHooks.push(fn); }
+        burst(fn) { burstHooks.push(fn); },
+        shake(a) { shakeAmt = Math.max(shakeAmt, a); },
+        flash(v) { flash = Math.max(flash, v); }
     };
     let burstHooks = [];
 
@@ -590,6 +615,8 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         burstHooks = [];
         scene.background.set(SKY); scene.fog.color.set(SKY);
         dummy.root.position.set(0, 0, 0); dummy.root.rotation.set(0, 0, 0);
+        dummy.root.visible = true;
+        [dummy.torso, dummy.legL, dummy.legR, dummy.armL, dummy.armR, dummy.head].forEach(pv => pv.scale.set(1, 1, 1));
         resetSkin();
         if (!current) return;
         scene.remove(current.group);
@@ -812,7 +839,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         // 3D 컷씬 재생. cfg = { hit, hit2, total, tier }, getTime() = 지금 컷씬 몇 초인지
         async playCutscene(aura, cfg, getTime) {
             if (!cine) {
-                const { createCutscene } = await import('./cutscene3d.js?v=9');
+                const { createCutscene } = await import('./cutscene3d.js?v=11');
                 cine = createCutscene(cineCtx);
             }
             return cine.play(aura, cfg, getTime, { shake: a => { shakeAmt = Math.max(shakeAmt, a); } });

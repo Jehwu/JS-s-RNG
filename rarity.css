@@ -70,15 +70,29 @@
 .fr-ancient::after { bottom: -6px; right: -6px; border-left: none; border-top: none; }
 @keyframes ancient-pulse { 50% { box-shadow: 0 0 28px rgba(255, 210, 122, 0.6), inset 0 0 30px rgba(255, 210, 122, 0.25); } }
 
-/* ABSOLUTE: 무지개 프리즘이 도는 테두리 */
+/* ABSOLUTE: 프리즘 테두리 + 반대로 도는 무지개 후광 + 홀로그램이 훑고 지나감 (ANCIENT보다 한 단계 위) */
 .fr-absolute {
     border: 2px solid transparent;
     background:
         linear-gradient(var(--bg), var(--bg)) padding-box,
         conic-gradient(from var(--ang), #ff5f6d, #ffc371, #7af7ff, #6a5cff, #ff8bd1, #ff5f6d) border-box;
-    animation: spin-ang 2.6s linear infinite;
-    box-shadow: 0 0 22px rgba(122, 247, 255, 0.28), 0 0 40px rgba(255, 139, 209, 0.15);
+    animation: spin-ang 2.2s linear infinite;
+    box-shadow: 0 0 16px rgba(122, 247, 255, 0.35), inset 0 0 26px rgba(196, 140, 255, 0.18);
+    overflow: visible;
 }
+.fr-absolute::before {
+    content: ''; position: absolute; inset: -7px; z-index: -1; pointer-events: none;
+    background: conic-gradient(from var(--ang), #ff5f6d, #ffc371, #7af7ff, #6a5cff, #ff8bd1, #ff5f6d);
+    filter: blur(9px); opacity: 0.6;
+    animation: spin-ang 3s linear infinite reverse;
+}
+.fr-absolute::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.16) 44%, rgba(122, 247, 255, 0.14) 50%, rgba(255, 139, 209, 0.12) 56%, transparent 70%);
+    background-size: 260% 100%;
+    animation: holo 2.8s ease-in-out infinite;
+}
+@keyframes holo { 0% { background-position: 130% 0; } 100% { background-position: -130% 0; } }
 
 /* JXS: 핏빛 핵이 숨 쉬고, 테두리를 타고 번개가 번쩍 */
 .fr-jxs {
@@ -166,3 +180,88 @@
 @media (prefers-reduced-motion: reduce) {
     .fr-legend, .fr-mythic, .fr-absolute, .fr-jxs, .nm-legend, .nm-mythic, .nm-absolute, .nm-jxs { animation: none; }
 }
+
+/* =========================================================
+   JXS 칭호마다 고유 테두리  (.fr-u-이름)
+   ========================================================= */
+
+/* 공허왕: 빛을 빨아들이는 검은 구멍. 붉은 금이 간 테두리, 안쪽으로 빨려드는 고리 */
+.fr-u-void {
+    border: 2px solid transparent;
+    background:
+        radial-gradient(circle at 50% 50%, #000 0%, #000 30%, #12000a 60%, #050008 100%) padding-box,
+        conic-gradient(from var(--ang), #2b00ff, #000 18%, #ff0040 32%, #000 50%, #2b00ff 68%, #000 82%, #ff0040) border-box;
+    animation: spin-ang 5s linear infinite;
+    box-shadow: 0 0 20px rgba(255, 0, 64, 0.45), 0 0 44px rgba(43, 0, 255, 0.3), inset 0 0 30px #000;
+    overflow: hidden;
+}
+.fr-u-void::after {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 180%; aspect-ratio: 1; pointer-events: none; z-index: 0;
+    border: 2px solid rgba(255, 0, 64, 0.5);
+    box-shadow: 0 0 18px rgba(255, 0, 64, 0.6), inset 0 0 18px rgba(43, 0, 255, 0.5);
+    transform: translate(-50%, -50%) scale(1) rotate(45deg);
+    animation: void-pull 2.2s cubic-bezier(0.55, 0, 0.9, 0.4) infinite;
+}
+@keyframes void-pull { 0% { transform: translate(-50%, -50%) scale(1) rotate(45deg); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(0.05) rotate(225deg); opacity: 0; } }
+.fr-u-void > *:not(.fr-deco) { position: relative; z-index: 1; }
+.fr-deco { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 2; }
+.fr-u-void .fr-deco path { fill: none; stroke: #ff0040; stroke-width: 1.2; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 3px #ff0040); animation: crack-pulse 2.2s ease-in-out infinite; }
+@keyframes crack-pulse { 50% { stroke: #ff7a9a; filter: drop-shadow(0 0 6px #ff0040); } }
+
+/* 번개의 좌 (제우스): 금빛 그리스 이중 테두리 + 청백 번개가 사방에서 침 */
+.fr-u-zeus {
+    border: 2px solid transparent;
+    outline: 1px solid rgba(255, 211, 77, 0.7);
+    outline-offset: 3px;
+    background:
+        radial-gradient(ellipse at 50% -10%, rgba(122, 247, 255, 0.3), transparent 60%) padding-box,
+        linear-gradient(#050a14, #050a14) padding-box,
+        conic-gradient(from var(--ang), #ffd34d, #fff 6%, #7af7ff 12%, #0a1a2a 25%, #ffd34d 40%, #fff 46%, #7af7ff 52%, #0a1a2a 65%, #ffd34d 80%, #fff 86%, #ffd34d) border-box;
+    animation: spin-ang 1.1s linear infinite, zeus-flash 2.3s steps(1) infinite;
+    overflow: visible;
+}
+@keyframes zeus-flash {
+    0%, 100% { box-shadow: 0 0 16px rgba(122, 247, 255, 0.55), 0 0 36px rgba(255, 211, 77, 0.25); }
+    40% { box-shadow: 0 0 28px rgba(255, 255, 255, 0.95), 0 0 70px rgba(122, 247, 255, 0.8); }
+    43% { box-shadow: 0 0 16px rgba(122, 247, 255, 0.55), 0 0 36px rgba(255, 211, 77, 0.25); }
+    46% { box-shadow: 0 0 24px rgba(255, 255, 255, 0.9), 0 0 56px rgba(122, 247, 255, 0.7); }
+}
+.fr-u-zeus .fr-bolts path { stroke: #e8fdff; stroke-width: 2.2; filter: drop-shadow(0 0 4px #7af7ff) drop-shadow(0 0 10px #7af7ff); }
+
+/* 흉악범: 진홍·검정·금 테두리, 귀퉁이에 장미, 꽃잎이 떨어짐 */
+.fr-u-rose {
+    border: 2px solid transparent;
+    background:
+        radial-gradient(ellipse at 50% 120%, rgba(255, 23, 68, 0.35), transparent 65%) padding-box,
+        linear-gradient(#0d0306, #0d0306) padding-box,
+        conic-gradient(from var(--ang), #ff1744, #1a0006 20%, #ffd34d 30%, #1a0006 42%, #ff1744 55%, #1a0006 72%, #ffd34d 82%, #ff1744) border-box;
+    animation: spin-ang 3.4s linear infinite;
+    box-shadow: 0 0 18px rgba(255, 23, 68, 0.5), 0 0 40px rgba(255, 211, 77, 0.15);
+    overflow: visible;
+}
+.fr-u-rose .fr-deco .rose rect { animation: rose-breathe 3s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.fr-u-rose .fr-deco .petal { animation: petal-fall 3.6s linear infinite; }
+.fr-u-rose .fr-deco .petal:nth-of-type(2) { animation-delay: -1.2s; }
+.fr-u-rose .fr-deco .petal:nth-of-type(3) { animation-delay: -2.4s; }
+.fr-u-rose .fr-deco .petal:nth-of-type(4) { animation-delay: -0.6s; animation-duration: 4.2s; }
+@keyframes rose-breathe { 50% { transform: scale(1.12); } }
+@keyframes petal-fall { 0% { transform: translate(0, -10px) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 100% { transform: translate(-14px, 120px) rotate(320deg); opacity: 0; } }
+
+/* 공허의 물약: 보라 소용돌이 */
+.fr-u-voidpotion {
+    border: 2px solid transparent;
+    background:
+        radial-gradient(circle at 50% 55%, rgba(176, 38, 255, 0.35), transparent 60%) padding-box,
+        linear-gradient(#08030f, #08030f) padding-box,
+        conic-gradient(from var(--ang), #b026ff, #000 15%, #ff2d55 30%, #000 45%, #b026ff 60%, #fff 63%, #b026ff 66%, #000 80%, #b026ff) border-box;
+    animation: spin-ang 1.3s linear infinite;
+    box-shadow: 0 0 20px rgba(176, 38, 255, 0.6), inset 0 0 22px rgba(176, 38, 255, 0.25);
+    overflow: hidden;
+}
+.fr-u-voidpotion::after {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 160%; aspect-ratio: 1; pointer-events: none; z-index: 0;
+    background: conic-gradient(from var(--ang), transparent, rgba(176, 38, 255, 0.3), transparent 30%, rgba(255, 45, 85, 0.22), transparent 60%);
+    transform: translate(-50%, -50%);
+    animation: spin-ang 2s linear infinite reverse;
+}
+.fr-u-voidpotion > *:not(.fr-deco) { position: relative; z-index: 1; }

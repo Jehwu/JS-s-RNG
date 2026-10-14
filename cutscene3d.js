@@ -144,6 +144,75 @@ export function createCutscene(ctx) {
        update(time, phase, k, dt)  phase: 'build' | 'phase2' | 'reveal'
        ========================================================= */
     const MOTIFS = {
+        // 절대여제: 황금 계단이 한 칸씩 솟아 별까지 이어지고, 거대한 왕관이 내려와 별에 씌워짐
+        empress({ g, colors }) {
+            const gold = new THREE.MeshStandardMaterial({ color: 0xffd34d, emissive: 0xffb800, emissiveIntensity: 0.6, roughness: 0.4 });
+            const steps = Array.from({ length: 9 }, (_, i) => {
+                const st = new THREE.Mesh(BOX, gold);
+                st.scale.set(3.2 - i * 0.12, 0.3, 1.1);
+                st.position.set(0, -1 + i * 0.5, 9 - i * 1.1);
+                g.add(st); return st;
+            });
+            const crown = new THREE.Group();
+            for (let i = 0; i < 4; i++) {
+                const a = (i * Math.PI) / 2;
+                const side = new THREE.Mesh(BOX, gold); side.scale.set(2.2, 0.4, 0.1);
+                side.position.set(Math.sin(a) * 1.05, 0, Math.cos(a) * 1.05); side.rotation.y = a; crown.add(side);
+                const sp = new THREE.Mesh(BOX, gold); sp.scale.set(0.2, 0.8, 0.1);
+                sp.position.set(Math.sin(a) * 1.05, 0.55, Math.cos(a) * 1.05); sp.rotation.y = a; crown.add(sp);
+                const gem = new THREE.Mesh(BOX, glowMat(colors[0], 1)); gem.scale.setScalar(0.2); gem.position.copy(sp.position); gem.position.y += 0.5; crown.add(gem);
+            }
+            g.add(crown);
+            return {
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    steps.forEach((st, i) => {
+                        st.visible = vis && k > i / 12;
+                        const rise = clamp01((k - i / 12) * 6);
+                        st.scale.y = 0.3 * rise + 0.001;
+                    });
+                    crown.visible = vis;
+                    crown.position.set(0, THREE.MathUtils.lerp(15, 5.1, ease.out(k)), 0);
+                    crown.rotation.y = time * (0.5 + k * 3);
+                }
+            };
+        },
+
+        // 흉악범: 카드 회오리가 별을 감싸고, 마지막에 거대한 실크햇이 별을 덮었다가 → 쾅, 장미 꽃잎 폭발
+        phantomRose({ g, colors, star }) {
+            const N = 48;
+            const cards = new THREE.InstancedMesh(BOX, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.3 }), N);
+            g.add(cards);
+            const data = Array.from({ length: N }, (_, i) => ({ a: (i / N) * Math.PI * 2, y: rand(-3, 3), r: rand(2, 4.5) }));
+            const hat = new THREE.Group();
+            const black = new THREE.MeshStandardMaterial({ color: 0x0b0b10, roughness: 0.3 });
+            const brim = new THREE.Mesh(BOX, black); brim.scale.set(5.4, 0.25, 5.0);
+            const top = new THREE.Mesh(BOX, black); top.scale.set(3.4, 3.4, 3.2); top.position.y = 1.8;
+            const band = new THREE.Mesh(BOX, new THREE.MeshStandardMaterial({ color: 0x8a0018, emissive: colors[0], emissiveIntensity: 0.6 })); band.scale.set(3.45, 0.6, 3.25); band.position.y = 0.55;
+            hat.add(brim, top, band);
+            hat.rotation.x = Math.PI;   // 뒤집힌 모자가 위에서 덮침
+            g.add(hat);
+            const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3(0.5, 0.72, 0.02);
+            return {
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    cards.visible = vis;
+                    data.forEach((d, i) => {
+                        const a = d.a + time * (1 + k * 6);
+                        const r = d.r * (1 - ease.in(k) * 0.6);
+                        p.set(Math.cos(a) * r, 3.5 + d.y * (1 - k * 0.5), Math.sin(a) * r);
+                        q.setFromEuler(e.set(time * 2 + i, -a, time + i));
+                        cards.setMatrixAt(i, m4.compose(p, q, sc));
+                    });
+                    cards.instanceMatrix.needsUpdate = true;
+                    hat.visible = vis && k > 0.72;
+                    const drop = clamp01((k - 0.72) / 0.22);
+                    hat.position.set(0, THREE.MathUtils.lerp(14, 5.3, ease.in(drop)), 0);
+                    hat.rotation.y = time * 2;
+                }
+            };
+        },
+
         // 초월자 김건우: 하늘에서 금빛 광선이 부채처럼 내려오고, 등 뒤에 거대한 네모 후광이 생김
         transcend({ g, colors }) {
             const rays = [];

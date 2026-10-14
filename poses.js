@@ -202,14 +202,94 @@ export const POSES = {
         set(d.legL, 0.18, 0, 0.05); set(d.legR, 0.22, 0, -0.05);
         d.root.rotation.y = S(t * 0.25) * 0.15;
     },
-    // 번개의 좌 박지성 (제우스): 오른손에 번개를 높이 들고, 왼손은 아래를 가리킴. 던질 때 팔이 앞으로
+    // 번개의 좌 박지성 (제우스): 떠서 번개를 높이 듦 → 팔을 뒤로 젖히며 몸을 비틀어 힘을 모음 → 앞으로 내던짐
     js_lightning_jisung(t, d, _r, sig) {
-        const k = sig?.throwK ?? 0;
-        set(d.armR, -k * 1.9, 0, mix(2.85, 0.9, k));
-        set(d.armL, -0.95, 0, -0.35);
-        set(d.legL, -0.15, 0, -0.18); set(d.legR, 0.1, 0, 0.18);
-        d.head.rotation.x = -0.12 + k * 0.15;
-        d.root.rotation.y = -0.2 + k * 0.25;
-        d.root.rotation.x = k * 0.1;
+        const w = sig?.windK ?? 0, k = sig?.throwK ?? 0;
+        const idleSway = S(t * 1.1) * 0.06;
+        // 오른팔: 위로 → 뒤로 젖힘 → 앞으로 휘두름
+        const rx = mix(mix(0, 0.95, w), -1.95, k);
+        const rz = mix(mix(2.85 + idleSway, 2.25, w), 0.75, k);
+        set(d.armR, rx, 0, rz);
+        // 왼팔: 평소엔 아래로 위엄, 모을 땐 목표를 가리킴, 던지면 뒤로
+        set(d.armL, mix(mix(-0.6, -1.55, w), 0.6, k), 0, mix(mix(-0.55, -0.25, w), -0.9, k));
+        // 몸: 비틀기와 숙임
+        d.root.rotation.y = mix(mix(-0.15 + S(t * 0.5) * 0.08, 0.6, w), -0.5, k);
+        d.root.rotation.x = mix(mix(-0.05, -0.18, w), 0.32, k);
+        d.root.rotation.z = mix(0, 0.08, w) - k * 0.06;
+        // 다리: 던질 때 앞으로 내딛음
+        set(d.legL, mix(mix(-0.25, 0.1, w), -0.75, k), 0, -0.12);
+        set(d.legR, mix(mix(0.15, -0.2, w), 0.55, k), 0, 0.12);
+        d.head.rotation.set(mix(-0.15, 0.1, k), mix(0, -0.4, w) + k * 0.3, 0);
+        d.root.position.y += 0.35 + S(t * 1.4) * 0.12 - k * 0.15;
+    },
+
+    /* ---------- 새 칭호 ---------- */
+    // 김건우: 팔짱 끼고 발 까딱
+    com_gunwoo(t, d) {
+        set(d.armL, -0.95, 0, 0.55); set(d.armR, -0.85, 0, -0.55);
+        set(d.legR, -Math.max(0, S(t * 5)) * 0.15);
+        d.head.rotation.y = S(t * 0.4) * 0.2;
+    },
+    // 김티비디오: 두 손으로 카메라 들고 촬영 중
+    unc_tvideo(t, d) {
+        set(d.armL, -1.5, 0, 0.32); set(d.armR, -1.6, 0, -0.32);
+        d.head.rotation.set(0.05, 0, S(t * 0.9) * 0.08);
+        d.root.rotation.y = S(t * 0.5) * 0.35;
+        d.root.position.y += Math.abs(S(t * 2.4)) * 0.04;
+    },
+    // 김민채소로날유혹해: 한 손 허리, 한 손 머리 뒤, 골반 흔들기 (옆의 소를 향해)
+    rare_cow_minchae(t, d) {
+        set(d.armL, 0.35, 0, -0.5);
+        set(d.armR, -2.5, 0, -0.75);
+        d.root.rotation.z = S(t * 2.2) * 0.09;
+        d.root.rotation.y = 0.45 + S(t * 1.1) * 0.1;
+        d.head.rotation.set(-0.08, 0, 0.18);
+        set(d.legL, 0, 0, -0.06); set(d.legR, -0.15, 0, 0.1);
+    },
+    // 꽁꽁병은: 몸을 감싸 쥐고 오들오들
+    ep_frozen_byungeun(t, d) {
+        const sh = S(t * 45) * 0.025;
+        set(d.armL, -1.15, 0, 0.6 + sh); set(d.armR, -1.15, 0, -0.6 - sh);
+        set(d.legL, 0, 0, 0.05); set(d.legR, 0, 0, -0.05);
+        d.head.rotation.set(0.3, sh * 2, 0);
+        d.root.position.x += sh * 0.6;
+    },
+    // 김건우족을보았다: 부족장의 의식 춤 (팔을 번갈아 하늘로, 발 구르기)
+    leg_gunwoo_tribe(t, d) {
+        const a = S(t * 4);
+        set(d.armL, -0.2, 0, -1.6 - a * 0.9); set(d.armR, -0.2, 0, 1.6 - a * 0.9);
+        set(d.legL, Math.max(0, S(t * 4)) * -0.6); set(d.legR, Math.max(0, -S(t * 4)) * -0.6);
+        d.root.position.y += Math.abs(S(t * 4)) * 0.25;
+        d.head.rotation.x = -0.25 + Math.abs(a) * 0.15;
+        d.root.rotation.y = S(t * 1) * 0.5;
+    },
+    // 170KG OOO: 바벨을 머리 위로 들었다가 바닥에 내리찍음
+    mythic_170kg(t, d, _r, sig) {
+        const up = sig?.liftK ?? 1;   // 1 = 머리 위, 0 = 바닥
+        set(d.armL, -0.15 * (1 - up), 0, -mix(0.35, 2.85, up)); set(d.armR, -0.15 * (1 - up), 0, mix(0.35, 2.85, up));
+        set(d.legL, mix(-0.8, 0, up), 0, -0.22); set(d.legR, mix(-0.8, 0, up), 0, 0.22);
+        d.root.rotation.x = mix(0.45, -0.05, up);
+        d.root.position.y += mix(-0.55, 0, up);
+        d.head.rotation.x = mix(0.2, -0.25, up);
+    },
+    // 절대여제 김가은: 한 손 허리, 한 손에 홀을 높이. 가끔 홀로 바닥을 내리침
+    anc_empress_gaen(t, d, _r, sig) {
+        const k = sig?.slamK ?? 0;
+        set(d.armR, mix(-2.35, -1.2, k), 0, mix(0.35, 0.1, k));
+        set(d.armL, 0.35, 0, -0.45);
+        d.head.rotation.x = mix(-0.22, 0.05, k);
+        d.root.rotation.y = S(t * 0.35) * 0.25;
+        set(d.legL, 0, 0, -0.04); set(d.legR, -0.12, 0, 0.08);
+    },
+    // 흉악범: 인사(모자 들고 허리 숙임) ↔ 두 팔을 활짝 펼치는 마술 공개
+    jxs_felon(t, d, _r, sig) {
+        const bow = sig?.bowK ?? 0, reveal = sig?.revealK ?? 0;
+        set(d.armR, mix(mix(-0.4, -1.25, bow), -0.35, reveal), 0, mix(mix(0.2, -0.65, bow), 2.25, reveal));
+        set(d.armL, mix(mix(0.25, 0.55, bow), -0.35, reveal), 0, mix(-0.25, -2.25, reveal));
+        d.root.rotation.x = mix(0, 0.45, bow) - reveal * 0.12;
+        d.root.rotation.y = S(t * 0.6) * 0.2 + mix(0, -0.3, bow);
+        d.head.rotation.x = mix(0, 0.3, bow) - reveal * 0.2;
+        set(d.legL, mix(0, -0.35, bow), 0, -0.06); set(d.legR, mix(0, 0.25, bow), 0, 0.06);
+        d.root.position.y += 0.25 + S(t * 1.6) * 0.1 + reveal * 0.4;
     }
 };

@@ -1,5 +1,5 @@
-import { AURA_DATA } from './auras.js?v=10';
-import { CRAFT_ITEMS } from './craftItems.js?v=9';
+import { AURA_DATA } from './auras.js?v=11';
+import { CRAFT_ITEMS } from './craftItems.js?v=11';
 
 /* =========================================================
    📦 게임 데이터
@@ -30,7 +30,7 @@ const SHOP_ITEMS = [
     { id: "limit_potion", name: "한계의 물약", price: 40000, type: "luck_mult", value: 5000, maxUses: 3, desc: "×5,000 행운 (3회)", frame: "LEGEND", color: "#ff7a1a" },
     { id: "overcome_potion", name: "극복의 물약", price: 250000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×50,000 행운 (2회)", frame: "MYTHIC", color: "#00e5ff", color2: "#6a5cff" },
     { id: "heaven_potion", name: "천상의 물약", price: 400000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150,000 행운 (1회)", frame: "ANCIENT", color: "#ffe39a" },
-    { id: "void_potion", name: "공허의 물약", price: 2000000, type: "luck_mult", value: 700000, maxUses: 1, desc: "×700,000 행운 (1회)", frame: "JXS", color: "#b026ff", color2: "#ff2d55" }
+    { id: "void_potion", name: "공허의 물약", price: 2000000, type: "luck_mult", value: 700000, maxUses: 1, desc: "×700,000 행운 (1회)", frame: "JXS", unique: "voidpotion", color: "#b026ff", color2: "#ff2d55" }
 ];
 
 const QUEST_DATA = [
@@ -111,8 +111,8 @@ function auraNameHtml(aura) {
 }
 
 // 카드 테두리 (rarity.css 의 .fr-<등급>). JXS는 번개 SVG를 같이 넣음
-function frameAttrs(grade, colors) {
-    return `class="fr fr-${grade.toLowerCase()}" style="${colorVars(colors)}"`;
+function frameAttrs(grade, colors, unique) {
+    return `class="fr fr-${grade.toLowerCase()}${unique ? ` fr-u-${unique}` : ''}" style="${colorVars(colors)}"`;
 }
 function boltSvg() {
     const edge = side => {
@@ -128,7 +128,26 @@ function boltSvg() {
     };
     return `<svg class="fr-bolts" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${[0, 1, 2, 3].map(edge).join('')}</svg>`;
 }
-function frameDeco(grade) { return grade === 'JXS' ? boltSvg() : ''; }
+// 고유 테두리 장식
+function voidCracks() {
+    const crack = (x, y, a) => {
+        let d = `M${x} ${y}`, px = x, py = y;
+        for (let i = 0; i < 4; i++) { a += (Math.random() - 0.5) * 1.2; px += Math.cos(a) * 7; py += Math.sin(a) * 7; d += ` L${px.toFixed(1)} ${py.toFixed(1)}`; }
+        return `<path d="${d}"/>`;
+    };
+    return `<svg class="fr-deco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${crack(0, 20, 0.3)}${crack(100, 70, Math.PI - 0.3)}${crack(30, 100, -1.3)}${crack(80, 0, 1.9)}</svg>`;
+}
+function roseDeco() {
+    const rose = (x, y) => `<g class="rose">${[0, 1, 2, 3].map(i => `<rect x="${x - 5 + i * 1.2}" y="${y - 5 + i * 1.2}" width="${10 - i * 2.4}" height="${10 - i * 2.4}" fill="hsl(350,100%,${30 + i * 9}%)" transform="rotate(${i * 22} ${x} ${y})"/>`).join('')}</g>`;
+    const petal = x => `<rect class="petal" x="${x}" y="0" width="3" height="2" fill="#ff3d63"/>`;
+    return `<svg class="fr-deco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${rose(4, 4)}${rose(96, 96)}${petal(20)}${petal(50)}${petal(75)}${petal(35)}</svg>`;
+}
+function frameDeco(grade, unique) {
+    if (unique === 'void') return voidCracks();
+    if (unique === 'rose') return roseDeco();
+    if (unique === 'voidpotion') return '';
+    return grade === 'JXS' ? boltSvg() : '';
+}
 
 function addItems(items) {
     for (const id in items) gameState.itemInventory[id] = (gameState.itemInventory[id] || 0) + items[id];
@@ -770,7 +789,7 @@ function renderInventory() {
         html += gradeHeader(grade);
         for (const a of owned) {
             html += `
-            <div ${frameAttrs(a.grade, auraColors(a)).replace('class="', 'class="card ')}>${frameDeco(a.grade)}
+            <div ${frameAttrs(a.grade, auraColors(a), a.frame).replace('class="', 'class="card ')}>${frameDeco(a.grade, a.frame)}
                 <div class="card-name">${auraNameHtml(a)}</div>
                 <div class="card-have">×${fmt(gameState.inventory[a.id])}</div>
                 <div class="card-meta">개당 ${fmt(a.jcValue)} JC</div>
@@ -793,7 +812,7 @@ function renderPotions() {
     ui.potionGrid.innerHTML = ids.length ? ids.map(id => {
         const item = SHOP_BY_ID[id];
         return `
-        <div ${frameAttrs(item.frame, [item.color, item.color2 || item.color, item.color]).replace('class="', 'class="card ')}>${frameDeco(item.frame)}
+        <div ${frameAttrs(item.frame, [item.color, item.color2 || item.color, item.color], item.unique).replace('class="', 'class="card ')}>${frameDeco(item.frame, item.unique)}
             <div class="card-name">${item.name}</div>
             <div class="card-desc">${item.desc}</div>
             <div class="card-have">×${fmt(gameState.itemInventory[id])}</div>
@@ -846,7 +865,7 @@ function renderCraft() {
 function renderShop() {
     ui.shopGrid.className = 'card-grid';
     ui.shopGrid.innerHTML = SHOP_ITEMS.map(item => `
-        <div ${frameAttrs(item.frame, [item.color, item.color2 || item.color, item.color]).replace('class="', 'class="card ')}>${frameDeco(item.frame)}
+        <div ${frameAttrs(item.frame, [item.color, item.color2 || item.color, item.color], item.unique).replace('class="', 'class="card ')}>${frameDeco(item.frame, item.unique)}
             <div class="card-name">${item.name}</div>
             <div class="card-desc">${item.desc}</div>
             <div class="shop-price">${fmt(item.price)} JC</div>
@@ -910,7 +929,7 @@ function renderIndex() {
         html += gradeHeader(grade, `${gFound}/${list.length}`);
         for (const a of list) {
             html += found.has(a.id)
-                ? `<div ${frameAttrs(a.grade, auraColors(a)).replace('class="', 'class="index-cell ')}>${frameDeco(a.grade)}<div class="card-name">${auraNameHtml(a)}</div><div class="card-meta">1 in ${fmt(a.in)}</div></div>`
+                ? `<div ${frameAttrs(a.grade, auraColors(a), a.frame).replace('class="', 'class="index-cell ')}>${frameDeco(a.grade, a.frame)}<div class="card-name">${auraNameHtml(a)}</div><div class="card-meta">1 in ${fmt(a.in)}</div></div>`
                 : `<div class="index-cell unknown"><div class="card-name">?</div><div class="card-meta">1 in ${fmt(a.in)}</div></div>`;
         }
     }
@@ -1380,7 +1399,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=9')
+import('./aura3d.js?v=11')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
