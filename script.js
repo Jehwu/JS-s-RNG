@@ -472,6 +472,21 @@ function pickAura() {
     // 배수 물약은 행운만 크게 올려 줌 → 희귀 칭호 확률이 행운만큼 올라가고,
     // 행운보다 흔한 칭호 중 가장 희귀한 것이 바닥(보장)이 됨.
     // (예전엔 행운보다 흔한 칭호를 통째로 빼서 특정 칭호 하나만 쏟아지던 버그)
+    // 배수 물약을 쓴 롤: 칭호마다 따로 판정하면 희귀 칭호가 많을수록 좋은 게 몰려 나와서
+    // (예: ×70만에서 ANCIENT 이상 63%) 한 번만 뽑는 방식으로 계산.
+    // '1 in X' 하나를 뽑아 행운만큼 곱하고, X 이하인 칭호 중 가장 희귀한 쪽에서 고름
+    // → '1 in N 보다 희귀한 게 나올 확률'이 정확히 행운 ÷ N (×70만이면 ANCIENT 이상 약 19%)
+    if (multBonus > 0) {
+        const X = totalLuck / (1 - Math.random());
+        const cand = [];
+        for (let i = AURA_DATA.length - 1; i >= 0 && cand.length < 3; i--) if (AURA_DATA[i].in <= X) cand.push(AURA_DATA[i]);
+        if (!cand.length) return AURA_DATA[0];
+        // 확률이 거의 같은 이웃 칭호끼리는 원래 비율대로 나눠 가짐
+        const top = cand.filter(c => c.in >= cand[0].in / 2);
+        let w = Math.random() * top.reduce((sum, c) => sum + 1 / c.in, 0);
+        for (const c of top) { w -= 1 / c.in; if (w <= 0) return c; }
+        return top[0];
+    }
     for (let i = AURA_DATA.length - 1; i >= 0; i--) {
         if (Math.random() < totalLuck / AURA_DATA[i].in) return AURA_DATA[i];
     }

@@ -647,7 +647,6 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     function setAura(aura, { force = false } = {}) {
         if (!force && current && aura && current.id === aura.id) return;
         clearAura();
-        if (qualityMode === 'auto' && qLevel > 0) { qLevel--; resize(); perfCooldown = 2; }   // 아우라가 바뀌면 화질을 한 단계 다시 올려 봄
         motion = TIER_MOTION[aura?.grade] || TIER_MOTION.COMMON;
         burstAt = 1.5;
         resetFit();
@@ -678,7 +677,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     const BASE_BOUNDS = { minX: -2.1, maxX: 2.1, minZ: -1, maxZ: 1, minY: -0.2, maxY: 5.4 };
     let bounds = { ...BASE_BOUNDS };
     let fitSampleT = 0, fitSamples = 0;
-    function resetFit() { bounds = { ...BASE_BOUNDS }; fitSamples = 0; fitSampleT = 0; }
+    function resetFit() { bounds = { ...BASE_BOUNDS }; fitSamples = 0; fitSampleT = 0.6; }   // 아우라가 다 커진 뒤부터 잼
     const tmpBox = new THREE.Box3();
     function sampleBounds() {
         if (!current) return;
@@ -791,12 +790,15 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         // 아우라 크기 재기 (처음 3초 동안 여러 번)
         if (current && fitSamples < 12) {
             fitSampleT -= dt;
-            if (fitSampleT <= 0) { sampleBounds(); fitSamples++; fitSampleT = 0.25; }
+            if (fitSampleT <= 0) { sampleBounds(); fitSamples++; fitSampleT = 0.2; }
         }
-        const wantDist = fitDistance();
-        dist += (wantDist - dist) * Math.min(1, dt * 2.5);
-        const wantY = (bounds.minY + bounds.maxY) / 2;
-        target.y += (wantY - target.y) * Math.min(1, dt * 2.5);
+        // 크기를 다 잰 다음에만 카메라를 움직임 (재는 도중에 움직이면 뽑을 때마다 확대→축소가 반복돼 보임)
+        if (!current || fitSamples >= 12) {
+            const wantDist = fitDistance();
+            dist += (wantDist - dist) * Math.min(1, dt * 2.5);
+            const wantY = (bounds.minY + bounds.maxY) / 2;
+            target.y += (wantY - target.y) * Math.min(1, dt * 2.5);
+        }
 
         // 캐릭터: 매 프레임 기본자세로 돌린 다음 아우라/등급 움직임을 얹음
         dummy.root.position.set(0, 0, 0);

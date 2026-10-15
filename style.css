@@ -1077,7 +1077,7 @@ body.cine-on #nametag, body.cine-on #ambient { opacity: 0 !important; }
 @keyframes result-line { from { transform: scaleX(0); opacity: 0; } }
 #aura-display .result-pop .result-name { font-size: clamp(32px, 10.5vw, 46px); filter: drop-shadow(0 0 18px color-mix(in srgb, var(--res, var(--aura)) 55%, transparent)); }
 #aura-display .result-pop .result-grade { font-size: 12px; text-shadow: 0 0 12px currentColor; }
-#aura-display .result-pop.settled { transform: scale(0.72); opacity: 0.85; }
+#aura-display .result-pop.settled { opacity: 0.8; }
 #aura-display .result-pop.settled::before { opacity: 0.6; }
 /* 결과가 막 나왔을 땐 머리 위 이름표를 숨겨서 시선이 결과로 가게 */
 body.result-fresh #nametag { opacity: 0; transition: opacity 0.3s; }
