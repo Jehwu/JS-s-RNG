@@ -1,6 +1,6 @@
-import { AURA_DATA } from './auras.js?v=22';
-import { CRAFT_ITEMS } from './craftItems.js?v=22';
-import { createMusicPlayer, coverArt } from './music.js?v=22';
+import { AURA_DATA } from './auras.js?v=23';
+import { CRAFT_ITEMS } from './craftItems.js?v=23';
+import { createMusicPlayer, coverArt } from './music.js?v=23';
 
 /* =========================================================
    📦 게임 데이터
@@ -28,10 +28,10 @@ const SHOP_ITEMS = [
     { id: "speed_1", name: "속도의 물약 1", price: 500, type: "speed", level: 1, value: 0.15, duration: 180, desc: "+15% 속도 (3분)", frame: "RARE", color: "#4da3ff" },
     { id: "speed_2", name: "속도의 물약 2", price: 1200, type: "speed", level: 2, value: 0.30, duration: 180, desc: "+30% 속도 (3분)", frame: "RARE", color: "#4da3ff" },
     { id: "speed_3", name: "속도의 물약 3", price: 3000, type: "speed", level: 3, value: 0.55, duration: 180, desc: "+55% 속도 (3분)", frame: "RARE", color: "#4da3ff" },
-    { id: "limit_potion", name: "한계의 물약", price: 40000, type: "luck_mult", value: 5000, maxUses: 3, desc: "×5,000 행운 (3회)", frame: "LEGEND", color: "#ff7a1a" },
-    { id: "overcome_potion", name: "극복의 물약", price: 250000, type: "luck_mult", value: 50000, maxUses: 2, desc: "×50,000 행운 (2회)", frame: "MYTHIC", color: "#00e5ff", color2: "#6a5cff" },
-    { id: "heaven_potion", name: "천상의 물약", price: 400000, type: "luck_mult", value: 150000, maxUses: 1, desc: "×150,000 행운 (1회)", frame: "ANCIENT", color: "#ffe39a" },
-    { id: "void_potion", name: "공허의 물약", price: 2000000, type: "luck_mult", value: 700000, maxUses: 1, desc: "×700,000 행운 (1회)", frame: "JXS", unique: "voidpotion", color: "#b026ff", color2: "#ff2d55" }
+    { id: "limit_potion", name: "한계의 물약", price: 40000, type: "luck_mult", value: 500, maxUses: 3, desc: "×500 행운 (3회)", frame: "LEGEND", color: "#ff7a1a" },
+    { id: "overcome_potion", name: "극복의 물약", price: 250000, type: "luck_mult", value: 5000, maxUses: 2, desc: "×5,000 행운 (2회)", frame: "MYTHIC", color: "#00e5ff", color2: "#6a5cff" },
+    { id: "heaven_potion", name: "천상의 물약", price: 400000, type: "luck_mult", value: 15000, maxUses: 1, desc: "×15,000 행운 (1회)", frame: "ANCIENT", color: "#ffe39a" },
+    { id: "void_potion", name: "공허의 물약", price: 2000000, type: "luck_mult", value: 70000, maxUses: 1, desc: "×70,000 행운 (1회)", frame: "JXS", unique: "voidpotion", color: "#b026ff", color2: "#ff2d55" }
 ];
 
 const QUEST_DATA = [
@@ -841,7 +841,7 @@ function attachGearPreviews() {
     if (gearPreviews) { gearPreviews.attach(ui.craftGrid); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=22').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=23').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (!$('sheet-craft').classList.contains('hidden')) gearPreviews.attach(ui.craftGrid);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1526,7 +1526,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=22')
+import('./aura3d.js?v=23')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

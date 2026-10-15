@@ -5,7 +5,7 @@
    ========================================================= */
 
 import * as THREE from 'three';
-import { buildGearModel } from './gear3d.js?v=22';
+import { buildGearModel } from './gear3d.js?v=23';
 
 export function createGearPreviews(renderer) {
     const SIZE = 160;
