@@ -1375,3 +1375,4 @@ body.cine-on #biome-fx { opacity: 0; }
 #gacha-panel.hw .gbtn b { color: #ffb347; }
 #biome-badge { width: auto; min-width: 58px; max-width: 76px; }
 #biome-badge .bb-name { white-space: normal; text-align: center; line-height: 1.15; word-break: keep-all; }
+.biome-tag { display: block; margin-top: 3px; font-size: 9.5px; color: var(--bc); letter-spacing: 0.02em; }

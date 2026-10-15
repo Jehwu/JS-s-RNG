@@ -135,7 +135,7 @@ export const CRAFT_ITEMS = [
     {
         id: "hw_candy", category: "amulet", gacha: "halloween",
         name: "사탕 바구니 부적",
-        desc: "롤마다 뽑은 칭호 판매가의 50%만큼 JC를 더 받습니다.",
-        luckBonus: 0, speedBonus: 0, jcBonus: 0.5, req: {}
+        desc: "롤마다 뽑은 칭호 판매가의 10%만큼 JC를 더 받습니다. (한 번에 최대 500 JC)",
+        luckBonus: 0, speedBonus: 0, jcBonus: 0.1, jcBonusMax: 500, req: {}
     }
 ];

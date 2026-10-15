@@ -1,5 +1,5 @@
 /* =========================================================
-   🌟 칭호 데이터 (88개)
+   🌟 칭호 데이터 (93개)
 
    in    : 1 in N 확률
    line  : 컷씬 마지막에 칭호 아래 뜨는 한 줄 (MYTHIC 이상)
@@ -136,6 +136,9 @@ export const AURA_DATA = [
       fx: { signature: "mechAngel", colors: ["#7fe8ff", "#ffd34d"], glow: 0.9 } },
     { id: "leg_desert_tv", name: "사막의 공주 김티비", grade: "LEGEND", in: 3030, color: "#ffc857",
       fx: { signature: "desertPrince", colors: ["#ffc857", "#3de0ff"], glow: 0.8 } },
+    // 🎃 할로윈의 밤 바이옴에서만 나옴 (biome)
+    { id: "leg_pumpkin_byungeun", name: "호박머리 공병은", grade: "LEGEND", in: 6131, color: "#ff8a1f", biome: "halloween",
+      fx: { signature: "pumpkinHead", colors: ["#ffb347", "#ff7a1a", "#7a2aff"], glow: 0.8 } },
     { id: "leg_golem_jisung", name: "강철 골렘 박지성", grade: "LEGEND", in: 6006, color: "#ff8a3d",
       fx: { signature: "golem", colors: ["#ff8a3d", "#ffd23f"], glow: 0.8 } },
 
@@ -164,6 +167,8 @@ export const AURA_DATA = [
       fx: { signature: "phoenix", colors: ["#ff6a1f", "#ffd23f"], glow: 1.0 } },
     { id: "myth_aurora_gaeun", name: "오로라 여왕 김가은", grade: "MYTHIC", in: 222222, color: "#6bffb8", line: "밤하늘이 그녀를 위해 춤춘다",
       fx: { signature: "auroraQueen", colors: ["#6bffb8", "#9b7bff", "#ffffff"], glow: 0.8 } },
+    { id: "myth_witch_tv", name: "마녀 김티비", grade: "MYTHIC", in: 313131, color: "#b26bff", line: "오늘 밤 빗자루는 쉬지 않아", biome: "halloween",
+      fx: { signature: "witch", colors: ["#b26bff", "#7dff6a", "#ff8a1f"], glow: 0.8 } },
     { id: "myth_thunderbeast_minchae", name: "벼락 신수 김민채", grade: "MYTHIC", in: 666666, color: "#7cc8ff", line: "울음소리 한 번에 하늘이 갈라진다",
       fx: { signature: "thunderBeast", colors: ["#7cc8ff", "#fff27a"], glow: 0.9 } },
 
@@ -184,12 +189,16 @@ export const AURA_DATA = [
       fx: { signature: "fateWeaver", colors: ["#ffd98a", "#ff8ad8", "#8ad8ff"], glow: 0.8 } },
     { id: "anc_honor_minchae", name: "명예와 영광 김민채", grade: "ANCIENT", in: 19999999, color: "#ffc94d", line: "내 뒤에 서라. 이 방패가 무너질 일은 없다",
       fx: { signature: "crusader", colors: ["#ffc94d", "#7fd6ff", "#d9dde6"], glow: 0.8 } },
+    { id: "anc_vampire_gunwoo", name: "뱀파이어 백작 김건우", grade: "ANCIENT", in: 13131313, color: "#ff2a4f", line: "영원한 밤에 온 것을 환영한다", biome: "halloween",
+      fx: { signature: "vampire", colors: ["#ff2a4f", "#8a0a1a", "#ffc060"], glow: 0.8 } },
     { id: "anc_empress_gaen", name: "절대여제 김가은", grade: "ANCIENT", in: 17171717, color: "#c77dff", line: "무릎 꿇어라",
       fx: { signature: "empress", colors: ["#c77dff", "#ffd34d", "#ff6ad5"], glow: 1.2 } },
 
     // 8. ABSOLUTE
     { id: "legend_gonjiam", name: "곤지암병은", grade: "ABSOLUTE", in: 29999999, color: "#00e676", line: "...거기 누구 있어요?",
       fx: { signature: "haunted", colors: ["#00e676", "#8affc1"], glow: 0.9 } },
+    { id: "abs_headless_gaeun", name: "목 없는 기사 김가은", grade: "ABSOLUTE", in: 31313131, color: "#7dff6a", line: "잃어버린 머리를 찾아, 오늘 밤도 달린다", biome: "halloween",
+      fx: { signature: "headless", colors: ["#7dff6a", "#2aff8a", "#ff8a1f"], glow: 0.7 } },
     { id: "abs_archdemon_tv", name: "대악마 김티비", grade: "ABSOLUTE", in: 38383838, color: "#ff1f3d", line: "지옥의 문은 안쪽에서 열린다",
       fx: { signature: "archdemon", colors: ["#ff1f3d", "#ff8a00", "#ff5a7a"], glow: 1.0 } },
     { id: "abs_chaos_gaeun", name: "혼돈의 신 김가은", grade: "ABSOLUTE", in: 44444444, color: "#d34dff", line: "질서란 잠깐의 착각일 뿐",
@@ -214,6 +223,8 @@ export const AURA_DATA = [
       fx: { signature: "thunderThrone", colors: ["#00ffff", "#7c4dff", "#ffffff"], particles: 28, rise: 1.4, glow: 1.0 } }
     ,{ id: "jxs_sans_tv", name: "샌즈. 김티비", grade: "JXS", in: 440000000, color: "#4fc3ff", line: "* 오늘 너는 아주 끔찍한 시간을 보내게 될 거야.", frame: "sans",
       fx: { signature: "sans", colors: ["#4fc3ff", "#ffe14d", "#ffffff"], particles: 6, rise: 0.4, glow: 0.25 } },
+    { id: "jxs_pumpkinking_minchae", name: "호박 대왕 김민채", grade: "JXS", in: 313131313, color: "#ff8a1f", line: "사탕을 주지 않으면, 운명을 가져가겠다", frame: "pumpkin", biome: "halloween",
+      fx: { signature: "pumpkinKing", colors: ["#ff8a1f", "#9a4dff", "#7dff6a"], particles: 20, rise: 0.7, glow: 0.7 } },
     { id: "jxs_darkestnight_minchae", name: "가장 어두운 밤 김민채", grade: "JXS", in: 444444444, color: "#5cf2ff", line: "모든 영혼은 결국 나에게 온다", frame: "hades",
       fx: { signature: "hades", colors: ["#5cf2ff", "#2a7bff", "#c9a24a"], particles: 30, rise: 0.6, glow: 0.6 } }
 ];

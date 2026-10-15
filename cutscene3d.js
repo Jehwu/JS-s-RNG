@@ -14,7 +14,7 @@
      hit2 : JXS만. 두 번째 클라이맥스. hit~hit2 동안은 각성 직전 단계
    ========================================================= */
 
-import { buildLocomotive } from './auraSignatures.js?v=29';
+import { buildLocomotive } from './auraSignatures.js?v=30';
 
 export function createCutscene(ctx) {
     const { THREE, scene, camera, dummy, floor, stars, kit, bloom, stageApi } = ctx;
@@ -146,6 +146,120 @@ export function createCutscene(ctx) {
        update(time, phase, k, dt)  phase: 'build' | 'phase2' | 'reveal'
        ========================================================= */
     const MOTIFS = {
+
+        // 🎃 뱀파이어: 핏빛 달이 떠오르고, 사방에서 박쥐 떼가 별로 몰려듦
+        vampire({ g, colors }) {
+            const moon = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ color: 0xc8102a, toneMapped: false }));
+            moon.scale.set(9, 9, 0.2); moon.position.set(0, 3.5, -24); g.add(moon);
+            const halo = new THREE.Mesh(BOX, glowMat(0xff2040, 0.3)); halo.scale.set(14, 14, 0.1); halo.position.set(0, 3.5, -24.5); g.add(halo);
+            const batM = new THREE.MeshBasicMaterial({ color: 0x050205 });
+            const bats = [];
+            for (let i = 0; i < 40; i++) {
+                const b = new THREE.Group();
+                const body = new THREE.Mesh(BOX, batM); body.scale.set(0.3, 0.22, 0.3); b.add(body);
+                const wl = new THREE.Mesh(BOX, batM), wr = new THREE.Mesh(BOX, batM);
+                wl.scale.set(0.5, 0.06, 0.3); wr.scale.copy(wl.scale); wl.position.x = -0.38; wr.position.x = 0.38;
+                b.add(wl, wr); b.userData = { wl, wr, a: rand(0, 6.3), r: rand(9, 16), y: rand(-6, 10), ph: rand(0, 6) };
+                g.add(b); bats.push(b);
+            }
+            return {
+                bloom: 0.75,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    moon.position.y = -6 + ease.out(clamp01(k / 0.6)) * 9.5;
+                    halo.position.y = moon.position.y;
+                    halo.material.opacity = 0.2 + k * 0.3;
+                    bats.forEach((b, i) => {
+                        const u = b.userData;
+                        const pull = ease.in(k);
+                        const r = u.r * (1 - pull * 0.9);
+                        const a = u.a + time * (1 + k * 3);
+                        b.position.set(Math.cos(a) * r, 3.5 + (u.y - 3.5) * (1 - pull), Math.sin(a) * r * 0.5 - 2);
+                        b.rotation.y = -a;
+                        const f = Math.sin(time * 22 + u.ph) * 0.8;
+                        u.wl.rotation.z = f; u.wr.rotation.z = -f;
+                    });
+                }
+            };
+        },
+
+        // 🎃 목 없는 기사: 초록 혼불 고리가 조여 들고, 땅에서 호박등이 줄줄이 켜짐
+        headless({ g, colors }) {
+            const lanterns = [];
+            const orange = new THREE.MeshStandardMaterial({ color: 0xff7a1a, emissive: 0x5a1a00, emissiveIntensity: 0.6 });
+            for (let i = 0; i < 14; i++) {
+                const a = (i / 14) * Math.PI * 2;
+                const p = new THREE.Group(); p.position.set(Math.cos(a) * 7, 0.4, Math.sin(a) * 7);
+                const b = new THREE.Mesh(BOX, orange); b.scale.set(0.9, 0.8, 0.85); p.add(b);
+                const f = new THREE.Mesh(BOX, glowMat(colors[0], 1)); f.scale.set(0.6, 0.12, 0.05); f.position.set(0, -0.1, 0.44); p.add(f);
+                const e = new THREE.Mesh(BOX, glowMat(colors[0], 1)); e.scale.set(0.5, 0.14, 0.05); e.position.set(0, 0.15, 0.44); p.add(e);
+                p.lookAt(0, 0.4, 0); p.rotateY(Math.PI);
+                p.userData.f = [f, e];
+                g.add(p); lanterns.push(p);
+            }
+            const rings = [0, 1, 2].map(i => { const r = square(12 - i * 3, 0.12, glowMat(colors[i % 2], 0.8)); r.position.y = 3.5; g.add(r); return r; });
+            return {
+                bloom: 0.7,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    lanterns.forEach((p, i) => {
+                        const on = k > i / 14 * 0.8;
+                        p.visible = on;
+                        p.userData.f.forEach(f => { f.material.opacity = 0.7 + Math.sin(time * 14 + i) * 0.3; });
+                    });
+                    rings.forEach((r, i) => {
+                        r.rotation.x = Math.PI / 2 + Math.sin(time + i) * 0.3;
+                        r.rotation.y = time * (i % 2 ? -1 : 1) * (0.5 + k * 3);
+                        r.scale.setScalar(THREE.MathUtils.lerp(1.3, 0.3, ease.in(k)));
+                    });
+                }
+            };
+        },
+
+        // 🎃 호박 대왕: 별 뒤에서 거대한 잭오랜턴이 떠오르고, 눈에 불이 켜지고, 터지기 직전 입을 쩍
+        pumpkinKing({ g, colors }) {
+            const orange = new THREE.MeshStandardMaterial({ color: 0xff7a1a, roughness: 0.55, emissive: 0x6a2200, emissiveIntensity: 0.7 });
+            const fireM = glowMat(0xffc04a, 1);
+            const pk = new THREE.Group(); pk.position.set(0, 3.5, -20); g.add(pk);
+            const body = new THREE.Mesh(BOX, orange); body.scale.set(20, 16, 10); pk.add(body);
+            const eyeL = new THREE.Mesh(BOX, fireM), eyeR = new THREE.Mesh(BOX, fireM);
+            eyeL.scale.set(4, 4, 0.3); eyeR.scale.copy(eyeL.scale); eyeL.position.set(-4.6, 3, 5.1); eyeR.position.set(4.6, 3, 5.1);
+            eyeL.rotation.z = eyeR.rotation.z = Math.PI / 4;
+            const mouth = new THREE.Mesh(BOX, fireM); mouth.scale.set(13, 1.6, 0.3); mouth.position.set(0, -3.6, 5.1);
+            pk.add(eyeL, eyeR, mouth);
+            const candies = [];
+            const cc = ['#ff3b7a', '#5ab0ff', '#7dff6a', '#ffe14d', '#c08bff'];
+            for (let i = 0; i < 30; i++) {
+                const c = new THREE.Mesh(BOX, glowMat(cc[i % cc.length], 0.9)); c.scale.set(0.4, 0.22, 0.22);
+                c.userData = { a: rand(0, 6.3), r: rand(6, 12), y: rand(-4, 10) };
+                g.add(c); candies.push(c);
+            }
+            return {
+                hideStar: false, bloom: 0.7,
+                update(time, phase, k) {
+                    const vis = phase === 'build' || phase === 'phase2';
+                    g.visible = vis;
+                    if (!vis) return;
+                    const kk = phase === 'phase2' ? 1 : k;
+                    pk.position.y = -14 + ease.out(clamp01(kk / 0.7)) * 18;
+                    const lit = clamp01((kk - 0.45) / 0.3);
+                    fireM.opacity = lit * (0.75 + Math.sin(time * 12) * 0.25);
+                    const open = phase === 'phase2' ? 1 + Math.abs(Math.sin(time * 14)) * 1.6 : 1 + clamp01((k - 0.85) / 0.15) * 2.2;
+                    mouth.scale.y = 1.6 * open;
+                    pk.rotation.z = Math.sin(time * 0.8) * 0.04;
+                    candies.forEach((c, i) => {
+                        const u = c.userData, pull = ease.in(kk);
+                        const a = u.a + time * (0.8 + kk * 3);
+                        c.position.set(Math.cos(a) * u.r * (1 - pull * 0.85), 3.5 + (u.y - 3.5) * (1 - pull), Math.sin(a) * u.r * 0.6 * (1 - pull * 0.85));
+                        c.rotation.set(time * 3 + i, time * 2, 0);
+                    });
+                }
+            };
+        },
         // 운명의 직조자: 사방에서 빛의 실이 별로 뻗어 와 촘촘히 엮이고, 운명의 바퀴가 빨라짐
         fateWeaver({ g, colors }) {
             const N = 36;

@@ -609,6 +609,31 @@ export const POSES = {
         d.head.rotation.x = -0.35; d.root.rotation.z = S(t * 0.7) * 0.1;
     },
     // 강령술사 김티비: 책을 펼친 손을 내밀고, 해골을 부를 땐 반대 손을 하늘로
+    // 호박머리 공병은: 등불을 앞으로 들고 흐느적, 가끔 고개를 갸웃
+    leg_pumpkin_byungeun(t, d) {
+        const tilt = pulse(t, 4, 1.4);
+        set(d.armR, -1.0 + S(t * 1.8) * 0.08, 0, 0.15); set(d.armL, S(t * 1.1) * 0.15, 0, -0.12);
+        d.head.rotation.z = tilt * 0.45; d.head.rotation.y = S(t * 0.7) * 0.2;
+        d.root.rotation.z = S(t * 1.1) * 0.06; d.root.position.y += Math.abs(S(t * 1.1)) * 0.06;
+        set(d.legL, S(t * 1.1) * 0.12); set(d.legR, -S(t * 1.1) * 0.12);
+    },
+    // 마녀 김티비: 빗자루에 걸터앉아 둥실, 지팡이를 휘두름
+    myth_witch_tv(t, d, _r, sig) {
+        const k = sig?.castK ?? 0;
+        d.root.position.y += 0.8 + S(t * 1.6) * 0.2;
+        d.root.rotation.z = S(t * 1.6) * 0.05; d.root.rotation.x = -0.05;
+        set(d.legL, -1.45, 0, -0.12); set(d.legR, -1.45, 0, 0.12);
+        set(d.armR, -0.9, 0, 0.1);
+        set(d.armL, mix(-0.5, -2.6, k) + S(t * 9) * 0.15 * k, 0, mix(-0.3, -0.5, k));
+        d.head.rotation.z = -0.1 + S(t * 0.8) * 0.08; d.head.rotation.x = -k * 0.2;
+    },
+    // 목 없는 기사 김가은: 불타는 호박을 높이 들고, 유령마가 앞발을 들 때 더 높이
+    abs_headless_gaeun(t, d, _r, sig) {
+        const k = sig?.raise ?? 0;
+        set(d.armR, mix(-1.1, -2.3, k), 0, mix(0.9, 0.5, k)); set(d.armL, -0.7 + S(t * 1.3) * 0.06, 0, -0.15);
+        d.root.position.y += S(t * 1.3) * 0.05; d.root.rotation.x = -k * 0.08;
+        set(d.legL, 0.05, 0, -0.06); set(d.legR, -0.05, 0, 0.06);
+    },
     leg_necro_tv(t, d, _r, sig) {
         const k = sig?.castK ?? 0;
         set(d.armR, -1.1, 0, -0.2); set(d.armL, mix(0.1, -0.4, k), 0, mix(0.15, 2.6, k));
@@ -619,6 +644,15 @@ export const POSES = {
         set(d.armL, -0.2, 0, -0.7 - S(t * 0.9) * 0.2); set(d.armR, -0.2, 0, 0.7 + S(t * 0.9) * 0.2);
         set(d.legL, 0.1, 0, -0.05); set(d.legR, -0.1, 0, 0.05);
         d.root.position.y += 1.0 + S(t * 0.9) * 0.2; d.head.rotation.x = 0.15;
+    },
+    // 뱀파이어 백작 김건우: 망토로 얼굴을 가렸다가, 펼칠 때 두 팔을 활짝
+    anc_vampire_gunwoo(t, d, _r, sig) {
+        const k = sig?.spread ?? 0;
+        set(d.armL, mix(-1.5, -0.2, k), 0, mix(1.1, -1.9, k));
+        set(d.armR, mix(-0.2, -0.2, k), 0, mix(0.1, 1.9, k));
+        d.head.rotation.x = mix(0.2, -0.25, k); d.head.rotation.y = mix(0.3, 0, k);
+        d.root.position.y += 0.25 * k + S(t * 1.2) * 0.06;
+        set(d.legL, 0, 0, -0.04 - k * 0.08); set(d.legR, 0, 0, 0.04 + k * 0.08);
     },
     // 블랙홀 공병은: 머리 위 블랙홀에 끌려가듯 몸이 들리고 팔이 위로 당겨짐
     myth_blackhole_byungeun(t, d) {
@@ -722,6 +756,15 @@ export const POSES = {
         d.root.rotation.y = S(t * 0.3) * 0.25;
     },
     // 가장 어두운 밤 김민채: 두 갈래 창을 짚고 군림 → 창을 높이 들어 → 바닥에 내리꽂음
+    // 호박 대왕 김민채: 낫을 짚고 서 있다가, 거대 호박이 웃을 때 빈손을 번쩍
+    jxs_pumpkinking_minchae(t, d, _r, sig) {
+        const k = sig?.laugh ?? 0;
+        set(d.armL, -0.35, 0, -0.18);
+        set(d.armR, -0.2 - k * 0.3, 0, mix(0.15, 2.7, k));
+        d.head.rotation.x = mix(0.05, -0.3, k); d.head.rotation.y = S(t * 0.5) * 0.15 * (1 - k);
+        d.root.position.y += S(t * 1.1) * 0.05 + k * 0.3;
+        set(d.legL, 0, 0, -0.1); set(d.legR, 0, 0, 0.1);
+    },
     jxs_darkestnight_minchae(t, d, _r, sig) {
         const up = sig?.raiseK ?? 0, sl = sig?.slamK ?? 0;
         const armX = sl > 0 ? mix(-0.3, -1.3, sl) : mix(-0.3, -2.8, up);

@@ -336,3 +336,26 @@
 .fr-u-hades .fr-deco .hf:nth-of-type(2n) { animation-delay: -0.5s; animation-duration: 1.3s; }
 .fr-u-hades .fr-deco .hf:nth-of-type(3n) { animation-delay: -0.9s; animation-duration: 1.9s; }
 @keyframes hades-flame { 0%, 100% { transform: scaleY(0.3); opacity: 0.4; } 50% { transform: scaleY(1); opacity: 1; } }
+
+/* 🎃 호박 대왕 (할로윈 JXS) */
+.fr-u-pumpkin {
+    border: 2px solid transparent;
+    background:
+        radial-gradient(ellipse at 50% 120%, rgba(255, 122, 26, 0.4), transparent 60%) padding-box,
+        radial-gradient(circle at 50% -10%, rgba(154, 77, 255, 0.3), transparent 55%) padding-box,
+        linear-gradient(#0a0410, #0a0410) padding-box,
+        conic-gradient(from var(--ang), #ff8a1f, #1a0a22 16%, #9a4dff 33%, #1a0a22 50%, #7dff6a 62%, #1a0a22 75%, #ff8a1f) border-box;
+    animation: spin-ang 5s linear infinite, pk-breathe 2.6s ease-in-out infinite;
+    overflow: hidden;
+}
+@keyframes pk-breathe {
+    0%, 100% { box-shadow: 0 0 14px rgba(255, 122, 26, 0.4), inset 0 0 18px rgba(0, 0, 0, 0.9); }
+    50% { box-shadow: 0 0 28px rgba(255, 122, 26, 0.7), 0 0 50px rgba(154, 77, 255, 0.25), inset 0 0 18px rgba(0, 0, 0, 0.9); }
+}
+.fr-u-pumpkin > *:not(.fr-deco) { position: relative; z-index: 1; }
+.fr-u-pumpkin .fr-deco .pkf { animation: pk-flicker 0.9s steps(3) infinite; }
+.fr-u-pumpkin .fr-deco .bt { animation: pk-bat 3s ease-in-out var(--d) infinite; }
+.fr-u-pumpkin .fr-deco .bt .w { animation: pk-flap 0.2s steps(2) infinite; transform-box: fill-box; }
+@keyframes pk-flicker { 50% { opacity: 0.45; } }
+@keyframes pk-bat { 50% { transform: translate(4px, 2px); } }
+@keyframes pk-flap { 50% { transform: translateY(1.2px); } }
