@@ -1,6 +1,6 @@
-import { AURA_DATA } from './auras.js?v=19';
-import { CRAFT_ITEMS } from './craftItems.js?v=19';
-import { createMusicPlayer, coverArt } from './music.js?v=19';
+import { AURA_DATA } from './auras.js?v=20';
+import { CRAFT_ITEMS } from './craftItems.js?v=20';
+import { createMusicPlayer, coverArt } from './music.js?v=20';
 
 /* =========================================================
    📦 게임 데이터
@@ -145,8 +145,16 @@ function sansDeco() {
     const heart = ['0110110', '1111111', '1111111', '0111110', '0011100', '0001000'].map((row, r) => [...row].map((c, k) => c === '1' ? `<rect x="${4 + k * 1.1}" y="${5 + r * 1.1}" width="1.1" height="1.1" fill="#ff1a1a"/>` : '').join('')).join('');
     return `<svg class="fr-deco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${[14, 30, 46, 62, 78, 90].map(bone).join('')}<g class="soul">${heart}</g><rect class="eye" x="90" y="5" width="4" height="4"/></svg>`;
 }
+function hadesDeco() {
+    // 위아래 금빛 그리스 무늬(네모 소용돌이) + 바닥에서 피어오르는 푸른 불꽃
+    let key = '';
+    for (let x = 0; x < 100; x += 10) key += `<path d="M${x} 3 h8 v4 h-5 v-2 h2" fill="none" stroke="#c9a24a" stroke-width="1"/><path d="M${x} 97 h8 v-4 h-5 v2 h2" fill="none" stroke="#c9a24a" stroke-width="1"/>`;
+    const flame = x => `<rect class="hf" x="${x}" y="78" width="3" height="14" fill="#5cf2ff"/>`;
+    return `<svg class="fr-deco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${key}${[8, 22, 37, 52, 66, 80, 92].map(flame).join('')}</svg>`;
+}
 function frameDeco(grade, unique) {
     if (unique === 'void') return voidCracks();
+    if (unique === 'hades') return hadesDeco();
     if (unique === 'sans') return sansDeco();
     if (unique === 'rose') return roseDeco();
     if (unique === 'voidpotion') return '';
@@ -826,7 +834,7 @@ function attachGearPreviews() {
     if (gearPreviews) { gearPreviews.attach(ui.craftGrid); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=19').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=20').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (!$('sheet-craft').classList.contains('hidden')) gearPreviews.attach(ui.craftGrid);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1494,7 +1502,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=19')
+import('./aura3d.js?v=20')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

@@ -315,3 +315,24 @@
 @keyframes sans-bone { 0%, 100% { transform: scaleY(0.15); } 40%, 60% { transform: scaleY(1); } }
 @keyframes sans-soul { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(6px, -3px); } 50% { transform: translate(2px, 4px); } 75% { transform: translate(-4px, -2px); } }
 @keyframes sans-eye { 0%, 70% { fill: #4fc3ff; } 71%, 80% { fill: #ffe14d; } 81%, 100% { fill: #4fc3ff; } }
+
+/* 가장 어두운 밤 김민채: 칠흑 바탕 + 금빛 그리스 무늬 + 바닥에서 피어오르는 푸른 저승불 + 천천히 뜨는 일식 */
+.fr-u-hades {
+    border: 2px solid transparent;
+    background:
+        radial-gradient(circle at 50% -10%, rgba(92, 242, 255, 0.18), transparent 55%) padding-box,
+        radial-gradient(ellipse at 50% 120%, rgba(42, 123, 255, 0.35), transparent 60%) padding-box,
+        linear-gradient(#020206, #020206) padding-box,
+        conic-gradient(from var(--ang), #c9a24a, #0a0a12 18%, #5cf2ff 32%, #0a0a12 46%, #c9a24a 60%, #0a0a12 74%, #2a7bff 86%, #c9a24a) border-box;
+    animation: spin-ang 6s linear infinite, hades-breathe 3.2s ease-in-out infinite;
+    overflow: hidden;
+}
+@keyframes hades-breathe {
+    0%, 100% { box-shadow: 0 0 14px rgba(92, 242, 255, 0.35), inset 0 0 20px rgba(0, 0, 0, 0.9); }
+    50% { box-shadow: 0 0 26px rgba(92, 242, 255, 0.6), 0 0 50px rgba(42, 123, 255, 0.25), inset 0 0 20px rgba(0, 0, 0, 0.9); }
+}
+.fr-u-hades > *:not(.fr-deco) { position: relative; z-index: 1; }
+.fr-u-hades .fr-deco .hf { animation: hades-flame 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom; filter: drop-shadow(0 0 2px #5cf2ff); }
+.fr-u-hades .fr-deco .hf:nth-of-type(2n) { animation-delay: -0.5s; animation-duration: 1.3s; }
+.fr-u-hades .fr-deco .hf:nth-of-type(3n) { animation-delay: -0.9s; animation-duration: 1.9s; }
+@keyframes hades-flame { 0%, 100% { transform: scaleY(0.3); opacity: 0.4; } 50% { transform: scaleY(1); opacity: 1; } }

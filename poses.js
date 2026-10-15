@@ -660,5 +660,77 @@ export const POSES = {
         set(d.armL, -0.25, 0, -2.3 - f * 0.5); set(d.armR, -0.25, 0, 2.3 + f * 0.5);
         d.head.rotation.x = -0.35 - f * 0.15; d.root.position.y += 0.6 + f * 0.3;
         set(d.legL, 0, 0, -0.12); set(d.legR, 0, 0, 0.12);
+    },
+
+    // 체육대회 계주 김건우: 바통 들고 전력질주
+    rare_relay_gunwoo(t, d) {
+        const w = S(t * 11);
+        set(d.armL, w * 1.1, 0, -0.1); set(d.armR, -w * 1.1, 0, 0.1);
+        set(d.legL, -w * 0.9, 0, 0); set(d.legR, w * 0.9, 0, 0);
+        d.root.rotation.x = 0.3; d.root.position.y += Math.abs(w) * 0.2;
+    },
+    // 치킨 배달 박지성: 한 손에 봉지 들고 다른 손으로 폰 확인
+    rare_chicken_jisung(t, d) {
+        const look = pulse(t, 4, 1.4);
+        set(d.armL, -0.1, 0, 0.15); set(d.armR, mix(-0.3, -1.4, look), 0, -0.2);
+        d.head.rotation.x = look * 0.35; d.head.rotation.y = S(t * 0.8) * 0.3 * (1 - look);
+    },
+    // 독수리 조련사 공병은: 독수리가 내려앉을 땐 팔을 옆으로 내밀어 받침
+    ep_falconer_byungeun(t, d, _r, sig) {
+        const k = sig?.perchK ?? 0;
+        set(d.armR, mix(-0.4, -0.3, k), 0, mix(0.4, 1.45, k)); set(d.armL, 0.2, 0, -0.2);
+        d.head.rotation.x = mix(-0.45, 0.05, k); d.head.rotation.y = mix(S(t * 0.9) * 0.6, -0.5, k);
+    },
+    // 벚꽃 무희 김가은: 한 바퀴 돌며 팔을 흐르듯
+    ep_sakura_gaeun(t, d) {
+        set(d.armL, -0.4 + S(t * 1.5) * 0.4, 0, 1.6 + S(t * 1.5) * 0.6); set(d.armR, -0.4 - S(t * 1.5) * 0.4, 0, -1.2 - C(t * 1.5) * 0.5);
+        d.root.rotation.y = t * 0.9; set(d.legL, -0.4, 0, 0); d.root.position.y += 0.15 + Math.abs(S(t * 1.5)) * 0.1;
+    },
+    // 사막의 왕자 김티비: 양탄자 위에 팔짱 끼고 섬
+    leg_desert_tv(t, d) {
+        set(d.armL, -1.3, 0.6, 0.9); set(d.armR, -1.3, -0.6, -0.9);
+        d.root.position.y += 0.35 + S(t * 1.5) * 0.1; d.head.rotation.x = -0.1; d.root.rotation.y = S(t * 0.4) * 0.3;
+    },
+    // 강철 골렘 박지성: 골렘과 같이 주먹을 들었다 내려침
+    leg_golem_jisung(t, d, _r, sig) {
+        const k = sig?.golemK ?? 0;
+        set(d.armL, -0.2 - k * 2.6, 0, 0.2); set(d.armR, -0.2 - k * 2.6, 0, -0.2);
+        set(d.legL, -0.2, 0, -0.18); set(d.legR, 0.15, 0, 0.18); d.root.position.y -= 0.15;
+    },
+    // 오로라 여왕 김가은: 두 팔을 하늘로 펼쳐 오로라를 부름
+    myth_aurora_gaeun(t, d) {
+        set(d.armL, -0.3, 0, -2.4 - S(t * 0.7) * 0.25); set(d.armR, -0.3, 0, 2.4 + S(t * 0.7 + 1) * 0.25);
+        d.root.position.y += 0.8 + S(t * 0.6) * 0.2; d.head.rotation.x = -0.35; d.root.rotation.y = S(t * 0.25) * 0.4;
+    },
+    // 벼락 신수 김민채: 늑대가 울부짖을 때 한 팔을 하늘로
+    myth_thunderbeast_minchae(t, d, _r, sig) {
+        const k = sig?.howlK ?? 0;
+        set(d.armL, mix(-0.4, -0.3, k), 0, mix(0.3, 2.8, k)); set(d.armR, 0.2, 0, -0.35);
+        d.head.rotation.x = mix(0.05, -0.4, k); set(d.legL, -0.2, 0, -0.15); set(d.legR, 0.15, 0, 0.15);
+    },
+    // 운명의 직조자 김건우: 양손을 들어 실을 당기듯 손을 번갈아 움직임
+    anc_fate_gunwoo(t, d) {
+        set(d.armL, -1.5 + S(t * 1.2) * 0.35, 0, 0.6); set(d.armR, -1.5 - S(t * 1.2) * 0.35, 0, -0.6);
+        d.root.position.y += 0.5 + S(t * 0.6) * 0.12; d.head.rotation.x = 0.1; d.root.rotation.y = S(t * 0.4) * 0.2;
+    },
+    // 차원 파괴자 공병은: 주먹을 뒤로 당겼다가 앞으로 내지름
+    abs_breaker_byungeun(t, d, _r, sig) {
+        const k = sig?.punchK ?? 0, c = t % 6;
+        const wind = c > 2.0 && c < 2.6 ? (c - 2.0) / 0.6 : 0;
+        set(d.armL, wind > 0 ? mix(-0.3, 0.6, wind) : mix(-0.3, -1.6, k), 0, 0.15);
+        set(d.armR, -0.9, 0, -0.5);
+        d.root.rotation.y = wind * 0.5 - k * 0.35; d.root.rotation.x = k * 0.12;
+        set(d.legL, -0.5 * k - 0.15, 0, -0.2); set(d.legR, 0.4 * k + 0.1, 0, 0.2);
+    },
+    // 가장 어두운 밤 김민채: 두 갈래 창을 짚고 군림 → 창을 높이 들어 → 바닥에 내리꽂음
+    jxs_darkestnight_minchae(t, d, _r, sig) {
+        const up = sig?.raiseK ?? 0, sl = sig?.slamK ?? 0;
+        const armX = sl > 0 ? mix(-0.3, -1.3, sl) : mix(-0.3, -2.8, up);
+        set(d.armL, armX, 0, mix(0.2, 0.1, Math.max(up, sl)));
+        set(d.armR, mix(-0.2, -0.6, up), 0, mix(-0.45, -1.4, up));
+        d.head.rotation.x = mix(0.12, -0.25, up) + sl * 0.15;
+        d.root.position.y += 0.4 + S(t * 0.6) * 0.1 - sl * 0.2;
+        d.root.rotation.x = sl * 0.2;
+        set(d.legL, 0, 0, -0.1); set(d.legR, 0, 0, 0.1);
     }
 };

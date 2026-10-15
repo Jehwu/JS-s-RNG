@@ -1,5 +1,5 @@
 /* =========================================================
-   🌟 칭호 데이터 (77개)
+   🌟 칭호 데이터 (88개)
 
    in    : 1 in N 확률
    line  : 컷씬 마지막에 칭호 아래 뜨는 한 줄 (MYTHIC 이상)
@@ -76,6 +76,10 @@ export const AURA_DATA = [
       fx: { particles: 24, rise: 2.4, rings: 1, glow: 0.65 } },
     { id: "rare_drum_byungeun", name: "드럼 치는 공병은", grade: "RARE", in: 92, color: "#ff9f43",
       fx: { colors: ["#ff9f43", "#ffe066"], particles: 18, rise: 1.0, orbit: 4, glow: 0.7 } },
+    { id: "rare_relay_gunwoo", name: "체육대회 계주 김건우", grade: "RARE", in: 36, color: "#3fd0ff",
+      fx: { colors: ["#3fd0ff", "#ffffff"], particles: 26, rise: 2.6, rings: 1, glow: 0.65 } },
+    { id: "rare_chicken_jisung", name: "치킨 배달 박지성", grade: "RARE", in: 81, color: "#ffb547",
+      fx: { colors: ["#ffb547", "#ff5a3c"], particles: 20, rise: 1.2, orbit: 3, glow: 0.7 } },
 
     // 4. EPIC
     { id: "ep_baksisung", name: "밪지성", grade: "EPIC", in: 100, color: "#2ecc71",
@@ -102,6 +106,10 @@ export const AURA_DATA = [
       fx: { signature: "shadowHunter", colors: ["#a05bff", "#ff3bd4"], particles: 18, rise: 0.6, glow: 0.7 } },
     { id: "ep_neon_gaeun", name: "네온 라이더 김가은", grade: "EPIC", in: 377, color: "#ff3bd4",
       fx: { signature: "neonRider", colors: ["#ff3bd4", "#ffb02e"], particles: 16, rise: 0.8, glow: 0.9 } },
+    { id: "ep_falconer_byungeun", name: "독수리 조련사 공병은", grade: "EPIC", in: 240, color: "#e8b06a",
+      fx: { signature: "falconer", colors: ["#e8b06a", "#ffffff"], particles: 14, rise: 0.7, glow: 0.7 } },
+    { id: "ep_sakura_gaeun", name: "벚꽃 무희 김가은", grade: "EPIC", in: 333, color: "#ff9ec7",
+      fx: { colors: ["#ff9ec7", "#ffffff", "#ff5a8a"], particles: 40, rise: 0.5, orbit: 6, rings: 1, glow: 1.0 } },
 
     // 5. LEGEND
     { id: "ep_crazykong", name: "크레이지콩", grade: "LEGEND", in: 758, color: "#ff7a1a",
@@ -126,6 +134,10 @@ export const AURA_DATA = [
       fx: { signature: "necromancer", colors: ["#5dff8a", "#b6ffcf"], glow: 0.8 } },
     { id: "leg_mechangel_minchae", name: "기계 천사 김민채", grade: "LEGEND", in: 7777, color: "#7fe8ff",
       fx: { signature: "mechAngel", colors: ["#7fe8ff", "#ffd34d"], glow: 0.9 } },
+    { id: "leg_desert_tv", name: "사막의 왕자 김티비", grade: "LEGEND", in: 3030, color: "#ffc857",
+      fx: { signature: "desertPrince", colors: ["#ffc857", "#3de0ff"], glow: 0.8 } },
+    { id: "leg_golem_jisung", name: "강철 골렘 박지성", grade: "LEGEND", in: 6006, color: "#ff8a3d",
+      fx: { signature: "golem", colors: ["#ff8a3d", "#ffd23f"], glow: 0.8 } },
 
     // 6. MYTHIC
     { id: "gemini_basic", name: "김민제미나이", grade: "MYTHIC", in: 10101, color: "#00ffff", line: "계산은 이미 끝났다",
@@ -150,6 +162,10 @@ export const AURA_DATA = [
       fx: { signature: "blackHole", colors: ["#ff9a3c", "#8a5cff"], glow: 0.8 } },
     { id: "myth_phoenix_gaeun", name: "불사조 김가은", grade: "MYTHIC", in: 515151, color: "#ff6a1f", line: "재 속에서 다시 날아오른다",
       fx: { signature: "phoenix", colors: ["#ff6a1f", "#ffd23f"], glow: 1.0 } },
+    { id: "myth_aurora_gaeun", name: "오로라 여왕 김가은", grade: "MYTHIC", in: 222222, color: "#6bffb8", line: "밤하늘이 그녀를 위해 춤춘다",
+      fx: { signature: "auroraQueen", colors: ["#6bffb8", "#9b7bff", "#ffffff"], glow: 0.8 } },
+    { id: "myth_thunderbeast_minchae", name: "벼락 신수 김민채", grade: "MYTHIC", in: 666666, color: "#7cc8ff", line: "울음소리 한 번에 하늘이 갈라진다",
+      fx: { signature: "thunderBeast", colors: ["#7cc8ff", "#fff27a"], glow: 0.9 } },
 
     // 7. ANCIENT
     { id: "divine_god", name: "초월자 김건우", grade: "ANCIENT", in: 5000000, color: "#ffe14d", line: "한계를 넘어선 자",
@@ -164,6 +180,8 @@ export const AURA_DATA = [
       fx: { signature: "nebula", colors: ["#ff7ad9", "#6aa8ff", "#fff1b8"], glow: 0.8 } },
     { id: "anc_iceemperor_tv", name: "얼음 황제 김티비", grade: "ANCIENT", in: 12121212, color: "#9fe6ff", line: "이 땅의 겨울은 끝나지 않는다",
       fx: { signature: "iceEmperor", colors: ["#9fe6ff", "#5ad1ff", "#b48cff"], glow: 0.8 } },
+    { id: "anc_fate_gunwoo", name: "운명의 직조자 김건우", grade: "ANCIENT", in: 9999999, color: "#ffd98a", line: "모든 운명은 그의 손끝에서 엮인다",
+      fx: { signature: "fateWeaver", colors: ["#ffd98a", "#ff8ad8", "#8ad8ff"], glow: 0.8 } },
     { id: "anc_honor_minchae", name: "명예와 영광 김민채", grade: "ANCIENT", in: 19999999, color: "#ffc94d", line: "내 뒤에 서라. 이 방패가 무너질 일은 없다",
       fx: { signature: "crusader", colors: ["#ffc94d", "#7fd6ff", "#d9dde6"], glow: 0.8 } },
     { id: "anc_empress_gaen", name: "절대여제 김가은", grade: "ANCIENT", in: 17171717, color: "#c77dff", line: "무릎 꿇어라",
@@ -176,6 +194,8 @@ export const AURA_DATA = [
       fx: { signature: "archdemon", colors: ["#ff1f3d", "#ff8a00", "#ff5a7a"], glow: 1.0 } },
     { id: "abs_chaos_gaeun", name: "혼돈의 신 김가은", grade: "ABSOLUTE", in: 44444444, color: "#d34dff", line: "질서란 잠깐의 착각일 뿐",
       fx: { signature: "chaosGod", colors: ["#d34dff", "#3dfcff", "#ff4d8d"], glow: 0.8 } },
+    { id: "abs_breaker_byungeun", name: "차원 파괴자 공병은", grade: "ABSOLUTE", in: 55555555, color: "#5cf2ff", line: "주먹 한 번에 세계가 금 간다",
+      fx: { signature: "dimensionBreaker", colors: ["#5cf2ff", "#ff4df0", "#ffe14d"], glow: 0.8 } },
     { id: "abs_juggernaut_minchae", name: "저거너트 김민채", grade: "ABSOLUTE", in: 88000000, color: "#ff2a2a", line: "멈출 수 없는 것은, 멈추지 않는다",
       fx: { signature: "juggernaut", colors: ["#ff2a2a", "#ff8a3d", "#ffb3a0"], glow: 0.7 } },
     { id: "abs_sunking_gunwoo", name: "태양왕 김건우", grade: "ABSOLUTE", in: 77777777, color: "#ffb02e", line: "태양은 오직 한 사람을 위해 뜬다",
@@ -193,5 +213,7 @@ export const AURA_DATA = [
     { id: "js_lightning_jisung", name: "번개의 좌 박지성", grade: "JXS", in: 300000000, color: "#00ffff", line: "하늘이 그의 이름을 부른다", frame: "zeus",
       fx: { signature: "thunderThrone", colors: ["#00ffff", "#7c4dff", "#ffffff"], particles: 28, rise: 1.4, glow: 1.0 } }
     ,{ id: "jxs_sans_tv", name: "샌즈. 김티비", grade: "JXS", in: 440000000, color: "#4fc3ff", line: "* 오늘 너는 아주 끔찍한 시간을 보내게 될 거야.", frame: "sans",
-      fx: { signature: "sans", colors: ["#4fc3ff", "#ffe14d", "#ffffff"], particles: 6, rise: 0.4, glow: 0.25 } }
+      fx: { signature: "sans", colors: ["#4fc3ff", "#ffe14d", "#ffffff"], particles: 6, rise: 0.4, glow: 0.25 } },
+    { id: "jxs_darkestnight_minchae", name: "가장 어두운 밤 김민채", grade: "JXS", in: 444444444, color: "#5cf2ff", line: "모든 영혼은 결국 나에게 온다", frame: "hades",
+      fx: { signature: "hades", colors: ["#5cf2ff", "#2a7bff", "#c9a24a"], particles: 30, rise: 0.6, glow: 0.6 } }
 ];

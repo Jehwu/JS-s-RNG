@@ -14,7 +14,7 @@
      hit2 : JXS만. 두 번째 클라이맥스. hit~hit2 동안은 각성 직전 단계
    ========================================================= */
 
-import { buildLocomotive } from './auraSignatures.js?v=19';
+import { buildLocomotive } from './auraSignatures.js?v=20';
 
 export function createCutscene(ctx) {
     const { THREE, scene, camera, dummy, floor, stars, kit, bloom, stageApi } = ctx;
@@ -146,6 +146,125 @@ export function createCutscene(ctx) {
        update(time, phase, k, dt)  phase: 'build' | 'phase2' | 'reveal'
        ========================================================= */
     const MOTIFS = {
+        // 운명의 직조자: 사방에서 빛의 실이 별로 뻗어 와 촘촘히 엮이고, 운명의 바퀴가 빨라짐
+        fateWeaver({ g, colors }) {
+            const N = 36;
+            const threads = [];
+            for (let i = 0; i < N; i++) {
+                const a = (i / N) * Math.PI * 2;
+                const from = new THREE.Vector3(Math.cos(a) * 16, 3.5 + Math.sin(a) * 11, -4 + Math.sin(i * 1.7) * 4);
+                const m = new THREE.Mesh(BOX, glowMat(colors[i % colors.length], 0.75));
+                m.userData.from = from; g.add(m); threads.push(m);
+            }
+            const wheel = new THREE.Group(); wheel.position.set(0, 3.5, -1); g.add(wheel);
+            for (let i = 0; i < 8; i++) { const sp = new THREE.Mesh(BOX, glowMat(colors[0], 0.9)); sp.scale.set(0.12, 5, 0.12); sp.rotation.z = (i / 8) * Math.PI; wheel.add(sp); }
+            const rim = square(5.2, 0.14, glowMat(colors[1], 0.9)); rim.rotation.x = Math.PI / 2; wheel.add(rim);
+            const C = new THREE.Vector3(0, 3.5, 0), tmp = new THREE.Vector3();
+            return {
+                hideStar: true, bloom: 0.7,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    threads.forEach((m, i) => {
+                        const reach = ease.out(clamp01((k - i * 0.012) / 0.6));
+                        tmp.lerpVectors(m.userData.from, C, reach);
+                        const len = m.userData.from.distanceTo(tmp) + 0.01;
+                        m.scale.set(0.05, 0.05, len);
+                        m.position.copy(m.userData.from).add(tmp).multiplyScalar(0.5);
+                        m.lookAt(tmp);
+                    });
+                    wheel.rotation.z = time * (0.3 + k * k * 6);
+                    wheel.scale.setScalar(0.5 + k * 0.5);
+                }
+            };
+        },
+
+        // 차원 파괴자: 화면 앞 공간에 유리 같은 금이 점점 번지다가, 터지는 순간 산산조각
+        dimensionBreaker({ g, colors }) {
+            const N = 30;
+            const panes = [];
+            for (let i = 0; i < N; i++) {
+                const m = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ color: colors[i % 3], transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false }));
+                const e = new THREE.LineSegments(new THREE.EdgesGeometry(BOX), new THREE.LineBasicMaterial({ color: colors[(i + 1) % 3], toneMapped: false })); m.add(e);
+                m.scale.set(rand(1.5, 3.5), rand(1.5, 3.5), 0.05);
+                m.position.set(rand(-6, 6), rand(-1, 9), rand(-3, 3));
+                m.rotation.set(rand(-0.3, 0.3), rand(-0.6, 0.6), rand(-0.8, 0.8));
+                m.userData = { base: m.position.clone(), d: m.position.distanceTo(new THREE.Vector3(0, 3.5, 0)) };
+                g.add(m); panes.push(m);
+            }
+            const cracks = [];
+            for (let i = 0; i < 14; i++) { const c = new THREE.Mesh(BOX, glowMat(colors[i % 3], 0.95)); const a = (i / 14) * Math.PI * 2; c.scale.set(0.06, 1, 0.06); c.rotation.z = a; c.userData.a = a; c.position.set(0, 3.5, 1); g.add(c); cracks.push(c); }
+            return {
+                hideStar: false, bloom: 0.75,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    panes.forEach((m, i) => {
+                        m.visible = k * 12 > m.userData.d * 0.9;
+                        m.position.copy(m.userData.base);
+                        m.position.x += Math.sin(time * 1.5 + i) * 0.1;
+                        if (k > 0.9) m.position.addScaledVector(m.userData.base, (k - 0.9) * 2.5);
+                    });
+                    cracks.forEach(c => {
+                        const len = ease.in(clamp01((k - 0.3) / 0.65)) * 9 + 0.01;
+                        c.scale.y = len;
+                        c.position.set(Math.sin(-c.userData.a) * len / 2, 3.5 + Math.cos(c.userData.a) * len / 2, 1);
+                    });
+                }
+            };
+        },
+
+        // 가장 어두운 밤: 하늘에 검은 일식이 차오르고 영혼들이 그 안으로 빨려 듦.
+        //   각성 단계엔 어둠 속에서 머리 셋 달린 개의 붉은 눈 여섯 개가 뜨고, 발밑에 푸른 저승불 고리
+        hades({ g, colors }) {
+            const ecl = new THREE.Group(); ecl.position.set(0, 3.5, -3); g.add(ecl);
+            const disc = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ color: 0x000000 })); disc.scale.set(5, 5, 0.3); ecl.add(disc);
+            const corona = [0, 1, 2].map(i => { const r = square(5.6 + i * 0.9, 0.16 - i * 0.04, glowMat(colors[i % 2], 0.9 - i * 0.2)); r.rotation.x = Math.PI / 2; ecl.add(r); return r; });
+            const SO = 50;
+            const souls = new THREE.InstancedMesh(BOX, glowMat(colors[0], 0.8), SO);
+            const sd = Array.from({ length: SO }, () => ({ from: new THREE.Vector3(rand(-16, 16), rand(-6, 14), rand(-10, 8)), ph: rand(0, 1) }));
+            g.add(souls);
+            const eyes = new THREE.Group(); eyes.position.set(0, 4.2, -9); g.add(eyes);
+            const eyeM = glowMat(new THREE.Color('#ff3b2a'), 1);
+            [-4, 0, 4].forEach((x, i) => { for (const s of [-1, 1]) { const e = new THREE.Mesh(BOX, eyeM); e.scale.set(0.9, 0.18, 0.1); e.position.set(x + s * 0.65, i === 1 ? 0.7 : 0, 0); e.rotation.z = -s * 0.15; eyes.add(e); } });
+            const ring = new THREE.InstancedMesh(BOX, glowMat(colors[0], 0.9), 30);
+            g.add(ring);
+            const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3(), C = new THREE.Vector3(0, 3.5, -3);
+            return {
+                hideStar: true, bloom: 0.7,
+                update(time, phase, k) {
+                    const build = phase === 'build', p2 = phase === 'phase2';
+                    ecl.visible = souls.visible = build;
+                    eyes.visible = ring.visible = p2;
+                    if (build) {
+                        const grow = ease.out(clamp01(k / 0.7));
+                        ecl.scale.setScalar(0.3 + grow * 0.9);
+                        corona.forEach((r, i) => { r.rotation.y = time * (0.2 + k * 2) * (i % 2 ? -1 : 1); });
+                        sd.forEach((d, i) => {
+                            const u = (time * 0.25 + d.ph) % 1;
+                            p.lerpVectors(d.from, C, u * u);
+                            sc.setScalar(0.25 * (1 - u * 0.7)); q.identity();
+                            souls.setMatrixAt(i, m4.compose(p, q, sc));
+                        });
+                        souls.instanceMatrix.needsUpdate = true;
+                    }
+                    if (p2) {
+                        const open = ease.out(clamp01(k / 0.4));
+                        eyes.scale.set(1, open, 1);
+                        for (let i = 0; i < 30; i++) {
+                            const a = (i / 30) * Math.PI * 2;
+                            const h = (0.6 + Math.abs(Math.sin(time * 6 + i * 1.3)) * 1.4) * open;
+                            p.set(Math.cos(a) * 3.2, h / 2, Math.sin(a) * 3.2); sc.set(0.2, h, 0.2); q.identity();
+                            ring.setMatrixAt(i, m4.compose(p, q, sc));
+                        }
+                        ring.instanceMatrix.needsUpdate = true;
+                    }
+                }
+            };
+        },
+
         // 성운의 주인: 별 대신 두 팔 은하가 점점 빨리 감기며 모이고, 별자리 선이 하나씩 이어짐
         nebula({ g, colors }) {
             const N = 180;

@@ -9,9 +9,9 @@ import { EffectComposer } from './lib/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './lib/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './lib/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './lib/jsm/postprocessing/OutputPass.js';
-import { SIGNATURES } from './auraSignatures.js?v=19';
-import { POSES } from './poses.js?v=19';
-import { createGearRig } from './gear3d.js?v=19';
+import { SIGNATURES } from './auraSignatures.js?v=20';
+import { POSES } from './poses.js?v=20';
+import { createGearRig } from './gear3d.js?v=20';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -647,6 +647,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     function setAura(aura, { force = false } = {}) {
         if (!force && current && aura && current.id === aura.id) return;
         clearAura();
+        if (qLevel > 0) { qLevel--; resize(); perfCooldown = 2; }   // 아우라가 바뀌면 화질을 한 단계 다시 올려 봄
         motion = TIER_MOTION[aura?.grade] || TIER_MOTION.COMMON;
         burstAt = 1.5;
         resetFit();
@@ -756,14 +757,19 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     // 프레임 시간 재서 화질 조절
     let perfAcc = 0, perfN = 0, perfCooldown = 3;
     let lowPower = false, skip = 0, pendingDt = 0;
+    // 화질 자동 조절: 90프레임마다 검사.
+    //  느린 프레임(25ms 넘음)이 많으면 한 단계 낮추고, 다시 여유가 생기면(평균 20ms 미만, 느린 프레임 거의 없음) 한 단계 올림
+    let perfSlow = 0;
     function adaptQuality(rawDt) {
+        if (perfCooldown > 0) { perfCooldown -= rawDt; perfAcc = 0; perfN = 0; perfSlow = 0; return; }
+        if (rawDt > 0.25) return;   // 탭 전환 등으로 생긴 큰 공백은 빼고 셈
         perfAcc += rawDt; perfN++;
-        perfCooldown -= rawDt;
-        if (perfN < 60 || perfCooldown > 0) return;
-        const avg = perfAcc / perfN;
-        perfAcc = 0; perfN = 0;
-        if (avg > 1 / 40 && qLevel < QUALITY.length - 1) { qLevel++; resize(); perfCooldown = 2; }
-        else if (avg < 1 / 58 && qLevel > 0 && !lowPower) { qLevel--; resize(); perfCooldown = 8; }
+        if (rawDt > 1 / 40) perfSlow++;
+        if (perfN < 90) return;
+        const avg = perfAcc / perfN, slow = perfSlow / perfN;
+        perfAcc = 0; perfN = 0; perfSlow = 0;
+        if (slow > 0.3 && qLevel < QUALITY.length - 1) { qLevel++; resize(); perfCooldown = 1.5; }
+        else if (avg < 1 / 50 && slow < 0.06 && qLevel > 0) { qLevel--; resize(); perfCooldown = 3; }
     }
 
     function tick() {
@@ -861,7 +867,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         // 3D 컷씬 재생. cfg = { hit, hit2, total, tier }, getTime() = 지금 컷씬 몇 초인지
         async playCutscene(aura, cfg, getTime) {
             if (!cine) {
-                const { createCutscene } = await import('./cutscene3d.js?v=19');
+                const { createCutscene } = await import('./cutscene3d.js?v=20');
                 cine = createCutscene(cineCtx);
             }
             return cine.play(aura, cfg, getTime, { shake: a => { shakeAmt = Math.max(shakeAmt, a); } });
