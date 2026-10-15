@@ -9,9 +9,9 @@ import { EffectComposer } from './lib/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './lib/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './lib/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './lib/jsm/postprocessing/OutputPass.js';
-import { SIGNATURES } from './auraSignatures.js?v=18';
-import { POSES } from './poses.js?v=18';
-import { createGearRig } from './gear3d.js?v=18';
+import { SIGNATURES } from './auraSignatures.js?v=19';
+import { POSES } from './poses.js?v=19';
+import { createGearRig } from './gear3d.js?v=19';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -206,7 +206,22 @@ function makeMini(color, { paint = null, scale = 0.45 } = {}) {
     return { root, ...p };
 }
 
-const KIT = { TMP, THREE, BOX, mini: makeMini, glowMat, solidMat, square: makeSquareRing, rand, ghost: makeGhost, sword: makeSword, bolt: makeBolt };
+// 손에 쥐는 검: 원점이 손잡이, 칼날은 +y 쪽으로 뻗고, 날(얇은 쪽)이 앞뒤(±z)를 향함
+//  → 팔을 앞뒤로 휘두르면 칼날로 베게 됨. 겉 그룹의 rotation.x 로 칼 방향을 정함
+//    (π 면 팔이 뻗은 방향 그대로, π/2 면 손에서 앞으로)
+function makeHeldSword(len, bladeColor, accent, w = 0.4, metal = false) {
+    const holder = new THREE.Group();
+    const spin = new THREE.Group(); spin.rotation.y = Math.PI / 2;
+    const s = makeSword(len, bladeColor, accent, w, metal);
+    const bw = w * 0.55;
+    const gripY = len + len * 0.09 + bw * 0.2;
+    s.rotation.x = Math.PI;      // 칼끝이 -y 로
+    s.position.y = gripY;        // 손잡이를 원점으로 → 칼날은 +y
+    spin.add(s); holder.add(spin);
+    return holder;
+}
+
+const KIT = { TMP, THREE, BOX, mini: makeMini, glowMat, solidMat, square: makeSquareRing, rand, ghost: makeGhost, sword: makeSword, heldSword: makeHeldSword, bolt: makeBolt };
 
 /* ---------- 아우라 만들기 ---------- */
 const SIGNATURE_PARTICLES = { LEGEND: 22, MYTHIC: 32, ANCIENT: 44, ABSOLUTE: 56, JXS: 80 };
@@ -462,13 +477,13 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     // 화질 단계: 프레임이 느리면 자동으로 낮추고, 여유 있으면 올림
     const DPR = window.devicePixelRatio || 1;
     const QUALITY = [
-        { pr: Math.min(DPR, 1.5), bloomDiv: 2 },
-        { pr: Math.min(DPR, 1.2), bloomDiv: 3 },
-        { pr: 1.0, bloomDiv: 3 },
-        { pr: 0.8, bloomDiv: 4 },
-        { pr: 0.65, bloomDiv: 4 }
+        { pr: Math.min(DPR, 2), bloomDiv: 2 },
+        { pr: Math.min(DPR, 1.75), bloomDiv: 2 },
+        { pr: Math.min(DPR, 1.5), bloomDiv: 3 },
+        { pr: Math.min(DPR, 1.25), bloomDiv: 3 },
+        { pr: 1.0, bloomDiv: 4 }
     ];
-    let qLevel = DPR > 2 ? 1 : 0;   // 고해상도 폰은 한 단계 낮게 시작
+    let qLevel = 0;
     renderer.setPixelRatio(QUALITY[qLevel].pr);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
@@ -648,7 +663,9 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     }
 
     // 블룸
-    const composer = new EffectComposer(renderer);
+    // 계단 현상 줄이기: WebGL2 면 블룸 화면에도 멀티샘플(MSAA) 적용
+    const msaa = renderer.capabilities.isWebGL2 ? 4 : 0;
+    const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: msaa }));
     composer.addPass(new RenderPass(scene, camera));
     const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.6, 0.32, 0.82);
     composer.addPass(bloom);
@@ -745,7 +762,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         if (perfN < 60 || perfCooldown > 0) return;
         const avg = perfAcc / perfN;
         perfAcc = 0; perfN = 0;
-        if (avg > 1 / 45 && qLevel < QUALITY.length - 1) { qLevel++; resize(); perfCooldown = 2; }
+        if (avg > 1 / 40 && qLevel < QUALITY.length - 1) { qLevel++; resize(); perfCooldown = 2; }
         else if (avg < 1 / 58 && qLevel > 0 && !lowPower) { qLevel--; resize(); perfCooldown = 8; }
     }
 
@@ -844,7 +861,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         // 3D 컷씬 재생. cfg = { hit, hit2, total, tier }, getTime() = 지금 컷씬 몇 초인지
         async playCutscene(aura, cfg, getTime) {
             if (!cine) {
-                const { createCutscene } = await import('./cutscene3d.js?v=18');
+                const { createCutscene } = await import('./cutscene3d.js?v=19');
                 cine = createCutscene(cineCtx);
             }
             return cine.play(aura, cfg, getTime, { shake: a => { shakeAmt = Math.max(shakeAmt, a); } });

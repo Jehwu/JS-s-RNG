@@ -1,6 +1,6 @@
-import { AURA_DATA } from './auras.js?v=18';
-import { CRAFT_ITEMS } from './craftItems.js?v=18';
-import { createMusicPlayer, coverArt } from './music.js?v=18';
+import { AURA_DATA } from './auras.js?v=19';
+import { CRAFT_ITEMS } from './craftItems.js?v=19';
+import { createMusicPlayer, coverArt } from './music.js?v=19';
 
 /* =========================================================
    📦 게임 데이터
@@ -826,7 +826,7 @@ function attachGearPreviews() {
     if (gearPreviews) { gearPreviews.attach(ui.craftGrid); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=18').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=19').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (!$('sheet-craft').classList.contains('hidden')) gearPreviews.attach(ui.craftGrid);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1494,7 +1494,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=18')
+import('./aura3d.js?v=19')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

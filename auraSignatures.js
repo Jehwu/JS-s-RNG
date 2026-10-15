@@ -1972,8 +1972,8 @@ export const SIGNATURES = {
         const patch = new THREE.Mesh(BOX, black); patch.scale.set(0.36, 0.3, 0.05); patch.position.set(0.3, 0.08, 0.62); attach(dummy.head, patch);
         const strap = new THREE.Mesh(BOX, black); strap.scale.set(1.3, 0.06, 1.28); strap.position.set(0, 0.2, 0); strap.rotation.z = -0.3; attach(dummy.head, strap);
         // 커틀러스 (캐릭터 오른손)
-        const blade = sword(2.4, null, new THREE.Color('#ffcc55'), 0.34, true);
-        blade.rotation.x = Math.PI; blade.position.set(0, -1.9, 0.2);
+        const blade = kit.heldSword(2.4, null, new THREE.Color('#ffcc55'), 0.34, true);
+        blade.rotation.x = 2.5; blade.position.set(0, -1.95, 0);   // 손잡이를 쥐고 칼끝은 앞쪽 위로
         attach(dummy.armL, blade);
         // 앵무새 (왼쪽 어깨)
         const bird = new THREE.Group();
@@ -2550,8 +2550,8 @@ export const SIGNATURES = {
         const owned = [];
         const attach = (parent, obj) => { parent.add(obj); owned.push([parent, obj]); };
         stage.onClear(() => owned.forEach(([p, o]) => p.remove(o)));
-        const blade = sword(2.6, null, pick(0), 0.22, true);
-        blade.rotation.x = Math.PI; blade.position.set(0, -1.9, 0.1);
+        const blade = kit.heldSword(2.6, null, pick(0), 0.22, true);
+        blade.rotation.x = 2.4; blade.position.set(0, -1.95, 0);
         attach(dummy.armL, blade);
         const sheath = new THREE.Mesh(BOX, new THREE.MeshStandardMaterial({ color: 0x1a1018, roughness: 0.4 }));
         sheath.scale.set(0.18, 0.22, 2.6); sheath.position.set(-0.9, -0.85, 0.2); sheath.rotation.y = 0.25;
@@ -2811,7 +2811,7 @@ export const SIGNATURES = {
         dummy.torso.scale.set(1.25, 1.05, 1.3);
         const steel = new THREE.MeshStandardMaterial({ color: 0xd4d9e2, metalness: 0.35, roughness: 0.32, emissive: 0x1a1c22, emissiveIntensity: 0.4 });
         const darkSteel = new THREE.MeshStandardMaterial({ color: 0x7a808c, metalness: 0.35, roughness: 0.4 });
-        const key = new THREE.PointLight(0xfff2d6, 14, 14, 1.6); key.userData.own = true; key.position.set(1.5, 6, 4); group.add(key);
+        const key = new THREE.PointLight(0xfff2d6, 4, 14, 1.6); key.userData.own = true; key.position.set(1.5, 7, 6); group.add(key);
         const gold = solidMat(new THREE.Color('#ffc94d'), 0.35);
         const box = (m, w, h, d, x, y, z) => { const b = new THREE.Mesh(BOX, m); b.scale.set(w, h, d); b.position.set(x, y, z); return b; };
         // 투구: 통짜 + 가운데 세로 볏 + 가로 눈 틈
@@ -2886,7 +2886,8 @@ export const SIGNATURES = {
             if (n !== slamN && c >= 3.15) { slamN = n; sk = 0; stage.shake(0.6); stage.flash(0.45); }
             // 망치 각도 (팔 기준): 평소엔 머리를 앞 바닥에 세워 두고, 들 땐 머리 뒤로, 내리칠 땐 앞 바닥으로
             const REST = 2.7, UP = 1.63, SLAM = 3.39;
-            hammer.rotation.set(sig.slamK > 0 ? REST + (SLAM - REST) * sig.slamK : REST + (UP - REST) * sig.raiseK, 0, 0);
+            // (y 로 90도 돌려 망치 머리의 넓은 면이 내려치는 방향을 향하게)
+            hammer.rotation.set(sig.slamK > 0 ? REST + (SLAM - REST) * sig.slamK : REST + (UP - REST) * sig.raiseK, Math.PI / 2, 0);
             tiles.forEach(tl => {
                 const on = sig.shieldK > tl.userData.d / 4;
                 tl.material.opacity = on ? 0.16 + 0.08 * Math.sin(t * 4 + tl.userData.d) : 0;
@@ -3047,8 +3048,9 @@ export const SIGNATURES = {
             sig.slamK = c >= 2.4 && c < 2.55 ? (c - 2.4) / 0.15 : c >= 2.55 && c < 3.6 ? 1 : c >= 3.6 && c < 4.3 ? 1 - (c - 3.6) / 0.7 : 0;
             if (c >= 2.4) sig.raiseK = 0;
             const wpn = sig.slamK > 0 ? REST + (SLAM - REST) * sig.slamK : REST + (UP - REST) * sig.raiseK;
-            sword.rotation.set(wpn, 0, 0);
-            pSword.rotation.set(wpn, 0, 0);
+            // 칼날(얇은 쪽)이 내려찍는 방향으로 가게 세움. 정면에서도 넓적함이 보이도록 살짝만 비틈
+            sword.rotation.set(wpn, Math.PI / 2 - 0.35, 0);
+            pSword.rotation.set(wpn, Math.PI / 2 - 0.35, 0);
             if (n !== slamN && c >= 2.55) {
                 slamN = n; ik = 0;
                 stage.shake(0.9); stage.flash(0.7);
@@ -3134,7 +3136,7 @@ export const SIGNATURES = {
         const owned = [];
         const attach = (parent, obj) => { parent.add(obj); owned.push([parent, obj]); };
         stage.onClear(() => owned.forEach(([p, o]) => p.remove(o)));
-        for (const arm of [dummy.armL, dummy.armR]) { const d = sword(1.2, null, pick(0), 0.16, true); d.position.set(0, -1.95, 0.25); d.rotation.x = Math.PI / 2 + 0.3; attach(arm, d); }
+        for (const arm of [dummy.armL, dummy.armR]) { const d = kit.heldSword(1.2, null, pick(0), 0.16, true); d.position.set(0, -1.95, 0); d.rotation.x = Math.PI - 0.2; attach(arm, d); }
         const eye = new THREE.Mesh(BOX, glowMat(pick(0), 1)); eye.scale.set(0.95, 0.1, 0.05); eye.position.set(0, 0.1, 0.63); attach(dummy.head, eye);
         const shadowM = new THREE.MeshStandardMaterial({ color: 0x1a0b2e, roughness: 0.8, emissive: pick(0), emissiveIntensity: 0.35 });
         const tents = [];
