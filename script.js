@@ -1,7 +1,7 @@
-import { AURA_DATA } from './auras.js?v=31';
-import { CRAFT_ITEMS } from './craftItems.js?v=31';
-import { createMusicPlayer, coverArt } from './music.js?v=31';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=31';
+import { AURA_DATA } from './auras.js?v=32';
+import { CRAFT_ITEMS } from './craftItems.js?v=32';
+import { createMusicPlayer, coverArt } from './music.js?v=32';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=32';
 
 /* =========================================================
    📦 게임 데이터
@@ -461,7 +461,7 @@ function getSpeedBonus() {
     return (gameState.activeBuffs.speedBonus || 0) + (getGear()?.speedBonus || 0);
 }
 function getBaseLuck() {
-    return (gameState.luck + (getGear()?.luckBonus || 0) + (gameState.activeBuffs.luckBonus || 0)) * (getBiome()?.luck || 1);
+    return (gameState.luck + (getGear()?.luckBonus || 0) + (gameState.activeBuffs.luckBonus || 0)) * (getBiome()?.luck || 1) * getAdminLuck();
 }
 // 화면 표시용 (다음 롤 기준)
 function getDisplayLuck() {
@@ -860,6 +860,7 @@ function renderBuffs() {
     if (b.luckExpireTime > now) pills.push(`<span class="buff">행운 물약 ${b.luckLevel}  ${Math.ceil((b.luckExpireTime - now) / 1000)}s</span>`);
     if (b.speedExpireTime > now) pills.push(`<span class="buff">속도 물약 ${b.speedLevel}  ${Math.ceil((b.speedExpireTime - now) / 1000)}s</span>`);
     gameState.activeMultBuffs.forEach(m => pills.push(`<span class="buff mult">${m.name} ×${m.uses}</span>`));
+    if (adminLuck.until > now) { const s = Math.ceil((adminLuck.until - now) / 1000); pills.unshift(`<span class="buff admin">👑 어드민 행운 ×${fmt(adminLuck.mult)}  ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}</span>`); }
     const gear = getGear();
     if (gear) pills.push(`<span class="buff gear">${gear.name}</span>`);
     if (gameState.amulet) pills.push(`<span class="buff gear">${CRAFT_BY_ID[gameState.amulet]?.name || ''}</span>`);
@@ -932,7 +933,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=31').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=32').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1297,6 +1298,7 @@ $('game-start-btn').addEventListener('click', () => {
         applyEquippedAura();
         applyBiome(false);   // 저장된 바이옴이 남아 있으면 이어서
         updateAttendDot();
+        startAdminEvents();
         if (canAttend()) setTimeout(() => openSheet('sheet-attend'), 900);   // 오늘 출석 안 했으면 바로 띄움
     }, 420);
     playBgm('main');
@@ -1573,6 +1575,11 @@ $('dev-btn').addEventListener('click', async () => {
     }
     const bsel = $('dev-biome-select');
     if (!bsel.children.length) bsel.innerHTML = BIOMES.map(b => `<option value="${b.id}">${b.icon} ${b.name}</option>`).join('');
+    const absel = $('ab-biome');
+    if (!absel.children.length) absel.innerHTML = BIOMES.map(b => `<option value="${b.id}">${b.icon} ${b.name}</option>`).join('');
+    const gsel = $('ab-gift');
+    if (!gsel.children.length) gsel.innerHTML = `<option value="jc">🪙 10만 JC</option>` + SHOP_ITEMS.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+    setOnline(!!evOnline);
     closeSheet('sheet-settings');
     openSheet('sheet-dev');
     toast('개발자 모드 ON. 끌 때까지 저장되지 않습니다.', 'gold');
@@ -1848,6 +1855,119 @@ $('gear-detail').addEventListener('click', e => {
 });
 
 /* =========================================================
+   👑 어드민 어뷰즈 (Supabase)
+   - 관리자 모드에서 이벤트를 보내면 admin_events 표에 한 줄 추가됨
+   - 모든 게임이 20초마다(화면 안 볼 땐 2분마다) 새 줄이 있는지 확인해서 터뜨림
+   - 늦게 들어온 사람도 아직 안 끝난 행운 폭탄/바이옴/선물은 받음
+   ========================================================= */
+
+const SB_URL = 'https://vccpgfalbvanmwitkoqy.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjY3BnZmFsYnZhbm13aXRrb3F5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjU3MDUsImV4cCI6MjEwNzY0MTcwNX0.oQ1lvr191cygdxK1qkQMjxWvvqMV9bUisOpR7xbFq4U';
+const SB_HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
+let adminLuck = { mult: 1, until: 0 };
+let evLastId = 0, evStarted = false, evTimer = 0, evOnline = null;
+const evDone = new Set();
+function getAdminLuck() { return adminLuck.until > Date.now() ? adminLuck.mult : 1; }
+
+async function sbFetch(path, opts = {}) {
+    const r = await fetch(`${SB_URL}/rest/v1/${path}`, { ...opts, headers: { ...SB_HEADERS, ...(opts.headers || {}) }, cache: 'no-store' });
+    if (!r.ok) throw new Error(`supabase ${r.status}`);
+    return r.status === 204 || r.status === 201 ? null : r.json();
+}
+function setOnline(v) { evOnline = v; const el = $('admin-status'); if (el) { el.textContent = v ? '🟢 서버 연결됨' : '🔴 서버 연결 안 됨'; el.classList.toggle('on', v); } }
+
+// 이벤트 한 줄을 실제 게임에 적용. late = 게임 켜면서 지난 이벤트를 따라잡는 중
+function applyAdminEvent(ev, late) {
+    if (evDone.has(ev.id)) return;
+    evDone.add(ev.id);
+    const start = new Date(ev.created_at).getTime();
+    const end = start + (ev.duration || 0) * 1000;
+    const now = Date.now();
+    const d = ev.data || {};
+    if (ev.kind === 'luck') {
+        if (end <= now) return;
+        adminLuck = { mult: d.mult || 2, until: end };
+        adminBanner('👑', `어드민 어뷰즈!`, `모두 행운 ×${fmt(d.mult)} · ${Math.round(ev.duration / 60)}분`, '#ffd23a');
+        renderStats(); renderBuffs();
+    } else if (ev.kind === 'biome') {
+        const b = BIOME_BY_ID[d.biome];
+        if (!b || end <= now) return;
+        gameState.biome = { id: b.id, until: end };
+        saveGame(); applyBiome(true);
+    } else if (ev.kind === 'announce') {
+        if (late && now - start > 90000) return;
+        adminBanner('📢', d.text || '', '관리자 공지', '#7ae8ff', 6500);
+    } else if (ev.kind === 'gift') {
+        if (end <= now) return;
+        gameState.claimedEvents = gameState.claimedEvents || [];
+        if (gameState.claimedEvents.includes(ev.id)) return;
+        gameState.claimedEvents.push(ev.id);
+        if (gameState.claimedEvents.length > 60) gameState.claimedEvents.splice(0, 20);
+        if (d.jc) gameState.jc += d.jc;
+        if (d.items) addItems(d.items);
+        saveGame(); renderStats(); renderPotions();
+        const what = [d.jc ? `${fmt(d.jc)} JC` : '', ...Object.entries(d.items || {}).map(([id, n]) => `${SHOP_BY_ID[id]?.name || id} ×${n}`)].filter(Boolean).join(' · ');
+        adminBanner('🎁', '어드민 선물!', what, '#ff9ad0');
+    }
+}
+function adminBanner(icon, title, sub, color, ms = 4200) {
+    const ban = $('admin-banner');
+    ban.style.setProperty('--ac', color);
+    ban.innerHTML = `<div class="ab-crown">${icon}</div><div class="ab-title">${escapeHtml(title)}</div><div class="ab-sub">${escapeHtml(sub)}</div>`;
+    ban.classList.remove('hidden', 'show'); void ban.offsetWidth; ban.classList.add('show');
+    ban.style.animationDuration = `${ms}ms`;
+    clearTimeout(ban._t); ban._t = setTimeout(() => ban.classList.add('hidden'), ms);
+    stage3d?.flash?.();
+    playTone(523, 'square', 0.12 * soundSettings.master, 0.01, 0.25);
+    setTimeout(() => playTone(784, 'square', 0.12 * soundSettings.master, 0.01, 0.4), 140);
+    setTimeout(() => playTone(1046, 'triangle', 0.14 * soundSettings.master, 0.01, 0.8), 280);
+}
+
+async function pollAdminEvents(first) {
+    try {
+        // 처음엔 최근 6시간치(진행 중인 이벤트 따라잡기), 그다음부턴 새 줄만
+        const q = first
+            ? `admin_events?select=*&created_at=gte.${new Date(Date.now() - 6 * 3600000).toISOString()}&order=id.asc&limit=50`
+            : `admin_events?select=*&id=gt.${evLastId}&order=id.asc&limit=20`;
+        const rows = await sbFetch(q);
+        setOnline(true);
+        for (const ev of rows || []) { evLastId = Math.max(evLastId, ev.id); applyAdminEvent(ev, first); }
+    } catch (e) { setOnline(false); }
+}
+function scheduleAdminPoll() {
+    clearTimeout(evTimer);
+    evTimer = setTimeout(async () => { await pollAdminEvents(false); scheduleAdminPoll(); }, document.hidden ? 120000 : 20000);
+}
+function startAdminEvents() {
+    if (evStarted) return;
+    evStarted = true;
+    pollAdminEvents(true).then(scheduleAdminPoll);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { pollAdminEvents(false); scheduleAdminPoll(); } });
+}
+async function sendAdminEvent(kind, data, duration) {
+    try {
+        await sbFetch('admin_events', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ kind, data, duration }) });
+        toast('👑 보냈어요! 모두에게 20초 안에 터져요', 'gold');
+        pollAdminEvents(false);
+    } catch (e) { toast('서버에 못 보냈어요. 표를 만들었는지 확인해 주세요', 'bad'); }
+}
+$('sheet-dev').addEventListener('click', e => {
+    const b = e.target.closest('[data-abuse]');
+    if (!b) return;
+    const k = b.dataset.abuse;
+    if (k === 'luck') sendAdminEvent('luck', { mult: +$('ab-luck-mult').value }, +$('ab-luck-min').value * 60);
+    else if (k === 'biome') sendAdminEvent('biome', { biome: $('ab-biome').value }, +$('ab-biome-min').value * 60);
+    else if (k === 'announce') {
+        const text = $('ab-text').value.trim();
+        if (!text) { toast('공지 내용을 써 주세요', 'bad'); return; }
+        sendAdminEvent('announce', { text: text.slice(0, 80) }, 0);
+    } else if (k === 'gift') {
+        const v = $('ab-gift').value, n = Math.max(1, Math.min(99, +$('ab-gift-n').value || 1));
+        sendAdminEvent('gift', v === 'jc' ? { jc: 100000 * n } : { items: { [v]: n } }, 1800);   // 30분 안에 들어온 사람까지 받음
+    }
+});
+
+/* =========================================================
    📅 일일 출석 (7일 한 바퀴, 하루 빠져도 이어서 받음)
    ========================================================= */
 
@@ -2077,7 +2197,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=31')
+import('./aura3d.js?v=32')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

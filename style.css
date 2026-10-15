@@ -1405,3 +1405,28 @@ body.cine-on #biome-fx { opacity: 0; }
 .at-day.done { opacity: 0.45; }
 .at-check { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .at-check::after { content: ''; width: 26px; height: 14px; border-left: 4px solid var(--mint); border-bottom: 4px solid var(--mint); transform: rotate(-45deg) translate(2px, -2px); filter: drop-shadow(0 0 6px var(--mint)); }
+
+/* =========================================================
+   👑 어드민 어뷰즈
+   ========================================================= */
+.buff.admin { color: #1d1503; background: linear-gradient(90deg, #ffd23a, #ff9a3c); border-color: #ffd23a; box-shadow: 0 0 12px rgba(255, 210, 58, 0.5); }
+#admin-banner {
+    position: fixed; left: 0; right: 0; top: 22%; z-index: 70;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px 16px;
+    pointer-events: none; text-align: center;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ac) 26%, rgba(0, 0, 0, 0.78)) 18%, color-mix(in srgb, var(--ac) 26%, rgba(0, 0, 0, 0.78)) 82%, transparent);
+    border-top: 2px solid var(--ac); border-bottom: 2px solid var(--ac);
+}
+#admin-banner.show { animation: bn-life 4.2s ease both; }
+.ab-crown { font-size: 38px; line-height: 1; filter: drop-shadow(0 0 14px var(--ac)); animation: bb-bob 1s ease-in-out infinite; }
+.ab-title { font-family: var(--display); font-size: 30px; color: var(--ac); text-shadow: 0 0 24px var(--ac); word-break: keep-all; max-width: 92vw; }
+.ab-sub { font-size: 13px; color: var(--text); word-break: keep-all; }
+.section.abuse { border: 1px solid rgba(255, 210, 58, 0.4); background: rgba(255, 210, 58, 0.05); padding: 12px; }
+.section.abuse .section-title small { color: var(--faint); font-size: 10px; }
+.admin-status { float: right; font-size: 10.5px; color: var(--red); }
+.admin-status.on { color: var(--mint); }
+.ab-row { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.ab-row > span { flex: none; width: 72px; font-size: 12px; }
+.ab-row select, .ab-row input { flex: 1 1 0; min-width: 0; padding: 7px 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line-2); color: var(--text); font-size: 12px; }
+.ab-row input[type=number] { flex: 0 0 52px; }
+.ab-row .btn { flex: none; margin: 0; }
