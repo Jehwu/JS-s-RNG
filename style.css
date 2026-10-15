@@ -32,7 +32,7 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; overflow-x: hidden; }   /* 옆으로 삐져나온 효과 때문에 폰이 화면을 줄였다 늘였다 하지 않게 */
 body {
     background:
         radial-gradient(ellipse 120% 70% at 50% 110%, #140b33 0%, transparent 60%),
@@ -173,6 +173,7 @@ input, select { font-family: inherit; -webkit-user-select: text; user-select: te
 #aura-display {
     position: absolute;
     left: 0; right: 0; top: 2px;
+    overflow-x: clip;
     z-index: 1;
     text-align: center;
     padding: 0 8px;
@@ -1056,12 +1057,13 @@ body.cine-on #nametag, body.cine-on #ambient { opacity: 0 !important; }
 #aura-display .result-pop {
     position: relative;
     display: inline-block;
+    max-width: calc(100% - 28px);
     padding: 14px 22px 12px;
     transition: transform 0.6s cubic-bezier(.2, .8, .2, 1), opacity 0.6s;
     transform-origin: 50% 0;
 }
 #aura-display .result-pop::before {
-    content: ''; position: absolute; inset: -6px -40px; z-index: -1;
+    content: ''; position: absolute; inset: -6px -14px; z-index: -1;
     background: radial-gradient(ellipse at 50% 50%, rgba(3, 2, 10, 0.88) 0%, rgba(3, 2, 10, 0.6) 45%, transparent 72%);
     animation: result-back 0.6s ease-out both;
 }
