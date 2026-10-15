@@ -7,50 +7,56 @@
 
 export const BIOMES = [
     {
-        id: 'windy', name: '바람', icon: '🍃', color: '#9ff5d8', chance: 8, duration: 120, luck: 1.5, boost: 3,
+        id: 'windy', name: '바람', icon: '🍃', color: '#9ff5d8', chance: 12, duration: 120, luck: 1.5, boost: 3,
         msg: '거센 바람이 분다', auras: ['leg_storm_gaeun', 'legend_speed', 'unc_running', 'rare_bike_tv', 'ep_falconer_byungeun']
     },
     {
-        id: 'snowy', name: '눈보라', icon: '❄️', color: '#bfe9ff', chance: 12, duration: 150, luck: 2, boost: 5,
+        id: 'snowy', name: '눈보라', icon: '❄️', color: '#bfe9ff', chance: 18, duration: 150, luck: 2, boost: 5,
         msg: '눈보라가 몰아친다', auras: ['ep_frozen_byungeun', 'anc_iceemperor_tv', 'myth_aurora_gaeun']
     },
     {
-        id: 'sandstorm', name: '모래폭풍', icon: '🏜️', color: '#ffc46b', chance: 16, duration: 150, luck: 2, boost: 5,
+        id: 'sandstorm', name: '모래폭풍', icon: '🏜️', color: '#ffc46b', chance: 24, duration: 150, luck: 2, boost: 5,
         msg: '모래폭풍이 시야를 덮는다', auras: ['leg_desert_tv', 'leg_golem_jisung', 'abs_sunking_gunwoo', 'myth_midas_gaeun']
     },
     {
-        id: 'storm', name: '뇌우', icon: '⛈️', color: '#8fb8ff', chance: 20, duration: 180, luck: 2.5, boost: 4,
+        id: 'storm', name: '뇌우', icon: '⛈️', color: '#8fb8ff', chance: 30, duration: 180, luck: 2.5, boost: 4,
         msg: '하늘이 갈라진다', auras: ['leg_storm_gaeun', 'myth_thunderbeast_minchae', 'abs_breaker_byungeun', 'js_lightning_jisung', 'myth_abyss_byungeun']
     },
     {
-        id: 'starfall', name: '유성우', icon: '🌠', color: '#d7b8ff', chance: 40, duration: 120, luck: 3, boost: 5,
+        id: 'starfall', name: '유성우', icon: '🌠', color: '#d7b8ff', chance: 60, duration: 120, luck: 3, boost: 5,
         msg: '별이 쏟아진다', auras: ['anc_nebula_jisung', 'myth_astro_jisung', 'myth_blackhole_byungeun', 'anc_extinct_minchae', 'gemini_basic']
     },
     {
-        id: 'bloodmoon', name: '핏빛 달', icon: '🌕', color: '#ff4a5a', chance: 80, duration: 180, luck: 5, boost: 6,
+        id: 'bloodmoon', name: '핏빛 달', icon: '🌕', color: '#ff4a5a', chance: 120, duration: 180, luck: 5, boost: 6,
         msg: '붉은 달이 떠올랐다', auras: ['abs_archdemon_tv', 'leg_necro_tv', 'jxs_darkestnight_minchae', 'jxs_felon', 'legend_gonjiam', 'ep_darkdragon_tv']
     },
     {
-        id: 'void', name: '공허', icon: '🕳️', color: '#c46bff', chance: 300, duration: 90, luck: 10, boost: 10,
+        id: 'void', name: '공허', icon: '🕳️', color: '#c46bff', chance: 450, duration: 90, luck: 10, boost: 10,
         msg: '세계가 무너진다', auras: ['js_void_king', 'abs_chaos_gaeun', 'ep_darkdragon_tv', 'jxs_sans_tv']
+    },
+    // 🎃 할로윈 이벤트 기간에만 옴 (event 가 켜져 있을 때)
+    {
+        id: 'halloween', event: 'halloween', name: '할로윈의 밤', icon: '🎃', color: '#ff8a1f', chance: 60, duration: 150, luck: 4, boost: 6,
+        msg: '호박등에 불이 켜졌다', auras: ['legend_gonjiam', 'leg_necro_tv', 'abs_archdemon_tv', 'ep_mushroom_tv', 'ep_shadow_jisung', 'jxs_sans_tv', 'jxs_darkestnight_minchae']
     }
 ];
 export const BIOME_BY_ID = Object.fromEntries(BIOMES.map(b => [b.id, b]));
 export const BIOME_CHECK_MS = 60000;
 
-// 이번 판정에서 올 바이옴 (없으면 null). mult: 확률 배율 (나침반 부적 등)
-export function rollBiome(mult = 1) {
-    for (let i = BIOMES.length - 1; i >= 0; i--) {
-        if (Math.random() < mult / BIOMES[i].chance) return BIOMES[i];
-    }
+// 이번 판정에서 올 바이옴 (없으면 null). mult: 확률 배율 (나침반 부적 등), events: 지금 열린 이벤트 이름들
+const usable = events => BIOMES.filter(b => !b.event || events.includes(b.event));
+export function rollBiome(mult = 1, events = []) {
+    const list = usable(events).sort((a, b) => b.chance - a.chance);   // 희귀한 것부터
+    for (const b of list) if (Math.random() < mult / b.chance) return b;
     return null;
 }
 // 바이옴 소환 물약: 흔한 바이옴일수록 잘 나옴
-export function randomBiome() {
-    const sum = BIOMES.reduce((s, b) => s + 1 / b.chance, 0);
+export function randomBiome(events = []) {
+    const list = usable(events);
+    const sum = list.reduce((s, b) => s + 1 / b.chance, 0);
     let r = Math.random() * sum;
-    for (const b of BIOMES) { r -= 1 / b.chance; if (r <= 0) return b; }
-    return BIOMES[0];
+    for (const b of list) { r -= 1 / b.chance; if (r <= 0) return b; }
+    return list[0];
 }
 
 /* ---------- 화면 효과 ---------- */
@@ -80,10 +86,15 @@ export function createBiomeFx(canvas) {
             case 'starfall': p.x = R(-W * 0.2, W * 1.1); p.y = init ? R(-H, H * 0.5) : R(-H * 0.6, -20); p.v = R(7, 14) * S; p.len = R(60, 160) * S; p.c = Math.random() < 0.5 ? '#ffffff' : '#d7b8ff'; break;
             case 'bloodmoon': p.y = init ? R(0, H) : H + 10; p.v = R(0.4, 1.3) * S; p.s = R(2, 4) * S; p.w = R(0, 6); break;
             case 'void': p.s = R(2, 7) * S; p.v = R(0.2, 0.9) * S; p.a = R(0, 6); break;
+            case 'halloween':
+                p.bat = Math.random() < 0.45; p.a = R(0, 6);
+                if (p.bat) { p.x = init ? R(0, W) : -30; p.y = R(H * 0.05, H * 0.6); p.v = R(1.5, 3.5) * S; p.s = R(8, 14) * S; }
+                else { p.y = init ? R(0, H) : H + 30; p.v = R(0.3, 0.8) * S; p.s = R(12, 22) * S; }
+                break;
         }
         return p;
     }
-    const COUNT = { windy: 46, snowy: 110, sandstorm: 150, storm: 120, starfall: 7, bloodmoon: 40, void: 60 };
+    const COUNT = { windy: 46, snowy: 110, sandstorm: 150, storm: 120, starfall: 7, bloodmoon: 40, void: 60, halloween: 22 };
 
     function makeBolt() {
         const pts = [];
@@ -110,6 +121,8 @@ export function createBiomeFx(canvas) {
                 g = ctx.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, H * 0.8); g.addColorStop(0, 'rgba(120,0,10,0.08)'); g.addColorStop(1, `rgba(150,0,20,${0.42 + Math.sin(t * 1.2) * 0.06})`); break;
             case 'void':
                 g = ctx.createRadialGradient(W / 2, H / 2, H * 0.1, W / 2, H / 2, H * 0.75); g.addColorStop(0, 'rgba(40,0,60,0.10)'); g.addColorStop(1, 'rgba(10,0,20,0.6)'); break;
+            case 'halloween':
+                g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(70,20,110,0.38)'); g.addColorStop(0.6, 'rgba(30,10,40,0.08)'); g.addColorStop(1, `rgba(255,110,20,${0.22 + Math.sin(t * 1.5) * 0.05})`); break;
         }
         ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     }
@@ -144,6 +157,23 @@ export function createBiomeFx(canvas) {
                 ctx.beginPath(); bolt.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
                 ctx.shadowBlur = 0;
             }
+        }
+
+        if (id === 'halloween') {
+            // 주황 보름달 + 지나가는 마녀 실루엣
+            const mx = W * 0.22, my = H * 0.14, ms = Math.min(W, H) * 0.14;
+            const glow = ctx.createRadialGradient(mx, my, ms * 0.3, mx, my, ms * 2.2);
+            glow.addColorStop(0, 'rgba(255,170,60,0.5)'); glow.addColorStop(1, 'rgba(255,120,0,0)');
+            ctx.fillStyle = glow; ctx.fillRect(mx - ms * 2.3, my - ms * 2.3, ms * 4.6, ms * 4.6);
+            ctx.fillStyle = '#ffb347'; ctx.fillRect(mx - ms / 2, my - ms / 2, ms, ms);
+            ctx.fillStyle = '#e8902a'; ctx.fillRect(mx - ms * 0.3, my - ms * 0.15, ms * 0.2, ms * 0.2); ctx.fillRect(mx + ms * 0.1, my + ms * 0.15, ms * 0.15, ms * 0.15);
+            const wx = ((t * 0.07) % 1.4 - 0.2) * W, wy = H * 0.12 + Math.sin(t * 2) * 8 * S, u = 5 * S;
+            ctx.fillStyle = '#120818';
+            ctx.fillRect(wx - u * 5, wy + u, u * 9, u * 0.8);                // 빗자루
+            ctx.fillRect(wx + u * 4, wy + u * 0.4, u * 2, u * 2);            // 솔
+            ctx.fillRect(wx - u, wy - u * 2, u * 2.4, u * 3);                // 몸
+            ctx.fillRect(wx - u * 1.6, wy - u * 2.4, u * 3.6, u * 0.7);      // 모자 챙
+            ctx.fillRect(wx - u * 0.6, wy - u * 4, u * 1.4, u * 1.8);        // 모자
         }
 
         // 입자
@@ -189,6 +219,29 @@ export function createBiomeFx(canvas) {
                     p.y -= p.v; p.x += Math.sin(t * 1.3 + p.w) * 0.5 * S;
                     ctx.fillStyle = `rgba(255,${60 + 40 * Math.sin(t * 3 + p.w)},60,0.75)`; ctx.fillRect(p.x, p.y, p.s, p.s);
                     if (p.y < -10) Object.assign(p, spawn(id, false));
+                    break;
+                case 'halloween':
+                    p.a += dt;
+                    if (p.bat) {
+                        p.x += p.v; p.y += Math.sin(p.a * 3) * 0.8 * S;
+                        const f = Math.sin(p.a * 14) > 0 ? 1 : 0.3, s2 = p.s;
+                        ctx.fillStyle = 'rgba(15,5,20,0.9)';
+                        ctx.fillRect(p.x - s2 * 0.2, p.y - s2 * 0.15, s2 * 0.4, s2 * 0.3);
+                        ctx.fillRect(p.x - s2 * 0.75, p.y - s2 * 0.3 * f, s2 * 0.55, s2 * 0.18);
+                        ctx.fillRect(p.x + s2 * 0.2, p.y - s2 * 0.3 * f, s2 * 0.55, s2 * 0.18);
+                        if (p.x > W + 40) Object.assign(p, spawn(id, false));
+                    } else {
+                        p.y -= p.v; p.x += Math.sin(p.a + p.s) * 0.4 * S;
+                        const s2 = p.s;
+                        ctx.globalAlpha = alpha * 0.75;
+                        ctx.fillStyle = '#ff7a1a'; ctx.fillRect(p.x - s2 / 2, p.y - s2 / 2, s2, s2 * 0.85);
+                        ctx.fillStyle = '#3a8c2a'; ctx.fillRect(p.x - s2 * 0.08, p.y - s2 * 0.7, s2 * 0.16, s2 * 0.22);
+                        ctx.fillStyle = `rgba(255,${220 + Math.sin(p.a * 9) * 30},90,1)`;
+                        ctx.fillRect(p.x - s2 * 0.3, p.y - s2 * 0.2, s2 * 0.18, s2 * 0.15); ctx.fillRect(p.x + s2 * 0.12, p.y - s2 * 0.2, s2 * 0.18, s2 * 0.15);
+                        ctx.fillRect(p.x - s2 * 0.25, p.y + s2 * 0.08, s2 * 0.5, s2 * 0.1);
+                        ctx.globalAlpha = alpha;
+                        if (p.y < -30) Object.assign(p, spawn(id, false));
+                    }
                     break;
                 case 'void':
                     p.a += dt; p.y -= p.v; p.x += Math.sin(p.a * 2) * 0.4 * S;

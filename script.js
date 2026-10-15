@@ -1,7 +1,7 @@
-import { AURA_DATA } from './auras.js?v=28';
-import { CRAFT_ITEMS } from './craftItems.js?v=28';
-import { createMusicPlayer, coverArt } from './music.js?v=28';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=28';
+import { AURA_DATA } from './auras.js?v=29';
+import { CRAFT_ITEMS } from './craftItems.js?v=29';
+import { createMusicPlayer, coverArt } from './music.js?v=29';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=29';
 
 /* =========================================================
    📦 게임 데이터
@@ -37,7 +37,11 @@ const SHOP_ITEMS = [
     { id: "dice_potion", gacha: true, name: "주사위 물약", type: "dice", faces: [1000, 5000, 20000, 50000, 120000, 300000], desc: "주사위를 굴려 ×1,000 ~ ×300,000 행운 (1회)", frame: "EPIC", color: "#ff3b5c", color2: "#ffffff" },
     { id: "star_potion", gacha: true, name: "별빛 물약", type: "luck", level: 4, value: 3, duration: 180, desc: "+300% 행운 (3분)", frame: "LEGEND", color: "#d7b8ff", color2: "#7ae8ff" },
     { id: "warp_potion", gacha: true, name: "시간 가속 물약", type: "speed", level: 4, value: 1, duration: 120, desc: "+100% 속도 (2분)", frame: "LEGEND", color: "#7ae8ff", color2: "#4da3ff" },
-    { id: "biome_potion", gacha: true, name: "바이옴 소환 물약", type: "biome", desc: "지금 바로 랜덤 바이옴을 불러옵니다", frame: "MYTHIC", color: "#8fb8ff", color2: "#ff4a5a" }
+    { id: "biome_potion", gacha: true, name: "바이옴 소환 물약", type: "biome", desc: "지금 바로 랜덤 바이옴을 불러옵니다", frame: "MYTHIC", color: "#8fb8ff", color2: "#ff4a5a" },
+    // 🎃 할로윈 한정 뽑기 전용
+    { id: "candy_potion", gacha: "halloween", name: "사탕 물약", type: "luck", level: 5, value: 5, duration: 120, desc: "+500% 행운 (2분)", frame: "EPIC", color: "#ff3b7a", color2: "#ffe14d" },
+    { id: "pumpkin_potion", gacha: "halloween", name: "호박 물약", type: "luck_mult", value: 10000, maxUses: 2, desc: "×10,000 행운 (2회)", frame: "LEGEND", color: "#ff7a1a", color2: "#3a8c2a" },
+    { id: "ghost_potion", gacha: "halloween", name: "유령 물약", type: "biome", biome: "halloween", desc: "할로윈의 밤 바이옴을 바로 불러옵니다", frame: "MYTHIC", color: "#c8b8ff", color2: "#5a2a8a" }
 ];
 
 /* 🎰 상점 뽑기 (JC로 굴림). w = 가중치 */
@@ -60,10 +64,38 @@ const GACHA_POOL = [
     { kind: 'gear', id: 'gacha_cat', w: 1, tier: 'ANCIENT', dupe: 800000 },
     { kind: 'gear', id: 'gacha_comet', w: 0.5, tier: 'ABSOLUTE', dupe: 1500000 }
 ];
-const GACHA_TOTAL_W = GACHA_POOL.reduce((s, e) => s + e.w, 0);
-const GACHA_GEAR_W = GACHA_POOL.filter(e => e.kind === 'gear').reduce((s, e) => s + e.w, 0);
+
+/* 🎃 할로윈 한정 뽑기 (이 날짜까지) */
+const HALLOWEEN_END = new Date('2026-11-03T00:00:00+09:00').getTime();
+const isHalloween = () => Date.now() < HALLOWEEN_END;
+const activeEvents = () => isHalloween() ? ['halloween'] : [];
+const HW_POOL = [
+    // 한 번(3만 5천 JC)에 평균 2만 8천 JC어치 정도. 한정 장비가 목적
+    { kind: 'jc', min: 5000, max: 35000, w: 330, tier: 'COMMON', label: 'JC 사탕 주머니' },
+    { kind: 'items', items: { luck_3: 2, speed_3: 2 }, w: 230, tier: 'UNCOMMON', label: '물약 꾸러미' },
+    { kind: 'items', items: { candy_potion: 1 }, w: 90, tier: 'RARE' },
+    { kind: 'items', items: { limit_potion: 1 }, w: 80, tier: 'RARE' },
+    { kind: 'items', items: { ghost_potion: 1 }, w: 70, tier: 'EPIC' },
+    { kind: 'items', items: { pumpkin_potion: 1 }, w: 50, tier: 'EPIC' },
+    { kind: 'items', items: { overcome_potion: 1 }, w: 14, tier: 'LEGEND' },
+    { kind: 'gear', id: 'hw_pumpkin', w: 9, tier: 'LEGEND', dupe: 100000 },
+    { kind: 'gear', id: 'hw_ghost', w: 7, tier: 'MYTHIC', dupe: 120000 },
+    { kind: 'gear', id: 'hw_candy', w: 2.5, tier: 'MYTHIC', dupe: 250000 },
+    { kind: 'items', items: { heaven_potion: 1 }, w: 2, tier: 'MYTHIC' },
+    { kind: 'gear', id: 'hw_skull', w: 3, tier: 'ANCIENT', dupe: 400000 }
+];
+// 뽑기 종류 (상점 탭 이름 = 키)
+const BANNERS = {
+    gacha: { title: 'JS LUCKY BOX', pool: GACHA_POOL, cost: GACHA_COST, cost10: GACHA_COST10, pity: GACHA_PITY, pityKey: 'gachaPity', potionTag: true, label: '뽑기 전용' },
+    halloween: { title: 'HALLOWEEN NIGHT', pool: HW_POOL, cost: 35000, cost10: 315000, pity: 100, pityKey: 'hwPity', potionTag: 'halloween', label: '할로윈 한정', end: HALLOWEEN_END }
+};
+for (const b of Object.values(BANNERS)) {
+    b.total = b.pool.reduce((s, e) => s + e.w, 0);
+    b.gearW = b.pool.filter(e => e.kind === 'gear').reduce((s, e) => s + e.w, 0);
+}
+const bannerOfGear = id => Object.entries(BANNERS).find(([, b]) => b.pool.some(e => e.id === id));
 // 확률 글자: 1% 밑이면 소수 둘째 자리까지
-const gachaPct = (w, total = GACHA_TOTAL_W) => { const p = w / total * 100; return p.toFixed(p < 1 ? 2 : 1) + '%'; };
+const gachaPct = (w, total) => { const p = w / total * 100; return p.toFixed(p < 1 ? 2 : 1) + '%'; };
 
 const QUEST_DATA = [
     {
@@ -553,6 +585,8 @@ async function finishRoll() {
     music.unduck();
 
     let soldHtml = "";
+    const jcBonus = CRAFT_BY_ID[gameState.amulet]?.jcBonus;
+    if (jcBonus) gameState.jc += Math.max(1, Math.floor(rolled.jcValue * jcBonus));
     if (gameState.autoDelete[rolled.grade]) {
         gameState.jc += rolled.jcValue;
         soldHtml = `<div class="result-sold">자동 판매 +${fmt(rolled.jcValue)} JC</div>`;
@@ -890,7 +924,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=28').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=29').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -927,12 +961,15 @@ function renderCraft() {
         if (AMULET_MULT[gear.id]) chips.push(`<span class="chip amulet">10롤마다 행운 ×${AMULET_MULT[gear.id]}</span>`);
         if (gear.amuletMult) chips.push(`<span class="chip amulet">${gear.amuletEvery || 10}롤마다 행운 ×${gear.amuletMult}</span>`);
         if (gear.biomeBoost) chips.push(`<span class="chip biome">바이옴 ×${gear.biomeBoost} · 지속 ×${gear.biomeTime}</span>`);
-        if (gear.gacha) chips.push(`<span class="chip gacha">뽑기 전용</span>`);
+        if (gear.gacha) chips.push(`<span class="chip gacha">${gear.gacha === 'halloween' ? '🎃 할로윈 한정' : '뽑기 전용'}</span>`);
+        if (gear.jcBonus) chips.push(`<span class="chip amulet">롤마다 판매가 ${Math.round(gear.jcBonus * 100)}% JC</span>`);
         const state = equipped ? '<span class="cstate on">장착 중</span>' : owned ? '<span class="cstate owned">보유</span>' : gear.gacha ? '<span class="cstate">미보유</span>' : `<span class="cstate">${metN}/${reqN}</span>`;
         const btn = owned
             ? `<button class="btn btn-block" data-gotobag="${gear.category}">가방에서 ${equipped ? '해제' : '장착'}</button>`
             : gear.gacha
-                    ? `<button class="btn btn-block" data-gotogacha="1">상점 뽑기에서 얻기</button>`
+                    ? (gear.gacha === 'halloween' && !isHalloween()
+                        ? `<button class="btn btn-block" disabled>할로윈 이벤트 종료</button>`
+                        : `<button class="btn btn-block" data-gotogacha="${gear.gacha === 'halloween' ? 'halloween' : 'gacha'}">${gear.gacha === 'halloween' ? '할로윈 뽑기에서 얻기' : '상점 뽑기에서 얻기'}</button>`)
                     : `<button class="btn btn-block btn-gold" data-craft="${gear.id}" ${canCraft ? '' : 'disabled'}>${canCraft ? '제작하기' : '재료 부족'}</button>`;
         return `
         <div class="craft-card ${equipped ? 'equipped' : ''} ${owned ? 'owned' : ''}">
@@ -952,7 +989,7 @@ function renderCraft() {
 }
 
 function renderShop() {
-    if (shopTab === 'gacha') renderGacha();
+    if (BANNERS[shopTab]) renderGacha();
     ui.shopGrid.classList.add('row-list');
     ui.shopGrid.innerHTML = SHOP_ITEMS.filter(item => !item.gacha).map(item => {
         const have = gameState.itemInventory[item.id] || 0;
@@ -1109,7 +1146,7 @@ function stagger(el) {
 const SHEET_LIST = {
     'sheet-bag': () => [ui.inventoryGrid, ui.potionGrid, $('gear-grid')],
     'sheet-craft': () => [ui.craftGrid],
-    'sheet-shop': () => [shopTab === 'gacha' ? $('gacha-panel') : ui.shopGrid],
+    'sheet-shop': () => [BANNERS[shopTab] ? $('gacha-panel') : ui.shopGrid],
     'sheet-quest': () => [ui.questList],
     'sheet-index': () => [ui.indexGrid.querySelector('.index-grid')],
     'sheet-settings': () => [$('sheet-settings').querySelector('.sheet-body')]
@@ -1167,49 +1204,66 @@ function setBagTab(tab) {
 bindTabs('bag-tabs', tab => setBagTab(tab));
 
 // 가방: 가진 건틀렛/부적 장착·해제
+// 위에 '지금 장착 중' 슬롯 하나, 아래에 나머지를 한 줄씩 (줄을 누르면 바로 장착)
+function gearEffectHtml(gear) {
+    const parts = [];
+    if (gear.luckBonus) parts.push(`<b class="ef-luck">행운 +${fmt(Math.round(gear.luckBonus * 100))}%</b>`);
+    if (gear.speedBonus) parts.push(`<b class="ef-speed">속도 +${Math.round(gear.speedBonus * 100)}%</b>`);
+    if (AMULET_MULT[gear.id]) parts.push(`<b class="ef-amu">10롤마다 ×${AMULET_MULT[gear.id]}</b>`);
+    if (gear.amuletMult) parts.push(`<b class="ef-amu">${gear.amuletEvery || 10}롤마다 ×${gear.amuletMult}</b>`);
+    if (gear.biomeBoost) parts.push(`<b class="ef-biome">바이옴 ×${gear.biomeBoost} · 지속 ×${gear.biomeTime}</b>`);
+    if (gear.jcBonus) parts.push(`<b class="ef-amu">롤마다 판매가 ${Math.round(gear.jcBonus * 100)}% JC</b>`);
+    return parts.join('');
+}
+function gearPower(g) { return (g.luckBonus || 0) * 10 + (g.speedBonus || 0) + (g.amuletMult || AMULET_MULT[g.id] || 0) * 10 / (g.amuletEvery || 10) + (g.biomeBoost || 0) + (g.jcBonus || 0); }
 function renderBagGear() {
     const el = $('gear-grid');
     const cat = bagTab === 'amulet' ? 'amulet' : 'gauntlet';
-    const items = CRAFT_ITEMS.filter(g => (g.category || 'gauntlet') === cat && gameState.craftedGears.includes(g.id));
-    el.classList.add('list');
-    if (!items.length) {
-        el.innerHTML = `<div class="empty">${cat === 'amulet' ? '부적' : '건틀렛'}이 없습니다.<br>제작하거나 상점 뽑기에서 얻을 수 있어요.</div>`;
+    const word = cat === 'amulet' ? '부적' : '건틀렛';
+    const owned = CRAFT_ITEMS.filter(g => (g.category || 'gauntlet') === cat && gameState.craftedGears.includes(g.id)).sort((a, b) => gearPower(b) - gearPower(a));
+    el.classList.remove('list');
+    if (!owned.length) {
+        el.innerHTML = `<div class="empty">${word}이 없습니다.<br>제작하거나 상점 뽑기에서 얻을 수 있어요.</div>`;
         return;
     }
-    el.innerHTML = items.map(gear => {
-        const on = cat === 'amulet' ? gameState.amulet === gear.id : gameState.gear === gear.id;
-        const chips = [];
-        if (gear.luckBonus) chips.push(`<span class="chip luck">행운 +${Math.round(gear.luckBonus * 100)}%</span>`);
-        if (gear.speedBonus) chips.push(`<span class="chip speed">속도 +${Math.round(gear.speedBonus * 100)}%</span>`);
-        if (AMULET_MULT[gear.id]) chips.push(`<span class="chip amulet">10롤마다 행운 ×${AMULET_MULT[gear.id]}</span>`);
-        if (gear.amuletMult) chips.push(`<span class="chip amulet">${gear.amuletEvery || 10}롤마다 행운 ×${gear.amuletMult}</span>`);
-        if (gear.biomeBoost) chips.push(`<span class="chip biome">바이옴 ×${gear.biomeBoost} · 지속 ×${gear.biomeTime}</span>`);
-        return `
-        <div class="craft-card owned ${on ? 'equipped' : ''}">
-            <div class="craft-top">
-                <div class="craft-view"><canvas data-gear="${gear.id}" aria-hidden="true"></canvas>${on ? '<span class="cstate on">장착 중</span>' : ''}</div>
-                <div class="craft-info">
-                    <div class="craft-name">${gear.name}</div>
-                    <div class="chips">${chips.join('')}</div>
-                    <div class="craft-desc">${cat === 'amulet' ? '왼팔에 매다는 부적' : '오른팔에 끼는 건틀렛'}</div>
+    const onId = cat === 'amulet' ? gameState.amulet : gameState.gear;
+    const on = CRAFT_BY_ID[onId];
+    const rest = owned.filter(g => g.id !== onId);
+    el.innerHTML = `
+        <div class="bg-slot ${on ? '' : 'empty-slot'}">
+            <div class="bg-label">장착 중인 ${word}</div>
+            ${on ? `
+            <div class="bg-slot-card">
+                <div class="bg-slot-view"><canvas data-gear="${on.id}" aria-hidden="true"></canvas></div>
+                <div class="bg-slot-info">
+                    <div class="bg-name">${on.name}</div>
+                    <div class="bg-eff">${gearEffectHtml(on)}</div>
+                    <button class="btn btn-sm bg-off" data-unequip="${on.id}">해제</button>
                 </div>
-            </div>
-            ${on ? `<button class="btn btn-block" data-unequip="${gear.id}">해제</button>` : `<button class="btn btn-block btn-primary" data-equip="${gear.id}">장착</button>`}
-        </div>`;
-    }).join('');
+            </div>` : `<div class="bg-slot-none">비어 있어요 · 아래에서 눌러서 장착</div>`}
+        </div>
+        ${rest.length ? `<div class="bg-label">가지고 있는 ${word} <span>${rest.length}</span></div>
+        <div class="bg-list">${rest.map(g => `
+            <button type="button" class="bg-row" data-equip="${g.id}">
+                <div class="bg-row-view"><canvas data-gear="${g.id}" aria-hidden="true"></canvas></div>
+                <div class="bg-row-info"><div class="bg-name">${g.name}</div><div class="bg-eff">${gearEffectHtml(g)}</div></div>
+                <span class="bg-row-go">장착</span>
+            </button>`).join('')}</div>` : ''}`;
     attachGearPreviews(el);
 }
 $('gear-grid').addEventListener('click', e => {
-    const d = e.target.dataset;
-    if (d.equip) equip(CRAFT_BY_ID[d.equip]);
-    else if (d.unequip) {
-        if (CRAFT_BY_ID[d.unequip].category === "amulet") { gameState.amulet = null; gameState.amuletStack = 0; }
+    const eq = e.target.closest('[data-equip]'), un = e.target.closest('[data-unequip]');
+    if (eq) { equip(CRAFT_BY_ID[eq.dataset.equip]); toast(`${CRAFT_BY_ID[eq.dataset.equip].name} 장착`, 'good'); }
+    else if (un) {
+        if (CRAFT_BY_ID[un.dataset.unequip].category === "amulet") { gameState.amulet = null; gameState.amuletStack = 0; }
         else gameState.gear = null;
     } else return;
     saveGame(); renderStats(); renderBuffs(); renderBagGear(); applyGear();
+    stagger($('gear-grid'));
 });
 bindTabs('craft-tabs', tab => { craftTab = tab; renderCraft(); stagger(ui.craftGrid); });
 bindTabs('shop-tabs', tab => setShopTab(tab));
+$('shop-tabs').querySelector('[data-tab="halloween"]').classList.toggle('hidden', !isHalloween());
 
 /* =========================================================
    🎮 동작
@@ -1385,7 +1439,7 @@ ui.potionGrid.addEventListener('click', e => {
                 toast(`🎲 ${got.map(v => '×' + fmt(v)).join(', ')}`, 'gold');
                 return;
             } else if (item.type === 'biome') {
-                startBiome(randomBiome());
+                startBiome(item.biome ? BIOME_BY_ID[item.biome] : randomBiome(activeEvents()));
             }
             saveGame(); renderStats(); renderBuffs(); renderPotions();
             toast(`${item.name} ${n}개 사용`, 'good');
@@ -1411,7 +1465,7 @@ ui.craftGrid.addEventListener('click', e => {
         closeSheet('sheet-craft'); openSheet('sheet-bag'); setBagTab(d.gotobag);
         return;
     } else if (d.gotogacha) {
-        closeSheet('sheet-craft'); openSheet('sheet-shop'); setShopTab('gacha');
+        closeSheet('sheet-craft'); openSheet('sheet-shop'); setShopTab(d.gotogacha);
         return;
     } else if (d.equip) {
         equip(CRAFT_BY_ID[d.equip]);
@@ -1564,8 +1618,8 @@ function setShopTab(tab) {
     shopTab = tab;
     $('shop-tabs').querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     ui.shopGrid.classList.toggle('hidden', tab !== 'potion');
-    $('gacha-panel').classList.toggle('hidden', tab !== 'gacha');
-    if (tab === 'gacha') { renderGacha(); stagger($('gacha-panel')); }
+    $('gacha-panel').classList.toggle('hidden', !BANNERS[tab]);
+    if (BANNERS[tab]) { renderGacha(); stagger($('gacha-panel')); }
     else { gearPreviews?.stop(); renderShop(); stagger(ui.shopGrid); }
 }
 
@@ -1576,60 +1630,73 @@ function gachaEntryName(e) {
     return `${SHOP_BY_ID[id].name}${n > 1 ? ` ×${n}` : ''}`;
 }
 
+let pityHelpOpen = false;
 function renderGacha() {
     const el = $('gacha-panel');
-    const pity = gameState.gachaPity || 0;
-    const gears = GACHA_POOL.filter(e => e.kind === 'gear');
+    const B = BANNERS[shopTab] || BANNERS.gacha;
+    const hw = B === BANNERS.halloween;
+    const pity = gameState[B.pityKey] || 0;
+    const gears = B.pool.filter(e => e.kind === 'gear');
+    el.classList.toggle('hw', hw);
+    const capCols = hw ? ['#ff7a1a', '#7a2aff', '#3ddc6a', '#ff7a1a', '#1a0f22', '#c8b8ff', '#ff7a1a'] : TIER_ORDER.map(t => TIER_COL[t]);
     const caps = Array.from({ length: 14 }, (_, i) => {
-        const t = TIER_ORDER[[0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 2, 1, 6][i]];
-        return `<i class="cap" style="--c:${TIER_COL[t]};--x:${(i * 37) % 86 + 4}%;--y:${(i * 53) % 60 + 30}%;--d:${(i * 0.37) % 2}s"></i>`;
+        const c = capCols[[0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 2, 1, 6][i]];
+        return `<i class="cap" style="--c:${c};--x:${(i * 37) % 86 + 4}%;--y:${(i * 53) % 60 + 30}%;--d:${(i * 0.37) % 2}s"></i>`;
     }).join('');
+    const ended = B.end && Date.now() >= B.end;
+    let timeLeft = '';
+    if (B.end && !ended) {
+        const ms = B.end - Date.now(), d = Math.floor(ms / 86400000), h = Math.floor(ms / 3600000) % 24;
+        timeLeft = `<div class="gevent">🎃 한정 판매 · 종료까지 <b>${d ? `${d}일 ` : ''}${h}시간</b> <small>(11월 2일까지)</small></div>`;
+    }
     el.innerHTML = `
         <div class="gm">
-            <div class="gm-head"><span>JS LUCKY BOX</span><span class="gm-lamp"></span></div>
+            <div class="gm-head"><span>${B.title}</span><span class="gm-lamp"></span></div>
+            ${hw ? '<div class="gm-hw-deco" aria-hidden="true"><i class="pk"></i><i class="bat b1"></i><i class="bat b2"></i></div>' : ''}
             <div class="gm-window">${caps}</div>
             <div class="gm-foot"><div class="gm-slot"></div><div class="gm-knob"></div></div>
         </div>
-        <div class="gpity">
-            <div class="gpity-top"><span>장비 천장</span><span><b>${pity}</b> / ${GACHA_PITY}</span></div>
-            <div class="gpity-bar"><div style="width:${pity / GACHA_PITY * 100}%"></div></div>
-            <div class="gpity-note">${GACHA_PITY}번 안에 장비가 안 나오면 ${GACHA_PITY}번째에 아래 확률로 장비 하나가 확정으로 나와요</div>
-            <div class="gpity-odds">${gears.map(e => `<span style="--c:${TIER_COL[e.tier]}"><i></i>${CRAFT_BY_ID[e.id].name.replace(/ (건틀렛|부적)$/, '')}<b>${gachaPct(e.w, GACHA_GEAR_W)}</b></span>`).join('')}</div>
+        ${timeLeft}
+        <div class="gpity ${pityHelpOpen ? 'open' : ''}">
+            <div class="gpity-top"><span>장비 천장 <button class="gpity-help" data-pityhelp aria-label="천장 확률 보기">?</button></span><span><b>${pity}</b> / ${B.pity}</span></div>
+            <div class="gpity-bar"><div style="width:${pity / B.pity * 100}%"></div></div>
+            <div class="gpity-note">${B.pity}번 안에 장비가 안 나오면 ${B.pity}번째에 장비 하나가 확정으로 나와요</div>
+            <div class="gpity-odds">${gears.map(e => `<span style="--c:${TIER_COL[e.tier]}"><i></i>${CRAFT_BY_ID[e.id].name.replace(/ (건틀렛|부적)$/, '')}<b>${gachaPct(e.w, B.gearW)}</b></span>`).join('')}</div>
         </div>
         <div class="gbtns">
-            <button class="gbtn" data-pull="1" ${gameState.jc < GACHA_COST ? 'disabled' : ''}><span>1회 뽑기</span><b>${fmt(GACHA_COST)} JC</b></button>
-            <button class="gbtn gbtn-10" data-pull="10" ${gameState.jc < GACHA_COST10 ? 'disabled' : ''}><span>10회 뽑기</span><b>${fmt(GACHA_COST10)} JC</b><em>10% 할인</em></button>
+            <button class="gbtn" data-pull="1" ${ended || gameState.jc < B.cost ? 'disabled' : ''}><span>1회 뽑기</span><b>${fmt(B.cost)} JC</b></button>
+            <button class="gbtn gbtn-10" data-pull="10" ${ended || gameState.jc < B.cost10 ? 'disabled' : ''}><span>10회 뽑기</span><b>${fmt(B.cost10)} JC</b><em>10% 할인</em></button>
         </div>
-        <div class="glabel">뽑기 전용 장비</div>
+        <div class="glabel">${B.label} 장비</div>
         <div class="ggears">${gears.map(e => {
             const g = CRAFT_BY_ID[e.id], own = gameState.craftedGears.includes(e.id);
             return `<div class="ggear ${own ? 'own' : ''}" style="--c:${TIER_COL[e.tier]}" data-ggear="${e.id}" role="button">
                 <div class="ggear-view"><canvas data-gear="${e.id}" aria-hidden="true"></canvas>${own ? '<span class="ggear-own">보유</span>' : ''}</div>
                 <div class="ggear-name">${g.name}</div>
-                <div class="ggear-tier">${e.tier} · ${gachaPct(e.w)}</div>
+                <div class="ggear-tier">${e.tier} · ${gachaPct(e.w, B.total)}</div>
             </div>`;
         }).join('')}</div>
-        <div class="glabel">뽑기 전용 물약</div>
-        <div class="row-list">${SHOP_ITEMS.filter(i => i.gacha).map(item => `
+        <div class="glabel">${B.label} 물약</div>
+        <div class="row-list">${SHOP_ITEMS.filter(i => i.gacha === B.potionTag).map(item => `
             <div ${frameAttrs(item.frame, [item.color, item.color2 || item.color, item.color], item.unique).replace('class="', 'class="row ')}>${frameDeco(item.frame, item.unique)}
                 ${vialHtml(item)}
                 <div class="row-main"><div class="row-name">${item.name}</div><div class="row-desc">${item.desc}</div></div>
                 <div class="row-side"><div class="row-have">${gameState.itemInventory[item.id] ? '×' + fmt(gameState.itemInventory[item.id]) : ''}</div></div>
             </div>`).join('')}</div>
-        <details class="godds"><summary>전체 확률 보기</summary>${GACHA_POOL.slice().sort((a, b) => b.w - a.w).map(e => `
-            <div class="godd"><i style="background:${TIER_COL[e.tier]}"></i><span>${gachaEntryName(e)}${e.kind === 'jc' ? ` (${fmt(e.min)}~${fmt(e.max)})` : ''}</span><b>${gachaPct(e.w)}</b></div>`).join('')}
+        <details class="godds"><summary>전체 확률 보기</summary>${B.pool.slice().sort((a, b) => b.w - a.w).map(e => `
+            <div class="godd"><i style="background:${TIER_COL[e.tier]}"></i><span>${gachaEntryName(e)}${e.kind === 'jc' ? ` (${fmt(e.min)}~${fmt(e.max)})` : ''}</span><b>${gachaPct(e.w, B.total)}</b></div>`).join('')}
             <div class="godd-note">이미 가진 장비가 또 나오면 JC로 바꿔 줘요</div>
         </details>`;
     attachGearPreviews(el.querySelector('.ggears'));
 }
 
-function gachaPick() {
-    gameState.gachaPity = (gameState.gachaPity || 0) + 1;
-    const pool = gameState.gachaPity >= GACHA_PITY ? GACHA_POOL.filter(e => e.kind === 'gear') : GACHA_POOL;
+function gachaPick(B) {
+    gameState[B.pityKey] = (gameState[B.pityKey] || 0) + 1;
+    const pool = gameState[B.pityKey] >= B.pity ? B.pool.filter(e => e.kind === 'gear') : B.pool;
     let r = Math.random() * pool.reduce((s, e) => s + e.w, 0);
     let pick = pool[pool.length - 1];
     for (const e of pool) { r -= e.w; if (r <= 0) { pick = e; break; } }
-    if (pick.kind === 'gear') gameState.gachaPity = 0;
+    if (pick.kind === 'gear') gameState[B.pityKey] = 0;
     return pick;
 }
 
@@ -1662,10 +1729,13 @@ function gachaGrant(e) {
 }
 
 function pullGacha(n) {
-    const cost = n === 10 ? GACHA_COST10 : GACHA_COST * n;
+    const B = BANNERS[shopTab];
+    if (!B) return;
+    if (B.end && Date.now() >= B.end) { toast('이벤트가 끝났어요', 'bad'); renderGacha(); return; }
+    const cost = n === 10 ? B.cost10 : B.cost * n;
     if (gameState.jc < cost) { toast('JC가 부족해요', 'bad'); return; }
     gameState.jc -= cost;
-    const results = Array.from({ length: n }, () => gachaGrant(gachaPick()));
+    const results = Array.from({ length: n }, () => gachaGrant(gachaPick(B)));
     trackQuestProgress("shopPurchases", n);
     saveGame(); renderStats();
     showGachaResult(results);
@@ -1715,18 +1785,25 @@ $('gacha-panel').addEventListener('click', e => {
     if (b) pullGacha(+b.dataset.pull);
     const g = e.target.closest('[data-ggear]');
     if (g) openGearDetail(g.dataset.ggear);
+    if (e.target.closest('[data-pityhelp]')) {
+        pityHelpOpen = !pityHelpOpen;
+        e.target.closest('.gpity').classList.toggle('open', pityHelpOpen);
+    }
 });
 
 // 뽑기 장비를 누르면 크게 보여 줌 (3D + 효과 + 확률)
 function openGearDetail(id) {
-    const gear = CRAFT_BY_ID[id], e = GACHA_POOL.find(x => x.id === id);
-    if (!gear || !e) return;
+    const found = bannerOfGear(id);
+    const gear = CRAFT_BY_ID[id];
+    if (!gear || !found) return;
+    const B = found[1], e = B.pool.find(x => x.id === id);
     const own = gameState.craftedGears.includes(id);
     const chips = [];
     if (gear.luckBonus) chips.push(`<span class="chip luck">행운 +${Math.round(gear.luckBonus * 100)}%</span>`);
     if (gear.speedBonus) chips.push(`<span class="chip speed">속도 +${Math.round(gear.speedBonus * 100)}%</span>`);
     if (gear.amuletMult) chips.push(`<span class="chip amulet">${gear.amuletEvery || 10}롤마다 행운 ×${gear.amuletMult}</span>`);
     if (gear.biomeBoost) chips.push(`<span class="chip biome">바이옴 ×${gear.biomeBoost} · 지속 ×${gear.biomeTime}</span>`);
+    if (gear.jcBonus) chips.push(`<span class="chip amulet">롤마다 판매가 ${Math.round(gear.jcBonus * 100)}% JC</span>`);
     const box = $('gear-detail');
     box.style.setProperty('--c', TIER_COL[e.tier]);
     box.querySelector('.gd-card').innerHTML = `
@@ -1737,8 +1814,8 @@ function openGearDetail(id) {
         <div class="chips gd-chips">${chips.join('')}</div>
         <div class="gd-desc">${gear.desc}<br><span>${gear.category === 'amulet' ? '왼팔에 매다는 부적' : '오른팔에 끼는 건틀렛'}</span></div>
         <div class="gd-odds">
-            <div><span>뽑기 1회</span><b>${gachaPct(e.w)}</b></div>
-            <div><span>천장 때</span><b>${gachaPct(e.w, GACHA_GEAR_W)}</b></div>
+            <div><span>뽑기 1회</span><b>${gachaPct(e.w, B.total)}</b></div>
+            <div><span>천장 때</span><b>${gachaPct(e.w, B.gearW)}</b></div>
             <div><span>중복이면</span><b>+${fmt(e.dupe)} JC</b></div>
         </div>
         <div class="gd-own ${own ? 'on' : ''}">${own ? '보유 중 · 가방에서 장착' : '아직 없음'}</div>`;
@@ -1810,7 +1887,7 @@ function biomeTick() {
     }
     if (Date.now() < nextBiomeCheck) return;
     nextBiomeCheck = Date.now() + BIOME_CHECK_MS;
-    const b = rollBiome(CRAFT_BY_ID[gameState.amulet]?.biomeBoost || 1);
+    const b = rollBiome(CRAFT_BY_ID[gameState.amulet]?.biomeBoost || 1, activeEvents());
     if (b) startBiome(b);
 }
 $('biome-badge').addEventListener('click', () => {
@@ -1926,7 +2003,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=28')
+import('./aura3d.js?v=29')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

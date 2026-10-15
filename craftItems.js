@@ -111,5 +111,31 @@ export const CRAFT_ITEMS = [
         name: "황금 고양이 부적",
         desc: "롤을 10회 돌리면 다음 1회 롤에 행운이 10배로 증가합니다.",
         luckBonus: 0, speedBonus: 0, amuletMult: 10, amuletEvery: 10, req: {}
+    },
+
+    // 🎃 할로윈 한정 뽑기 전용
+    {
+        id: "hw_pumpkin", category: "gauntlet", gacha: "halloween",
+        name: "잭오랜턴 건틀렛",
+        desc: "영구적으로 행운 250%, 속도 15%가 증가합니다.",
+        luckBonus: 2.5, speedBonus: 0.15, req: {}
+    },
+    {
+        id: "hw_skull", category: "gauntlet", gacha: "halloween",
+        name: "해골왕 건틀렛",
+        desc: "영구적으로 행운 600%, 속도 5%가 증가합니다.",
+        luckBonus: 6, speedBonus: 0.05, req: {}
+    },
+    {
+        id: "hw_ghost", category: "amulet", gacha: "halloween",
+        name: "꼬마 유령 부적",
+        desc: "롤을 8회 돌리면 다음 1회 롤에 행운이 4배로 증가합니다.",
+        luckBonus: 0, speedBonus: 0, amuletMult: 4, amuletEvery: 8, req: {}
+    },
+    {
+        id: "hw_candy", category: "amulet", gacha: "halloween",
+        name: "사탕 바구니 부적",
+        desc: "롤마다 뽑은 칭호 판매가의 50%만큼 JC를 더 받습니다.",
+        luckBonus: 0, speedBonus: 0, jcBonus: 0.5, req: {}
     }
 ];

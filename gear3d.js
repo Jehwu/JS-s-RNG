@@ -365,6 +365,92 @@ const GAUNTLETS = {
             halo.material.opacity = 0.25 + Math.sin(t * 3) * 0.12;
             starM.opacity = 0.6 + Math.sin(t * 5) * 0.4;
         });
+    },
+    // 🎃 잭오랜턴: 골진 주황 호박 껍데기 + 손등에 촛불처럼 일렁이는 얼굴 + 덩굴 + 팔을 도는 박쥐
+    hw_pumpkin(g, up, side) {
+        const orange = std('#ff7a1a', { rough: 0.6, emissive: '#7a2a00', ei: 0.25 });
+        const dark = std('#d45a0a', { rough: 0.7 });
+        const vine = std('#2f7a2a', { rough: 0.8 });
+        shell(g, orange, { top: -0.85, grow: 0.16 });
+        // 세로 골
+        for (const x of [-0.36, 0, 0.36]) { box(g, dark, 0.07, 1.1, 0.04, x, -1.4, 0.59); box(g, dark, 0.07, 1.1, 0.04, x, -1.4, -0.59); }
+        for (const z of [-0.36, 0, 0.36]) { box(g, dark, 0.04, 1.1, 0.07, 0.59, -1.4, z); box(g, dark, 0.04, 1.1, 0.07, -0.59, -1.4, z); }
+        // 덩굴 감기 + 꼭지
+        box(g, vine, 1.2, 0.1, 1.2, 0, -0.86, 0);
+        for (let i = 0; i < 4; i++) box(g, vine, 0.1, 0.1, 0.24, side * 0.62, -1.0 - i * 0.12, -0.2 + (i % 2) * 0.3, 0, 0.4, 0);
+        const leaf = std('#3ddc6a', { rough: 0.6 });
+        box(g, leaf, 0.22, 0.04, 0.16, side * 0.7, -0.92, 0.2, 0, 0, side * 0.5);
+        // 얼굴 (빛나는 구멍)
+        const fire = std('#ffd23a', { emissive: '#ffb000', ei: 2 });
+        const face = new THREE.Group(); face.position.set(0, -1.38, 0.6);
+        box(face, fire, 0.16, 0.16, 0.03, -0.18, 0.14, 0, 0, 0, Math.PI / 4);
+        box(face, fire, 0.16, 0.16, 0.03, 0.18, 0.14, 0, 0, 0, Math.PI / 4);
+        box(face, fire, 0.08, 0.08, 0.03, 0, 0.0, 0, 0, 0, Math.PI / 4);
+        box(face, fire, 0.5, 0.08, 0.03, 0, -0.2, 0);
+        for (const x of [-0.17, 0, 0.17]) box(face, fire, 0.07, 0.07, 0.03, x + 0.08, -0.14, 0);
+        g.add(face);
+        const batM = std('#140a1c', { rough: 0.6, emissive: '#3a0a50', ei: 0.4 });
+        const bats = [0, 1].map(() => {
+            const b = new THREE.Group();
+            box(b, batM, 0.1, 0.08, 0.08, 0, 0, 0);
+            const wl = box(b, batM, 0.16, 0.03, 0.08, -0.12, 0, 0), wr = box(b, batM, 0.16, 0.03, 0.08, 0.12, 0, 0);
+            b.userData.w = [wl, wr];
+            g.add(b); return b;
+        });
+        up.push(t => {
+            fire.emissiveIntensity = 1.6 + Math.sin(t * 13) * 0.35 + Math.sin(t * 7.3) * 0.3;
+            bats.forEach((b, i) => {
+                const a = t * 2 + i * Math.PI;
+                b.position.set(Math.cos(a) * 0.9, -1.0 - i * 0.5 + Math.sin(t * 4 + i) * 0.08, Math.sin(a) * 0.9);
+                b.rotation.y = -a;
+                const f = Math.sin(t * 22 + i) * 0.7;
+                b.userData.w[0].rotation.z = f; b.userData.w[1].rotation.z = -f;
+            });
+        });
+    },
+
+    // 💀 해골왕: 검은 판금 위 갈비뼈 + 손등의 해골(턱이 딱딱) + 뼈 손톱 + 초록 도깨비불
+    hw_skull(g, up, side) {
+        const black = std('#17121f', { metal: 0.6, rough: 0.35 });
+        const bone = std('#efe6d0', { rough: 0.55 });
+        const soul = std('#7dff6a', { emissive: '#3dff2a', ei: 1.6 });
+        shell(g, black, { top: -0.78, grow: 0.16 });
+        box(g, bone, 1.2, 0.08, 1.2, 0, -0.8, 0);
+        // 갈비뼈 (옆에서 앞으로 휘어짐)
+        for (let i = 0; i < 4; i++) {
+            const y = -0.98 - i * 0.14;
+            box(g, bone, 0.06, 0.06, 0.9, side * 0.6, y, 0);
+            box(g, bone, 0.5, 0.06, 0.06, side * 0.36, y, 0.6);
+        }
+        box(g, bone, 0.08, 0.6, 0.08, 0, -1.2, 0.6);   // 흉골
+        // 해골
+        const skull = new THREE.Group(); skull.position.set(0, -1.55, 0.7); skull.scale.setScalar(1.35);
+        box(skull, bone, 0.4, 0.3, 0.3, 0, 0.05, 0);
+        const sock = std('#0a0a0a');
+        box(skull, sock, 0.1, 0.09, 0.02, -0.09, 0.07, 0.15); box(skull, sock, 0.1, 0.09, 0.02, 0.09, 0.07, 0.15);
+        const eyes = [box(skull, soul, 0.05, 0.05, 0.02, -0.09, 0.07, 0.165), box(skull, soul, 0.05, 0.05, 0.02, 0.09, 0.07, 0.165)];
+        box(skull, sock, 0.04, 0.05, 0.02, 0, -0.03, 0.15);
+        const jaw = new THREE.Group(); jaw.position.set(0, -0.1, 0.05);
+        box(jaw, bone, 0.32, 0.08, 0.22, 0, -0.04, 0);
+        for (const x of [-0.1, -0.03, 0.04, 0.11]) box(jaw, bone, 0.05, 0.05, 0.02, x - 0.005, 0.01, 0.12);
+        skull.add(jaw);
+        g.add(skull);
+        // 뼈 손톱
+        for (const x of [-0.3, -0.1, 0.1, 0.3]) box(g, bone, 0.08, 0.22, 0.08, x, -2.05, 0.3, 0.4, 0, 0);
+        // 도깨비불
+        const wisps = Array.from({ length: 6 }, () => box(g, glow('#7dff6a', 0.7), 0.08, 0.08, 0.08, 0, 0, 0));
+        up.push(t => {
+            jaw.position.y = -0.1 - Math.max(0, Math.sin(t * 9)) * 0.05;
+            const ek = 0.8 + Math.sin(t * 5) * 0.25;
+            eyes.forEach(e => e.scale.set(0.05 * ek, 0.05 * ek, 0.02));
+            soul.emissiveIntensity = 1.3 + Math.sin(t * 5) * 0.5;
+            wisps.forEach((w, i) => {
+                const k = (t * 0.6 + i / 6) % 1, a = i * 2.1 + t;
+                w.position.set(Math.cos(a) * 0.65, -1.9 + k * 1.3, Math.sin(a) * 0.65);
+                w.scale.setScalar(0.08 * (1 - k) + 0.02);
+                w.material.opacity = 0.8 * (1 - k);
+            });
+        });
     }
 };
 
@@ -536,6 +622,64 @@ const AMULETS = {
                 const a = t * 1.5 + i * Math.PI / 2;
                 s.position.set(Math.cos(a) * 0.4, -0.58 + Math.sin(a * 1.5) * 0.2, 0.7 + Math.sin(a) * 0.12);
                 s.scale.setScalar(0.05 * (0.6 + Math.sin(t * 6 + i) * 0.4));
+            });
+        });
+    },
+    // 👻 꼬마 유령: 보라 띠 + 팔 둘레를 둥실둥실 도는 꼬마 유령
+    hw_ghost(g, up, side) {
+        box(g, std('#3a1a5a', { rough: 0.6 }), 1.1, 0.26, 1.1, 0, -0.42, 0);
+        box(g, glow('#b48bff', 0.8), 1.12, 0.04, 1.12, 0, -0.3, 0);
+        const sheet = new THREE.MeshStandardMaterial({ color: '#f4f2ff', emissive: '#b8b0ff', emissiveIntensity: 0.45, roughness: 0.5, transparent: true, opacity: 0.92 });
+        const ghost = new THREE.Group();
+        box(ghost, sheet, 0.34, 0.32, 0.3, 0, 0.08, 0);
+        const tails = [-0.12, 0, 0.12].map(x => box(ghost, sheet, 0.1, 0.14, 0.28, x, -0.13, 0));
+        const ink = std('#120a1a');
+        box(ghost, ink, 0.06, 0.08, 0.02, -0.07, 0.12, 0.155); box(ghost, ink, 0.06, 0.08, 0.02, 0.07, 0.12, 0.155);
+        box(ghost, ink, 0.07, 0.06, 0.02, 0, 0.0, 0.155);
+        box(ghost, std('#ff9ac8', { emissive: '#ff6aa8', ei: 0.4 }), 0.05, 0.03, 0.02, -0.13, 0.04, 0.155);
+        box(ghost, std('#ff9ac8', { emissive: '#ff6aa8', ei: 0.4 }), 0.05, 0.03, 0.02, 0.13, 0.04, 0.155);
+        const armL = box(ghost, sheet, 0.08, 0.14, 0.08, -0.21, 0.02, 0), armR = box(ghost, sheet, 0.08, 0.14, 0.08, 0.21, 0.02, 0);
+        g.add(ghost);
+        const trail = Array.from({ length: 4 }, (_, i) => box(g, glow('#c8b8ff', 0.35 - i * 0.07), 0.12, 0.12, 0.12, 0, 0, 0));
+        up.push(t => {
+            const a = t * 1.3;
+            ghost.position.set(Math.cos(a) * 0.82, -0.55 + Math.sin(t * 2.6) * 0.1, Math.sin(a) * 0.82);
+            ghost.rotation.y = -a + Math.PI / 2;
+            tails.forEach((tl, i) => { tl.position.y = -0.13 + Math.sin(t * 8 + i * 1.6) * 0.03; });
+            armL.rotation.z = 0.4 + Math.sin(t * 6) * 0.4; armR.rotation.z = -0.4 - Math.sin(t * 6) * 0.4;
+            trail.forEach((b, i) => {
+                const aa = a - (i + 1) * 0.22;
+                b.position.set(Math.cos(aa) * 0.82, -0.6 + Math.sin(t * 2.6 - i * 0.3) * 0.1, Math.sin(aa) * 0.82);
+            });
+        });
+    },
+
+    // 🍬 사탕 바구니: 주황 띠 + 호박 바구니가 흔들리고 사탕이 톡톡 튀어나옴
+    hw_candy(g, up, side) {
+        box(g, std('#ff7a1a', { rough: 0.6 }), 1.1, 0.26, 1.1, 0, -0.38, 0);
+        box(g, std('#1a0f22'), 1.12, 0.05, 1.12, 0, -0.5, 0);
+        const bucket = new THREE.Group(); bucket.position.set(0, -0.55, 0.64);
+        const handle = std('#1a0f22', { rough: 0.5 });
+        box(bucket, handle, 0.04, 0.24, 0.04, -0.17, -0.06, 0); box(bucket, handle, 0.04, 0.24, 0.04, 0.17, -0.06, 0);
+        box(bucket, handle, 0.38, 0.04, 0.04, 0, 0.06, 0);
+        const body = new THREE.Group(); body.position.y = -0.36; bucket.add(body);
+        box(body, std('#ff8a1f', { rough: 0.5, emissive: '#a03a00', ei: 0.3 }), 0.4, 0.3, 0.32, 0, 0, 0);
+        const lit = std('#ffd23a', { emissive: '#ffb000', ei: 1.6 });
+        box(body, lit, 0.07, 0.07, 0.02, -0.09, 0.04, 0.165, 0, 0, Math.PI / 4); box(body, lit, 0.07, 0.07, 0.02, 0.09, 0.04, 0.165, 0, 0, Math.PI / 4);
+        box(body, lit, 0.2, 0.04, 0.02, 0, -0.07, 0.165);
+        const CANDY = ['#ff3b7a', '#5ab0ff', '#7dff6a', '#ffe14d', '#c08bff'];
+        for (let i = 0; i < 4; i++) box(body, std(CANDY[i], { emissive: CANDY[i], ei: 0.4 }), 0.08, 0.08, 0.08, -0.12 + i * 0.08, 0.17, (i % 2) * 0.06 - 0.03);
+        g.add(bucket);
+        const pops = Array.from({ length: 3 }, (_, i) => { const c = box(g, std(CANDY[i + 1], { emissive: CANDY[i + 1], ei: 0.6 }), 0.07, 0.07, 0.07, 0, 0, 0); c.visible = false; return c; });
+        up.push(t => {
+            bucket.rotation.z = Math.sin(t * 2.2) * 0.14;
+            bucket.rotation.x = 0.06 + Math.sin(t * 1.6) * 0.05;
+            pops.forEach((c, i) => {
+                const k = (t * 0.7 + i / 3) % 1;
+                c.visible = k < 0.6;
+                const kk = k / 0.6;
+                c.position.set(Math.sin(i * 2.3) * 0.18 * kk, -0.75 + kk * 0.5 - kk * kk * 0.55, 0.68 + kk * 0.12);
+                c.rotation.set(t * 6, t * 4, 0);
             });
         });
     }
