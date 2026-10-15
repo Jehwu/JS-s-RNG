@@ -9,9 +9,9 @@ import { EffectComposer } from './lib/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './lib/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './lib/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './lib/jsm/postprocessing/OutputPass.js';
-import { SIGNATURES } from './auraSignatures.js?v=23';
-import { POSES } from './poses.js?v=23';
-import { createGearRig } from './gear3d.js?v=23';
+import { SIGNATURES } from './auraSignatures.js?v=24';
+import { POSES } from './poses.js?v=24';
+import { createGearRig } from './gear3d.js?v=24';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -879,7 +879,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         // 3D 컷씬 재생. cfg = { hit, hit2, total, tier }, getTime() = 지금 컷씬 몇 초인지
         async playCutscene(aura, cfg, getTime) {
             if (!cine) {
-                const { createCutscene } = await import('./cutscene3d.js?v=23');
+                const { createCutscene } = await import('./cutscene3d.js?v=24');
                 cine = createCutscene(cineCtx);
             }
             return cine.play(aura, cfg, getTime, { shake: a => { shakeAmt = Math.max(shakeAmt, a); } });
