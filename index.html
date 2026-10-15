@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=34">
-    <link rel="stylesheet" href="rarity.css?v=34">
+    <link rel="stylesheet" href="style.css?v=35">
+    <link rel="stylesheet" href="rarity.css?v=35">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -200,7 +200,11 @@
     <div id="sheet-index" class="sheet-backdrop hidden">
         <div class="sheet">
             <div class="sheet-head"><h2>도감 <small id="index-progress"></small></h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
-            <div class="sheet-body"><div id="index-grid"></div></div>
+            <div class="tabs" id="index-tabs">
+                <button class="tab active" data-tab="all">칭호</button>
+                <button class="tab" data-tab="sets">📚 세트</button>
+            </div>
+            <div class="sheet-body"><div id="index-grid"></div><div id="set-grid" class="hidden"></div></div>
         </div>
     </div>
 
@@ -322,6 +326,7 @@
             <div class="sheet-body"><div id="profile-panel"></div></div>
         </div>
     </div>
+    <input type="file" id="avatar-file" accept="image/*" class="hidden">
     <div id="pf-dialog" class="dialog-backdrop hidden"><div class="dialog pf-dialog" id="pf-view"></div></div>
 
     <!-- 👑 관리자 패널 (어드민 어뷰즈) -->
@@ -438,6 +443,7 @@
             <div id="ask-title" class="dialog-title"></div>
             <div id="ask-msg" class="dialog-sub"></div>
             <input type="password" id="ask-input" class="hidden" autocomplete="off" inputmode="numeric">
+            <input type="text" id="ask-text" class="hidden" autocomplete="off" maxlength="40">
             <div class="dialog-actions">
                 <button class="btn" data-ask="cancel">취소</button>
                 <button id="ask-ok" class="btn btn-primary" data-ask="ok">확인</button>
@@ -447,6 +453,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=34"></script>
+    <script type="module" src="script.js?v=35"></script>
 </body>
 </html>

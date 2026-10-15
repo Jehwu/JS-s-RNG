@@ -1,7 +1,7 @@
-import { AURA_DATA } from './auras.js?v=34';
-import { CRAFT_ITEMS } from './craftItems.js?v=34';
-import { createMusicPlayer, coverArt } from './music.js?v=34';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=34';
+import { AURA_DATA } from './auras.js?v=35';
+import { CRAFT_ITEMS } from './craftItems.js?v=35';
+import { createMusicPlayer, coverArt } from './music.js?v=35';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=35';
 
 /* =========================================================
    📦 게임 데이터
@@ -253,15 +253,18 @@ function toast(msg, type = '') {
 }
 
 /* ---------- 확인 / 입력 다이얼로그 ---------- */
-function ask({ title, message = '', input = false, okText = '확인', danger = false }) {
+function ask({ title, message = '', input = false, text = false, value = '', okText = '확인', danger = false }) {
     return new Promise(resolve => {
-        const dlg = $('ask-dialog'), inp = $('ask-input'), ok = $('ask-ok');
+        // text: true 면 글자 입력 칸(자기소개 등), 아니면 숫자 비밀번호 칸
+        $('ask-input').classList.add('hidden'); $('ask-text').classList.add('hidden');
+        const dlg = $('ask-dialog'), inp = text ? $('ask-text') : $('ask-input'), ok = $('ask-ok');
+        if (text) input = true;
         $('ask-title').textContent = title;
         $('ask-msg').textContent = message;
         ok.textContent = okText;
         ok.className = `btn ${danger ? 'btn-red' : 'btn-primary'}`;
         inp.classList.toggle('hidden', !input);
-        inp.value = '';
+        inp.value = value;
         dlg.classList.remove('hidden');
         if (input) setTimeout(() => inp.focus(), 50);
 
@@ -464,10 +467,10 @@ function getMultBonus() {
     return (gameState.activeMultBuffs || []).reduce((s, b) => s + b.bonus, 0);
 }
 function getSpeedBonus() {
-    return (gameState.activeBuffs.speedBonus || 0) + (getGear()?.speedBonus || 0);
+    return (gameState.activeBuffs.speedBonus || 0) + (getGear()?.speedBonus || 0) + getSetBonus().speed;
 }
 function getBaseLuck() {
-    return (gameState.luck + (getGear()?.luckBonus || 0) + (gameState.activeBuffs.luckBonus || 0)) * (getBiome()?.luck || 1) * getAdminLuck();
+    return (gameState.luck + (getGear()?.luckBonus || 0) + (gameState.activeBuffs.luckBonus || 0) + getSetBonus().luck) * (getBiome()?.luck || 1) * getAdminLuck();
 }
 // 화면 표시용 (다음 롤 기준)
 function getDisplayLuck() {
@@ -583,7 +586,7 @@ async function finishRoll() {
     }
 
     const isNew = !gameState.discoveredAuras.includes(rolled.id);
-    if (isNew) gameState.discoveredAuras.push(rolled.id);
+    if (isNew) { gameState.discoveredAuras.push(rolled.id); setBonusCache = null; announceSetDone(rolled.id); }
 
     if (CUT_CFG[rolled.grade] && stage3d) {
         await playCinematic(rolled);
@@ -946,7 +949,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=34').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=35').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1095,6 +1098,80 @@ function renderQuests() {
     }).join('') + `<div class="qnote">퀘스트는 한 번에 하나만 진행돼요. 바꿔도 진행도는 남아요.</div>`;
 }
 
+/* =========================================================
+   📚 세트 도감 — 묶음 칭호를 한 번씩 다 뽑으면(도감에 등록) 영구 버프
+   ========================================================= */
+const FRIENDS = ['김티비', '박지성', '공병은', '김민채', '김가은', '김건우'];
+const AURA_SETS = [
+    { id: 'desert', icon: '🏜️', name: '사막 세트', color: '#ffc46b', auras: ['leg_desert_tv', 'abs_sunking_gunwoo', 'myth_midas_gaeun', 'ep_falconer_byungeun'], luck: 0.15 },
+    { id: 'ice', icon: '❄️', name: '얼음 세트', color: '#9fe6ff', auras: ['ep_frozen_byungeun', 'myth_aurora_gaeun', 'anc_iceemperor_tv'], speed: 0.05 },
+    { id: 'storm', icon: '⛈️', name: '폭풍 세트', color: '#8fb8ff', auras: ['leg_storm_gaeun', 'myth_thunderbeast_minchae', 'abs_breaker_byungeun', 'js_lightning_jisung'], luck: 0.3 },
+    { id: 'space', icon: '🌌', name: '우주 세트', color: '#d7b8ff', auras: ['gemini_basic', 'myth_astro_jisung', 'myth_blackhole_byungeun', 'anc_nebula_jisung'], luck: 0.25 },
+    { id: 'fire', icon: '🔥', name: '불꽃 세트', color: '#ff6b2b', auras: ['ep_fire_jisung', 'ep_lava_tv', 'myth_phoenix_gaeun', 'abs_archdemon_tv'], speed: 0.05 },
+    { id: 'warrior', icon: '⚔️', name: '전사 세트', color: '#ff5a8a', auras: ['ep_blackbelt_gunwoo', 'leg_swordsman_byungeun', 'leg_ninja_jisung', 'myth_dragonknight_minchae', 'anc_honor_minchae', 'abs_juggernaut_minchae', 'cosmic_steel_emperor'], luck: 0.4 },
+    { id: 'school', icon: '🏫', name: '학교 세트', color: '#5fe08a', auras: ['unc_lunch_gunwoo', 'unc_late_gaeun', 'rare_escape_tv', 'rare_president_byungeun', 'rare_captain_minchae', 'rare_relay_gunwoo'], luck: 0.05 },
+    { id: 'halloween', icon: '🎃', name: '할로윈 세트', color: '#ff8a1f', auras: AURA_DATA.filter(a => a.biome === 'halloween').map(a => a.id), luck: 0.5, limited: true },
+    { id: 'admin', icon: '👑', name: '어드민 세트', color: '#ffd23a', auras: AURA_DATA.filter(a => a.biome === 'admin').map(a => a.id), luck: 1, limited: true },
+    // 친구별 세트: 이름이 들어간 칭호 전부 (바이옴 한정 칭호는 빼고)
+    ...FRIENDS.map((f, i) => ({ id: 'f' + i, icon: '🧑', name: `${f} 세트`, color: ['#7fe0ff', '#00fa9a', '#6495ed', '#ff2a4a', '#c77dff', '#ffb02e'][i], auras: AURA_DATA.filter(a => !a.biome && a.name.includes(f)).map(a => a.id), luck: 0.2, friend: true }))
+];
+let setBonusCache = null, setBonusKey = null;
+function setFound() { return new Set([...gameState.discoveredAuras, ...Object.keys(gameState.inventory)]); }
+function getSetBonus() {
+    // 세이브가 통째로 바뀌거나(로그인/로그아웃/개발자 모드) 새 칭호가 등록되면 다시 계산
+    const key = gameState.discoveredAuras.length + ':' + Object.keys(gameState.inventory).length;
+    if (setBonusCache && setBonusKey === key && setBonusCache.gs === gameState) return setBonusCache;
+    setBonusKey = key;
+    const found = setFound();
+    const b = { luck: 0, speed: 0, done: 0 };
+    for (const s of AURA_SETS) if (s.auras.length && s.auras.every(id => found.has(id))) { b.luck += s.luck || 0; b.speed += s.speed || 0; b.done++; }
+    b.gs = gameState;
+    return (setBonusCache = b);
+}
+function setRewardText(s) { return [s.luck ? `행운 +${Math.round(s.luck * 100)}%` : '', s.speed ? `속도 +${Math.round(s.speed * 100)}%` : ''].filter(Boolean).join(' · '); }
+// 방금 뽑은 칭호로 세트가 완성됐으면 축하
+function announceSetDone(id) {
+    const found = setFound();
+    for (const s of AURA_SETS) {
+        if (!s.auras.includes(id) || !s.auras.every(x => found.has(x))) continue;
+        setTimeout(() => toast(`📚 ${s.icon} ${s.name} 완성!\n영구 ${setRewardText(s)}`, 'gold'), 1500);
+    }
+}
+let indexTab = 'all';
+function renderSets() {
+    const found = setFound(), bonus = getSetBonus();
+    const card = s => {
+        const have = s.auras.filter(id => found.has(id)).length, done = have === s.auras.length;
+        return `<div class="set-card ${done ? 'done' : ''}" style="--c:${s.color}">
+            <div class="set-head">
+                <span class="set-icon">${s.icon}</span>
+                <div class="set-title"><b>${s.name}</b>${s.limited ? '<small>한정</small>' : ''}</div>
+                <span class="set-count">${have}<small>/${s.auras.length}</small></span>
+            </div>
+            <div class="set-bar"><div style="width:${have / s.auras.length * 100}%"></div></div>
+            <div class="set-auras">${s.auras.map(id => { const a = AURA_BY_ID[id]; const f = found.has(id); return `<span class="set-aura ${f ? 'on' : ''} ${gradeCol(a.grade)}" style="${f ? `--ac:${a.color}` : ''}">${f ? a.name : '???'}</span>`; }).join('')}</div>
+            <div class="set-reward">${done ? '✓ ' : '🔒 '}완성 보상: <b>영구 ${setRewardText(s)}</b></div>
+        </div>`;
+    };
+    $('set-grid').innerHTML = `
+        <div class="set-total">
+            <div><span>완성한 세트</span><b>${bonus.done}<small> / ${AURA_SETS.length}</small></b></div>
+            <div><span>세트 행운</span><b class="luck">+${Math.round(bonus.luck * 100)}%</b></div>
+            <div><span>세트 속도</span><b class="speed">+${Math.round(bonus.speed * 100)}%</b></div>
+        </div>
+        <div class="set-label">테마 세트</div>
+        ${AURA_SETS.filter(s => !s.friend).map(card).join('')}
+        <div class="set-label">친구 세트 <small>그 사람 이름이 들어간 칭호 전부</small></div>
+        ${AURA_SETS.filter(s => s.friend).map(card).join('')}
+        <div class="set-note">칭호를 한 번이라도 뽑으면(도감 등록) 세트에 들어가요. 팔아도 안 빠져요.</div>`;
+}
+bindTabs('index-tabs', tab => {
+    indexTab = tab;
+    ui.indexGrid.classList.toggle('hidden', tab !== 'all');
+    $('set-grid').classList.toggle('hidden', tab !== 'sets');
+    if (tab === 'sets') { renderSets(); stagger($('set-grid')); } else stagger(ui.indexGrid.querySelector('.index-grid'));
+});
+
 // 바이옴 전용 칭호 표시
 function biomeTag(a) {
     const b = a.biome && BIOME_BY_ID[a.biome];
@@ -1157,7 +1234,7 @@ const SHEET_RENDER = {
     'sheet-craft': renderCraft,
     'sheet-shop': renderShop,
     'sheet-quest': renderQuests,
-    'sheet-index': renderIndex,
+    'sheet-index': () => { renderIndex(); renderSets(); },
     'sheet-settings': () => { renderSoundUI(); renderAutoSell(); if (setTab === 'account') renderAccount(); },
     'sheet-profile': () => renderProfileSheet(),
     'sheet-attend': () => renderAttend()
@@ -1177,7 +1254,7 @@ const SHEET_LIST = {
     'sheet-craft': () => [ui.craftGrid],
     'sheet-shop': () => [BANNERS[shopTab] ? $('gacha-panel') : ui.shopGrid],
     'sheet-quest': () => [ui.questList],
-    'sheet-index': () => [ui.indexGrid.querySelector('.index-grid')],
+    'sheet-index': () => [indexTab === 'sets' ? $('set-grid') : ui.indexGrid.querySelector('.index-grid')],
     'sheet-settings': () => [$('sheet-settings').querySelector(`.set-pane[data-pane="${setTab}"]`)]
 };
 
@@ -2079,6 +2156,7 @@ async function logIn(nick, pw) {
     try { j = await authCall('token?grant_type=password', { email: await nickEmail(nick), password: pw }); }
     catch (e) { throw new Error(/invalid/i.test(e.message) ? '닉네임이나 비밀번호가 틀렸어요' : e.message); }
     takeSession(j, nick);
+    try { const pr = await userFetch(`profiles?select=avatar&id=eq.${session.uid}`); myAvatar = pr?.[0]?.avatar || null; myAvatar ? localStorage.setItem(AVATAR_KEY, myAvatar) : localStorage.removeItem(AVATAR_KEY); } catch (e) {}
     // 서버 기록과 이 폰 기록 중 고르기
     const rows = await userFetch(`saves?select=data,updated_at&id=eq.${session.uid}`);
     const cloud = rows?.[0]?.data;
@@ -2103,6 +2181,7 @@ async function logOut() {
     if (cloudSavedAt < Date.now() - 10000) throw new Error('서버에 저장을 못 해서 로그아웃을 멈췄어요. 인터넷을 확인해 주세요');
     try { await authCall('logout', {}, session?.access); } catch (e) {}
     session = null; saveSession();
+    myAvatar = null; try { localStorage.removeItem(AVATAR_KEY); } catch (e) {}
     // 이 폰은 새 게임으로 (기록은 서버에 있어서 다시 로그인하면 돌아옴)
     gameState = createInitialGameState();
     cloudLastRolls = -1; cloudSavedAt = 0;
@@ -2199,7 +2278,39 @@ function renderProfileBtn() {
     const a = AURA_BY_ID[gameState.equippedAura];
     btn.style.setProperty('--c', a?.color || '#5b4dff');
     btn.textContent = session?.nick?.[0] || '?';
+    if (session && myAvatar) btn.innerHTML = `<img src="${myAvatar}" alt="">`;
     btn.classList.toggle('guest', !session);
+}
+const AVATAR_KEY = 'js_rng_avatar';
+let myAvatar = null;
+try { myAvatar = localStorage.getItem(AVATAR_KEY); } catch (e) {}
+// 사진 또는 닉네임 첫 글자
+function avaHtml(p, cls) {
+    const av = p.avatar && /^data:image\/(jpeg|png|webp);base64,/.test(p.avatar) ? p.avatar : null;
+    return `<span class="${cls} ${av ? 'has-img' : ''}">${av ? `<img src="${av}" alt="">` : escapeHtml((p.nickname || '?')[0])}</span>`;
+}
+// 고른 사진을 가운데 네모로 잘라 128px JPEG 로 줄임 (보통 5~10KB)
+function shrinkImage(file) {
+    return new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => {
+            const S = 128, c = document.createElement('canvas'); c.width = c.height = S;
+            const m = Math.min(img.width, img.height);
+            c.getContext('2d').drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, S, S);
+            URL.revokeObjectURL(img.src);
+            let q = 0.82, url = c.toDataURL('image/jpeg', q);
+            while (url.length > 30000 && q > 0.3) { q -= 0.12; url = c.toDataURL('image/jpeg', q); }
+            res(url);
+        };
+        img.onerror = rej;
+        img.src = URL.createObjectURL(file);
+    });
+}
+async function setAvatar(url) {
+    await userFetch(`profiles?id=eq.${session.uid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ avatar: url }) });
+    myAvatar = url;
+    try { url ? localStorage.setItem(AVATAR_KEY, url) : localStorage.removeItem(AVATAR_KEY); } catch (e) {}
+    renderProfileBtn();
 }
 function profileCardHtml(p, mine) {
     const eq = AURA_BY_ID[p.equipped], best = AURA_BY_ID[p.best_aura];
@@ -2207,10 +2318,10 @@ function profileCardHtml(p, mine) {
     return `
         <div class="pf-card" style="--c:${eq?.color || '#5b4dff'}">
             <div class="pf-top">
-                <div class="pf-ava">${escapeHtml((p.nickname || '?')[0])}</div>
+                <div class="pf-ava-wrap">${avaHtml(p, 'pf-ava')}${mine && session ? '<button class="pf-photo" data-pf="photo" aria-label="사진 바꾸기">📷</button>' : ''}</div>
                 <div class="pf-name"><b>${escapeHtml(p.nickname || '게스트')}</b>${since ? `<small>${since} 가입</small>` : '<small>로그인 안 함</small>'}</div>
             </div>
-            <div class="pf-bio">${p.bio ? escapeHtml(p.bio) : '<i>자기소개가 없어요</i>'}${mine && session ? ' <button class="pf-edit" data-pf="bio">✏️</button>' : ''}</div>
+            <div class="pf-bio">${p.bio ? escapeHtml(p.bio) : '<i>자기소개가 없어요</i>'}${mine && session ? ` <button class="pf-edit" data-pf="bio" data-bio="${escapeHtml(p.bio || '')}">✏️</button>` : ''}</div>
             ${eq ? `<div ${frameAttrs(eq.grade, auraColors(eq), eq.frame).replace('class="', 'class="pf-eq ')}>${frameDeco(eq.grade, eq.frame)}<span class="pf-label">장착 칭호</span><div class="pf-eq-name">${auraNameHtml(eq)}</div><span class="pf-eq-sub ${gradeCol(eq.grade)}">${eq.grade} · 1 in ${fmt(eq.in)}</span></div>` : ''}
             <div class="pf-stats">
                 <div><span>롤</span><b>${fmt(p.rolls)}</b></div>
@@ -2224,19 +2335,23 @@ async function renderProfileSheet() {
     const el = $('profile-panel');
     $('prof-tabs').querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === profTab));
     if (profTab === 'me') {
-        const p = { ...profileStats(), nickname: session?.nick, bio: '', created_at: null };
+        const p = { ...profileStats(), nickname: session?.nick, bio: '', created_at: null, avatar: session ? myAvatar : null };
         el.innerHTML = profileCardHtml(p, true) + (session ? '' : `<button class="btn btn-block btn-gold" data-pf="login">로그인하고 랭킹에 올라가기</button>`);
         if (session) {
             try {
-                const r = await userFetch(`profiles?select=bio,created_at&id=eq.${session.uid}`);
-                if (profTab === 'me' && r?.[0]) { p.bio = r[0].bio; p.created_at = r[0].created_at; el.innerHTML = profileCardHtml(p, true); }
+                const r = await userFetch(`profiles?select=bio,created_at,avatar&id=eq.${session.uid}`);
+                if (r?.[0]) {
+                    p.bio = r[0].bio; p.created_at = r[0].created_at; p.avatar = r[0].avatar;
+                    if ((r[0].avatar || null) !== myAvatar) { myAvatar = r[0].avatar || null; try { myAvatar ? localStorage.setItem(AVATAR_KEY, myAvatar) : localStorage.removeItem(AVATAR_KEY); } catch (e) {} renderProfileBtn(); }
+                    if (profTab === 'me') el.innerHTML = profileCardHtml(p, true);
+                }
             } catch (e) {}
         }
         return;
     }
     el.innerHTML = `<div class="seg seg3" id="rank-seg">${Object.entries(RANK_KEYS).map(([k, [label]]) => `<button data-rk="${k}" class="${rankKey === k ? 'on' : ''}">${label}</button>`).join('')}</div><div class="rank-list"><div class="empty">불러오는 중…</div></div>`;
     try {
-        const r = await fetch(`${SB_URL}/rest/v1/profiles?select=id,nickname,rolls,best_aura,best_in,found,equipped,attend,bio,created_at&order=${rankKey}.desc&limit=30`, { headers: SB_HEADERS, cache: 'no-store' });
+        const r = await fetch(`${SB_URL}/rest/v1/profiles?select=id,nickname,rolls,best_aura,best_in,found,equipped,attend,bio,created_at,avatar&order=${rankKey}.desc&limit=30`, { headers: SB_HEADERS, cache: 'no-store' });
         if (!r.ok) throw new Error();
         const rows = await r.json();
         rankRows = rows;
@@ -2246,7 +2361,7 @@ async function renderProfileSheet() {
             const eq = AURA_BY_ID[p.equipped];
             return `<button class="rank-row ${p.id === session?.uid ? 'me' : ''} ${i < 3 ? 'top' + (i + 1) : ''}" data-rank="${i}">
                 <span class="rk-no">${i + 1}</span>
-                <span class="rk-ava" style="--c:${eq?.color || '#5b4dff'}">${escapeHtml((p.nickname || '?')[0])}</span>
+                <span style="--c:${eq?.color || '#5b4dff'};display:contents">${avaHtml(p, 'rk-ava')}</span>
                 <span class="rk-main"><b>${escapeHtml(p.nickname)}</b><small>${eq ? eq.name : '칭호 없음'}</small></span>
                 <span class="rk-val">${RANK_KEYS[rankKey][1](p)}</span>
             </button>`;
@@ -2271,9 +2386,15 @@ $('profile-panel').addEventListener('click', async e => {
     }
     const pf = e.target.closest('[data-pf]');
     if (!pf) return;
+    if (pf.dataset.pf === 'photo') {
+        const pick = await ask({ title: '프로필 사진', message: '사진을 고르면 네모로 잘라서 올려요.', okText: '사진 고르기' });
+        if (!pick) return;
+        $('avatar-file').click();
+        return;
+    }
     if (pf.dataset.pf === 'login') { closeSheet('sheet-profile'); setTimeout(() => { openSheet('sheet-settings'); setSettingsTab('account'); }, 200); }
     else if (pf.dataset.pf === 'bio') {
-        const text = await ask({ title: '자기소개', message: '최대 40자', input: true, okText: '저장' });
+        const text = await ask({ title: '자기소개', message: '최대 40자', text: true, value: pf.dataset.bio || '', okText: '저장' });
         if (text === null) return;
         try {
             await userFetch(`profiles?id=eq.${session.uid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ bio: text.trim().slice(0, 40) }) });
@@ -2282,6 +2403,17 @@ $('profile-panel').addEventListener('click', async e => {
     }
 });
 $('pf-dialog').addEventListener('click', e => { if (e.target.id === 'pf-dialog' || e.target.closest('[data-pfclose]')) $('pf-dialog').classList.add('hidden'); });
+$('avatar-file').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f || !session) return;
+    try {
+        const url = await shrinkImage(f);
+        await setAvatar(url);
+        toast('📷 프로필 사진을 바꿨어요', 'good');
+        renderProfileSheet();
+    } catch (err) { toast('사진을 못 올렸어요', 'bad'); }
+});
 $('profile-btn').addEventListener('click', () => openSheet('sheet-profile'));
 renderProfileBtn();
 if (session) setTimeout(() => cloudUpload(true), 8000);   // 켜고 조금 뒤 한 번 맞춰 둠
@@ -2516,7 +2648,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=34')
+import('./aura3d.js?v=35')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
