@@ -73,5 +73,43 @@ export const CRAFT_ITEMS = [
         luckBonus: 0,
         speedBonus: 0,
         req: { "gemini_basic": 2, "legend_speed": 4, "rare_soldier": 50, "com_just_byungeun": 300 }
+    },
+
+    // 🎰 상점 뽑기 전용 (제작 불가, 뽑기에서만 나옴)
+    {
+        id: "gacha_dice", category: "gauntlet", gacha: true,
+        name: "행운의 주사위 건틀렛",
+        desc: "영구적으로 행운 150%, 속도 10%가 증가합니다.",
+        luckBonus: 1.5, speedBonus: 0.1, req: {}
+    },
+    {
+        id: "gacha_jackpot", category: "gauntlet", gacha: true,
+        name: "잭팟 건틀렛",
+        desc: "영구적으로 행운 400%, 속도 20%가 증가합니다.",
+        luckBonus: 4, speedBonus: 0.2, req: {}
+    },
+    {
+        id: "gacha_comet", category: "gauntlet", gacha: true,
+        name: "별똥별 건틀렛",
+        desc: "영구적으로 행운 800%, 속도 35%가 증가합니다.",
+        luckBonus: 8, speedBonus: 0.35, req: {}
+    },
+    {
+        id: "gacha_clover", category: "amulet", gacha: true,
+        name: "네잎클로버 부적",
+        desc: "롤을 7회 돌리면 다음 1회 롤에 행운이 3배로 증가합니다.",
+        luckBonus: 0, speedBonus: 0, amuletMult: 3, amuletEvery: 7, req: {}
+    },
+    {
+        id: "gacha_compass", category: "amulet", gacha: true,
+        name: "폭풍 나침반 부적",
+        desc: "바이옴이 2배 더 자주 오고, 1.5배 더 오래 머뭅니다.",
+        luckBonus: 0, speedBonus: 0, biomeBoost: 2, biomeTime: 1.5, req: {}
+    },
+    {
+        id: "gacha_cat", category: "amulet", gacha: true,
+        name: "황금 고양이 부적",
+        desc: "롤을 10회 돌리면 다음 1회 롤에 행운이 10배로 증가합니다.",
+        luckBonus: 0, speedBonus: 0, amuletMult: 10, amuletEvery: 10, req: {}
     }
 ];

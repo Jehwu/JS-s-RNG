@@ -5,7 +5,7 @@
    ========================================================= */
 
 import * as THREE from 'three';
-import { buildGearModel } from './gear3d.js?v=25';
+import { buildGearModel } from './gear3d.js?v=26';
 
 export function createGearPreviews(renderer) {
     const SIZE = 160;
@@ -45,7 +45,9 @@ export function createGearPreviews(renderer) {
         if (!m) return;
         holder.clear();
         holder.add(m.root);
-        m.root.rotation.set(0.12, t * 0.7 + (+c.dataset.ph || 0), m.isAmulet ? 0.25 : -0.25);
+        // 부적은 앞에 매단 부적이 보이게 앞쪽에서 좌우로만 흔듦
+        const ry = m.isAmulet ? Math.sin(t * 0.8 + (+c.dataset.ph || 0)) * 0.8 : t * 0.7 + (+c.dataset.ph || 0);
+        m.root.rotation.set(0.12, ry, m.isAmulet ? 0.25 : -0.25);
         m.root.position.y = m.isAmulet ? -0.55 : 0.45;
         m.update(t);
         const prev = renderer.getRenderTarget();

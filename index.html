@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=25">
-    <link rel="stylesheet" href="rarity.css?v=25">
+    <link rel="stylesheet" href="style.css?v=26">
+    <link rel="stylesheet" href="rarity.css?v=26">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -19,6 +19,8 @@
     <!-- 🧊 3D 무대 (별, 바닥, 캐릭터, 아우라) — 안 되면 2D 별 배경으로 대신함 -->
     <canvas id="stage3d" aria-hidden="true"></canvas>
     <canvas id="starfield" class="hidden" aria-hidden="true"></canvas>
+    <canvas id="biome-fx" aria-hidden="true"></canvas>
+    <div id="biome-banner" class="hidden" aria-live="polite"></div>
     <div id="ambient" aria-hidden="true"></div>
     <div id="nametag" class="hidden"></div>
 
@@ -81,6 +83,7 @@
 
         <!-- 3D 캐릭터가 이 영역 가운데에 서 있음. 안의 글자는 전부 겹쳐 띄워서 크기가 변해도 아래 버튼이 안 움직임 -->
         <section class="stage">
+            <button id="biome-badge" class="hidden" aria-label="지금 바이옴 정보"></button>
             <div id="aura-display">
                 <div class="stage-hint">ROLL을 눌러 운명을 확인하세요</div>
             </div>
@@ -156,7 +159,11 @@
     <div id="sheet-shop" class="sheet-backdrop hidden">
         <div class="sheet">
             <div class="sheet-head"><h2>상점</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
-            <div class="sheet-body"><div id="shop-grid"></div></div>
+            <div class="tabs" id="shop-tabs">
+                <button class="tab active" data-tab="potion">물약</button>
+                <button class="tab" data-tab="gacha">행운 뽑기</button>
+            </div>
+            <div class="sheet-body"><div id="shop-grid"></div><div id="gacha-panel" class="hidden"></div></div>
         </div>
     </div>
 
@@ -278,8 +285,23 @@
                     <select id="dev-aura-select"></select>
                     <button class="btn btn-block" data-dev="next">지정</button>
                 </div>
+                <div class="section">
+                    <div class="section-title">바이옴 소환</div>
+                    <select id="dev-biome-select"></select>
+                    <button class="btn btn-block" data-dev="biome">소환</button>
+                    <button class="btn btn-block" data-dev="biome-end">지금 바이옴 끝내기</button>
+                </div>
                 <button class="btn btn-block btn-red" data-dev="exit">개발자 모드 종료 (원래 데이터로 복구)</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 🎰 뽑기 결과 -->
+    <div id="gacha-result" class="hidden">
+        <div class="gr-capsule" role="button" aria-label="열기"><i></i><i></i></div>
+        <div class="gr-body">
+            <div class="gr-grid"></div>
+            <button class="btn btn-block btn-primary gr-ok">확인</button>
         </div>
     </div>
 
@@ -335,6 +357,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=25"></script>
+    <script type="module" src="script.js?v=26"></script>
 </body>
 </html>

@@ -30,7 +30,7 @@ function shell(g, mat, { top = -0.95, bottom = -1.98, grow = 0.12 } = {}) {
     return box(g, mat, 1 + grow, h, 1 + grow, 0, (top + bottom) / 2, 0);
 }
 
-/* ---------- 건틀렛 6종 ---------- */
+/* ---------- 건틀렛 ---------- */
 const GAUNTLETS = {
     // 초보자의 운수대통: 갈색 가죽 + 금 징 + 손등에 네모 네잎클로버
     gear_beginner(g, up, side) {
@@ -195,10 +195,180 @@ const GAUNTLETS = {
             h1.scale.setScalar(beat(0));
             h2.scale.setScalar(beat(0.5));
         });
+    },
+    // 🎲 행운의 주사위: 카지노 빨강 판금 + 손등의 큰 주사위 + 팔을 도는 작은 주사위 2개
+    gacha_dice(g, up, side) {
+        const red = std('#b0102a', { metal: 0.45, rough: 0.35 });
+        const black = std('#15151c', { metal: 0.6, rough: 0.4 });
+        const gold = std('#ffd25a', { metal: 0.9, rough: 0.25, emissive: '#ffae00', ei: 0.3 });
+        shell(g, red, { top: -0.9, grow: 0.14 });
+        box(g, black, 1.18, 0.12, 1.18, 0, -0.92, 0);
+        box(g, black, 1.18, 0.12, 1.18, 0, -1.92, 0);
+        box(g, gold, 1.2, 0.04, 1.2, 0, -0.85, 0);
+        // 다이아 무늬 (카드 무늬처럼 옆면)
+        for (const y of [-1.2, -1.6]) box(g, gold, 0.14, 0.14, 0.04, side * 0.58, y, 0, 0, Math.PI / 2, Math.PI / 4);
+        // 주사위 만들기 (눈은 검은 네모)
+        const PIPS = { 1: [[0, 0]], 2: [[-1, 1], [1, -1]], 3: [[-1, 1], [0, 0], [1, -1]], 4: [[-1, 1], [1, 1], [-1, -1], [1, -1]], 5: [[-1, 1], [1, 1], [0, 0], [-1, -1], [1, -1]], 6: [[-1, 1], [1, 1], [-1, 0], [1, 0], [-1, -1], [1, -1]] };
+        function die(size, body, pipMat) {
+            const d = new THREE.Group();
+            box(d, body, size, size, size, 0, 0, 0);
+            const off = size * 0.27, ps = size * 0.16, sur = size / 2 + 0.005;
+            const faces = [[1, [0, 0, 1]], [6, [0, 0, -1]], [2, [0, 1, 0]], [5, [0, -1, 0]], [3, [1, 0, 0]], [4, [-1, 0, 0]]];
+            for (const [n, [nx, ny, nz]] of faces) for (const [a, b] of PIPS[n]) {
+                const pip = new THREE.Mesh(BOX, n === 1 ? std('#e01030', { emissive: '#ff1030', ei: 0.6 }) : pipMat);
+                if (nz) { pip.scale.set(ps, ps, 0.02); pip.position.set(a * off, b * off, nz * sur); }
+                else if (ny) { pip.scale.set(ps, 0.02, ps); pip.position.set(a * off, ny * sur, b * off); }
+                else { pip.scale.set(0.02, ps, ps); pip.position.set(nx * sur, b * off, a * off); }
+                d.add(pip);
+            }
+            return d;
+        }
+        const ivory = std('#f6f2e8', { rough: 0.35 });
+        const big = die(0.46, ivory, black);
+        big.position.set(0, -1.42, 0.78);
+        g.add(big);
+        box(g, gold, 0.6, 0.6, 0.06, 0, -1.42, 0.58);   // 받침
+        const minis = [die(0.22, ivory, black), die(0.22, std('#1a1a22', { metal: 0.5 }), std('#ffd25a', { emissive: '#ffae00', ei: 0.8 }))];
+        minis.forEach(m => g.add(m));
+        const spark = glow('#ffe27a', 0.9);
+        const sparks = Array.from({ length: 4 }, () => box(g, spark, 0.06, 0.06, 0.06, 0, 0, 0));
+        up.push((t) => {
+            // 큰 주사위: 2초마다 데굴 굴렀다가 멈춤
+            const ph = t % 2.4, roll = Math.min(1, ph / 0.5);
+            const e = 1 - Math.pow(1 - roll, 3);
+            const n = Math.floor(t / 2.4);
+            big.rotation.set((n + e) * Math.PI / 2, (n % 2) * Math.PI / 2 * e, 0);
+            big.position.z = 0.78 + Math.sin(roll * Math.PI) * 0.15;
+            minis.forEach((m, i) => {
+                const a = t * 1.8 + i * Math.PI;
+                m.position.set(Math.cos(a) * 0.95, -1.35 + Math.sin(a * 2) * 0.12, Math.sin(a) * 0.95);
+                m.rotation.set(t * 2.5 + i, t * 1.7, t * 0.9);
+            });
+            sparks.forEach((s, i) => {
+                const k = (t * 0.8 + i / 4) % 1;
+                s.position.set(Math.sin(i * 2.1) * 0.35, -1.42 + k * 0.9, 0.85 + Math.cos(i * 1.3) * 0.15);
+                s.scale.setScalar(0.06 * (1 - k));
+            });
+        });
+    },
+
+    // 🎰 잭팟: 금빛 슬롯머신. 손등에 릴 3개가 돌다 멈추고, 바깥쪽 레버가 당겨지면 코인이 튐
+    gacha_jackpot(g, up, side) {
+        const gold = std('#e9b530', { metal: 0.9, rough: 0.22, emissive: '#7a5200', ei: 0.25 });
+        const dark = std('#2a1036', { metal: 0.4, rough: 0.4 });
+        const red = std('#e8213a', { metal: 0.3, rough: 0.3, emissive: '#a0001a', ei: 0.5 });
+        shell(g, gold, { top: -0.82, grow: 0.16 });
+        box(g, dark, 1.2, 0.16, 1.2, 0, -0.86, 0);
+        box(g, dark, 1.2, 0.16, 1.2, 0, -1.94, 0);
+        // 릴 창
+        box(g, dark, 0.98, 0.5, 0.08, 0, -1.38, 0.6);
+        const SYM = ['#ff2a44', '#ffd23a', '#3ddc6a', '#5ab0ff'];
+        const reels = [];
+        for (let i = 0; i < 3; i++) {
+            const reel = new THREE.Group();
+            reel.position.set((i - 1) * 0.3, -1.38, 0.6);
+            for (let k = 0; k < 4; k++) {
+                const face = new THREE.Group();
+                face.rotation.x = k * Math.PI / 2;
+                box(face, std('#fff6e0', { rough: 0.5 }), 0.24, 0.3, 0.02, 0, 0, 0.15);
+                // 7 / 체리 / 바 / 다이아 를 네모로
+                const sm = std(SYM[k], { emissive: SYM[k], ei: 0.7 });
+                if (k === 0) { box(face, sm, 0.14, 0.04, 0.02, 0, 0.08, 0.17); box(face, sm, 0.04, 0.18, 0.02, 0.03, -0.02, 0.17, 0, 0, -0.35); }
+                else if (k === 1) { box(face, sm, 0.07, 0.07, 0.02, -0.04, -0.05, 0.17); box(face, sm, 0.07, 0.07, 0.02, 0.05, -0.04, 0.17); box(face, std('#2a8c3c'), 0.03, 0.12, 0.02, 0.01, 0.06, 0.17, 0, 0, 0.4); }
+                else if (k === 2) { box(face, sm, 0.18, 0.06, 0.02, 0, 0.05, 0.17); box(face, sm, 0.18, 0.06, 0.02, 0, -0.05, 0.17); }
+                else box(face, sm, 0.11, 0.11, 0.02, 0, 0, 0.17, 0, 0, Math.PI / 4);
+                reel.add(face);
+            }
+            g.add(reel); reels.push(reel);
+        }
+        // 테두리 전구 (번갈아 깜빡)
+        const bulbsA = glow('#fff2a0', 1), bulbsB = glow('#ff7a30', 1);
+        for (let i = 0; i < 6; i++) {
+            box(g, i % 2 ? bulbsA : bulbsB, 0.07, 0.07, 0.07, -0.45 + i * 0.18, -1.08, 0.64);
+            box(g, i % 2 ? bulbsB : bulbsA, 0.07, 0.07, 0.07, -0.45 + i * 0.18, -1.68, 0.64);
+        }
+        // 레버 (바깥쪽)
+        const lever = new THREE.Group();
+        lever.position.set(side * 0.66, -1.5, 0);
+        box(lever, dark, 0.12, 0.2, 0.2, 0, 0, 0);
+        const stick = new THREE.Group(); lever.add(stick);
+        box(stick, std('#cfd3dc', { metal: 0.9, rough: 0.2 }), 0.06, 0.55, 0.06, side * 0.05, 0.3, 0);
+        box(stick, red, 0.16, 0.16, 0.16, side * 0.05, 0.6, 0);
+        g.add(lever);
+        // 코인
+        const coinMat = std('#ffd84a', { metal: 1, rough: 0.2, emissive: '#ffb300', ei: 0.6 });
+        const coins = Array.from({ length: 5 }, () => { const c = box(g, coinMat, 0.16, 0.16, 0.04, 0, 0, 0); c.visible = false; return c; });
+        const coinV = coins.map(() => new THREE.Vector3());
+        let lastPull = -1;
+        up.push((t, dt = 1 / 60) => {
+            const cyc = t % 3, n = Math.floor(t / 3);
+            stick.rotation.z = -side * (cyc < 0.25 ? cyc / 0.25 * 1.1 : cyc < 0.5 ? (0.5 - cyc) / 0.25 * 1.1 : 0);
+            reels.forEach((r, i) => {
+                const stopAt = 0.9 + i * 0.35;
+                if (cyc < stopAt) r.rotation.x += dt * 22;
+                else r.rotation.x += (Math.round(r.rotation.x / (Math.PI / 2)) * Math.PI / 2 - r.rotation.x) * Math.min(1, dt * 14);
+            });
+            bulbsA.opacity = (Math.floor(t * 6) % 2) ? 1 : 0.25;
+            bulbsB.opacity = (Math.floor(t * 6) % 2) ? 0.25 : 1;
+            if (cyc > 2 && lastPull !== n) {
+                lastPull = n;
+                coins.forEach((c, i) => { c.visible = true; c.position.set((i - 2) * 0.08, -1.1, 0.65); coinV[i].set((i - 2) * 0.5, 2.2 + Math.random(), 0.6 + Math.random() * 0.5); });
+            }
+            coins.forEach((c, i) => {
+                if (!c.visible) return;
+                coinV[i].y -= 6 * dt;
+                c.position.addScaledVector(coinV[i], dt);
+                c.rotation.y += dt * 12;
+                if (c.position.y < -2.6) c.visible = false;
+            });
+        });
+    },
+
+    // 🌠 별똥별: 밤하늘 판금(별 박힌) + 손등 수정 + 팔을 비스듬히 도는 혜성과 꼬리
+    gacha_comet(g, up, side) {
+        const night = std('#0d1640', { metal: 0.75, rough: 0.25, emissive: '#0a1450', ei: 0.35 });
+        const silver = std('#dfe6ff', { metal: 0.95, rough: 0.15 });
+        shell(g, night, { top: -0.75, grow: 0.16 });
+        box(g, silver, 1.21, 0.07, 1.21, 0, -0.78, 0);
+        box(g, silver, 1.21, 0.07, 1.21, 0, -1.95, 0);
+        // 박힌 별
+        const starM = glow('#ffffff', 1);
+        for (let i = 0; i < 18; i++) {
+            const f = i % 4, y = -0.95 - Math.random() * 0.9, u = (Math.random() - 0.5) * 1.0;
+            const s = 0.03 + Math.random() * 0.04;
+            f === 0 ? box(g, starM, s, s, 0.02, u, y, 0.585) : f === 1 ? box(g, starM, s, s, 0.02, u, y, -0.585) : box(g, starM, 0.02, s, s, f === 2 ? 0.585 : -0.585, y, u);
+        }
+        // 지느러미 (바깥쪽)
+        for (let i = 0; i < 3; i++) box(g, silver, 0.06, 0.3 - i * 0.06, 0.34 - i * 0.06, side * (0.64 + i * 0.05), -1.05 - i * 0.18, 0, 0, 0, side * 0.3);
+        // 손등 수정
+        const gem = new THREE.Group(); gem.position.set(0, -1.38, 0.66);
+        box(gem, std('#7ae8ff', { emissive: '#30c8ff', ei: 1.4, metal: 0.3, rough: 0.1 }), 0.26, 0.26, 0.26, 0, 0, 0, 0, 0, Math.PI / 4);
+        const halo = box(gem, glow('#7ae8ff', 0.35), 0.5, 0.5, 0.02, 0, 0, -0.02, 0, 0, Math.PI / 4);
+        g.add(gem);
+        // 혜성
+        const orbit = new THREE.Group(); orbit.position.y = -1.35; orbit.rotation.set(0.5, 0, side * 0.35);
+        const head = box(orbit, glow('#ffffff', 1), 0.16, 0.16, 0.16, 0, 0, 0);
+        const TAIL = 9;
+        const tail = Array.from({ length: TAIL }, (_, i) => box(orbit, glow(i < 3 ? '#bfefff' : '#6a8cff', 0.8 * (1 - i / TAIL)), 0.12, 0.12, 0.12, 0, 0, 0));
+        g.add(orbit);
+        up.push(t => {
+            const a = t * 2.4;
+            head.position.set(Math.cos(a) * 0.95, 0, Math.sin(a) * 0.95);
+            head.rotation.set(t * 4, t * 3, 0);
+            tail.forEach((b, i) => {
+                const aa = a - (i + 1) * 0.16;
+                b.position.set(Math.cos(aa) * 0.95, 0, Math.sin(aa) * 0.95);
+                b.scale.setScalar(0.12 * (1 - i / TAIL * 0.8));
+            });
+            gem.rotation.y = t * 1.2;
+            gem.scale.setScalar(1 + Math.sin(t * 3) * 0.05);
+            halo.material.opacity = 0.25 + Math.sin(t * 3) * 0.12;
+            starM.opacity = 0.6 + Math.sin(t * 5) * 0.4;
+        });
     }
 };
 
-/* ---------- 부적 2종 ---------- */
+/* ---------- 부적 ---------- */
 function talismanTexture(paper, ink, title) {
     const c = document.createElement('canvas');
     c.width = 64; c.height = 128;
@@ -258,6 +428,114 @@ const AMULETS = {
                 const a = t * 2.2 + i * Math.PI;
                 s.position.set(Math.cos(a) * 0.82, -0.42 + Math.sin(a * 2) * 0.08, Math.sin(a) * 0.82);
                 s.rotation.set(t * 3, t * 2, 0);
+            });
+        });
+    },
+    // 🍀 네잎클로버: 초록 띠 + 금사슬에 매달린 클로버가 빙글빙글
+    gacha_clover(g, up, side) {
+        const band = std('#1f6b3a', { rough: 0.7 });
+        box(g, band, 1.1, 0.26, 1.1, 0, -0.42, 0);
+        const gold = std('#ffd25a', { metal: 0.9, rough: 0.25, emissive: '#c08a00', ei: 0.3 });
+        box(g, gold, 1.12, 0.05, 1.12, 0, -0.3, 0);
+        box(g, gold, 1.12, 0.05, 1.12, 0, -0.54, 0);
+        const charm = new THREE.Group();
+        charm.position.set(0, -0.56, 0.6);
+        for (let i = 0; i < 4; i++) box(charm, gold, 0.05, 0.05, 0.05, 0, -i * 0.07, 0);
+        const clover = new THREE.Group(); clover.position.y = -0.48;
+        const leaf = std('#3ddc6a', { emissive: '#22c45a', ei: 0.7, rough: 0.4 });
+        for (const [x, y] of [[0, 0.11], [0.11, 0], [0, -0.11], [-0.11, 0]]) box(clover, leaf, 0.16, 0.16, 0.05, x, y, 0, 0, 0, Math.PI / 4);
+        box(clover, gold, 0.06, 0.06, 0.07, 0, 0, 0);
+        box(clover, std('#2a8c3c'), 0.035, 0.16, 0.04, 0.04, -0.2, 0, 0, 0, 0.4);
+        charm.add(clover);
+        g.add(charm);
+        const sp = glow('#b6ffcb', 1);
+        const sparks = Array.from({ length: 3 }, () => box(g, sp, 0.05, 0.05, 0.05, 0, 0, 0));
+        up.push(t => {
+            clover.rotation.y = t * 1.6;
+            charm.rotation.z = Math.sin(t * 1.5) * 0.12;
+            sparks.forEach((s, i) => {
+                const k = (t * 0.7 + i / 3) % 1;
+                s.position.set(Math.sin(i * 2 + t) * 0.25, -1.0 + k * 0.5, 0.65);
+                s.scale.setScalar(0.05 * (1 - k));
+            });
+        });
+    },
+
+    // 🧭 폭풍 나침반: 가죽 띠 + 놋쇠 나침반. 바늘이 미친 듯 돌다 멈추고, 작은 구름과 번개가 맴돔
+    gacha_compass(g, up, side) {
+        box(g, std('#5a3a22', { rough: 0.85 }), 1.1, 0.28, 1.1, 0, -0.42, 0);
+        const brass = std('#c9a24a', { metal: 0.9, rough: 0.28 });
+        const comp = new THREE.Group(); comp.position.set(0, -0.62, 0.62);
+        box(comp, brass, 0.5, 0.5, 0.1, 0, 0, 0);
+        box(comp, std('#f2ead2', { rough: 0.6 }), 0.4, 0.4, 0.02, 0, 0, 0.055);
+        for (const [x, y] of [[0, 0.16], [0, -0.16], [0.16, 0], [-0.16, 0]]) box(comp, std('#3a2a1a'), 0.03, 0.03, 0.02, x, y, 0.065);
+        box(comp, brass, 0.12, 0.1, 0.1, 0, 0.3, 0);   // 고리
+        const needle = new THREE.Group(); needle.position.z = 0.075;
+        box(needle, std('#e8213a', { emissive: '#ff2040', ei: 0.6 }), 0.05, 0.16, 0.02, 0, 0.08, 0);
+        box(needle, std('#2a6bff', { emissive: '#2050ff', ei: 0.4 }), 0.05, 0.16, 0.02, 0, -0.08, 0);
+        box(needle, brass, 0.06, 0.06, 0.03, 0, 0, 0.01);
+        comp.add(needle);
+        g.add(comp);
+        const cloudM = std('#d8dde8', { rough: 0.9, emissive: '#8a95b0', ei: 0.2 });
+        const clouds = [0, 1, 2].map(() => {
+            const c = new THREE.Group();
+            box(c, cloudM, 0.18, 0.1, 0.12, 0, 0, 0); box(c, cloudM, 0.12, 0.12, 0.12, 0.05, 0.05, 0);
+            g.add(c); return c;
+        });
+        const boltM = glow('#bfe0ff', 1);
+        const boltB = [box(g, boltM, 0.03, 0.12, 0.03, 0, 0, 0), box(g, boltM, 0.03, 0.12, 0.03, 0, 0, 0)];
+        up.push(t => {
+            const ph = t % 4;
+            needle.rotation.z = ph < 1.4 ? t * 14 : Math.sin(t * 6) * Math.max(0, 0.6 - (ph - 1.4)) + Math.round(t * 14 / (Math.PI * 2)) * Math.PI * 2;
+            comp.rotation.x = 0.1 + Math.sin(t * 1.4) * 0.06;
+            clouds.forEach((c, i) => {
+                const a = t * 1.1 + i * (Math.PI * 2 / 3);
+                c.position.set(Math.cos(a) * 0.78, -0.3 + Math.sin(a * 2) * 0.05, Math.sin(a) * 0.78);
+            });
+            const flick = Math.sin(t * 23) > 0.85;
+            boltB.forEach((b, i) => {
+                b.visible = flick;
+                const c = clouds[Math.floor(t) % 3];
+                b.position.set(c.position.x + (i ? 0.03 : 0), c.position.y - 0.12 - i * 0.1, c.position.z);
+                b.rotation.z = i ? -0.5 : 0.5;
+            });
+        });
+    },
+
+    // 🐱 황금 고양이: 붉은 띠 + 손 흔드는 금빛 마네키네코, 방울 + 코인
+    gacha_cat(g, up, side) {
+        box(g, std('#b3122e', { rough: 0.6 }), 1.1, 0.26, 1.1, 0, -0.38, 0);
+        const gold = std('#ffd75a', { metal: 0.55, rough: 0.3, emissive: '#e0a000', ei: 0.75 });
+        const white = std('#fff8ec', { rough: 0.5 });
+        const red = std('#e01b33', { rough: 0.4 });
+        const cat = new THREE.Group(); cat.position.set(0, -0.58, 0.66); cat.scale.setScalar(0.85);
+        box(cat, gold, 0.42, 0.4, 0.3, 0, -0.2, 0);          // 몸
+        box(cat, gold, 0.46, 0.36, 0.32, 0, 0.16, 0);        // 머리
+        box(cat, gold, 0.1, 0.1, 0.08, -0.15, 0.38, 0); box(cat, gold, 0.1, 0.1, 0.08, 0.15, 0.38, 0);  // 귀
+        box(cat, red, 0.06, 0.06, 0.02, -0.15, 0.37, 0.04); box(cat, red, 0.06, 0.06, 0.02, 0.15, 0.37, 0.04);
+        box(cat, std('#1a1206'), 0.08, 0.03, 0.02, -0.1, 0.19, 0.165); box(cat, std('#1a1206'), 0.08, 0.03, 0.02, 0.1, 0.19, 0.165);  // 웃는 눈
+        box(cat, red, 0.04, 0.03, 0.02, 0, 0.11, 0.165);
+        box(cat, white, 0.36, 0.08, 0.02, 0, 0.03, 0.165);   // 수염 판
+        box(cat, red, 0.44, 0.06, 0.32, 0, -0.03, 0);         // 목줄
+        const bell = box(cat, std('#ffe680', { metal: 1, rough: 0.15, emissive: '#ffb300', ei: 0.8 }), 0.1, 0.1, 0.1, 0, -0.09, 0.17);
+        const coin = box(cat, gold, 0.22, 0.28, 0.04, -0.1, -0.24, 0.17);
+        box(cat, red, 0.1, 0.03, 0.01, -0.1, -0.2, 0.195); box(cat, red, 0.03, 0.12, 0.01, -0.1, -0.26, 0.195);
+        const paw = new THREE.Group(); paw.position.set(0.2, 0.0, 0.05);
+        box(paw, gold, 0.11, 0.26, 0.11, 0, 0.13, 0);
+        box(paw, white, 0.12, 0.06, 0.12, 0, 0.27, 0);
+        cat.add(paw);
+        g.add(cat);
+        const sp = glow('#ffe27a', 1);
+        const sparks = Array.from({ length: 4 }, () => box(g, sp, 0.05, 0.05, 0.05, 0, 0, 0));
+        up.push(t => {
+            paw.rotation.z = -0.3 - Math.max(0, Math.sin(t * 5)) * 0.8;
+            cat.rotation.z = Math.sin(t * 1.4) * 0.06;
+            bell.rotation.z = Math.sin(t * 8) * 0.4;
+            coin.rotation.y = Math.sin(t * 2) * 0.2;
+            sparks.forEach((s, i) => {
+                const a = t * 1.5 + i * Math.PI / 2;
+                s.position.set(Math.cos(a) * 0.4, -0.58 + Math.sin(a * 1.5) * 0.2, 0.7 + Math.sin(a) * 0.12);
+                s.scale.setScalar(0.05 * (0.6 + Math.sin(t * 6 + i) * 0.4));
             });
         });
     }
