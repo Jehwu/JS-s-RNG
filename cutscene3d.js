@@ -14,7 +14,7 @@
      hit2 : JXS만. 두 번째 클라이맥스. hit~hit2 동안은 각성 직전 단계
    ========================================================= */
 
-import { buildLocomotive } from './auraSignatures.js?v=17';
+import { buildLocomotive } from './auraSignatures.js?v=18';
 
 export function createCutscene(ctx) {
     const { THREE, scene, camera, dummy, floor, stars, kit, bloom, stageApi } = ctx;
@@ -146,6 +146,134 @@ export function createCutscene(ctx) {
        update(time, phase, k, dt)  phase: 'build' | 'phase2' | 'reveal'
        ========================================================= */
     const MOTIFS = {
+        // 성운의 주인: 별 대신 두 팔 은하가 점점 빨리 감기며 모이고, 별자리 선이 하나씩 이어짐
+        nebula({ g, colors }) {
+            const N = 180;
+            const gal = new THREE.InstancedMesh(BOX, new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), N);
+            const ca = colors[0], cb = colors[1], cw = new THREE.Color('#ffffff');
+            const gd = Array.from({ length: N }, (_, i) => ({ arm: i % 2, r: Math.pow(Math.random(), 0.7) * 6 + 0.3, off: rand(-0.3, 0.3) }));
+            gd.forEach((d, i) => gal.setColorAt(i, (d.r < 1.2 ? cw : d.arm ? ca : cb).clone().lerp(cw, Math.random() * 0.3)));
+            const holder = new THREE.Group(); holder.position.set(0, 3.5, 0); holder.rotation.x = 1.1; holder.add(gal); g.add(holder);
+            const pts = [[-4, 2.5], [-2, 3.6], [0, 3], [1.6, 4.2], [3.6, 3.4], [4.4, 1.6], [2.4, 0.8], [0.4, 1.4]];
+            const links = [];
+            for (let i = 0; i < pts.length - 1; i++) {
+                const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+                const l = new THREE.Mesh(BOX, glowMat(colors[2] || cw, 0)); const len = Math.hypot(bx - ax, by - ay);
+                l.scale.set(len, 0.06, 0.06); l.position.set((ax + bx) / 2, 3.5 + (ay + by) / 2, -4); l.rotation.z = Math.atan2(by - ay, bx - ax);
+                g.add(l); links.push(l);
+            }
+            const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3();
+            return {
+                hideStar: true, bloom: 0.7,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    const shrink = 1 - ease.in(clamp01((k - 0.7) / 0.3)) * 0.85;
+                    gd.forEach((d, i) => {
+                        const a = d.r * 1.1 + d.arm * Math.PI + time * (0.3 + k * k * 4) + d.off;
+                        const r = d.r * shrink;
+                        p.set(Math.cos(a) * r, Math.sin(i) * 0.08, Math.sin(a) * r);
+                        sc.setScalar(d.r < 1 ? 0.18 : 0.1);
+                        gal.setMatrixAt(i, m4.compose(p, q, sc));
+                    });
+                    gal.instanceMatrix.needsUpdate = true;
+                    links.forEach((l, i) => { l.material.opacity = k * 9 > i + 1 ? 0.8 : 0; });
+                }
+            };
+        },
+
+        // 얼음 황제: 얼음 가시가 둥글게 차례로 솟고, 하늘에서 거대한 얼음 왕관이 내려옴
+        iceEmperor({ g, colors }) {
+            const ice = new THREE.MeshStandardMaterial({ color: 0xbfe9ff, roughness: 0.15, transparent: true, opacity: 0.8, emissive: colors[0], emissiveIntensity: 0.35 });
+            const spikes = [];
+            for (let i = 0; i < 24; i++) {
+                const a = (i / 24) * Math.PI * 2;
+                const sp = new THREE.Mesh(BOX, ice);
+                sp.position.set(Math.cos(a) * 6, 0, Math.sin(a) * 6); sp.rotation.set(Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35);
+                sp.userData.h = 2.5 + (i % 3) * 1.5; g.add(sp); spikes.push(sp);
+            }
+            const crown = new THREE.Group();
+            for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2; const c = new THREE.Mesh(BOX, ice); c.scale.set(0.5, 1.6 + (i % 2) * 1.1, 0.5); c.position.set(Math.cos(a) * 2.2, 0, Math.sin(a) * 2.2); crown.add(c); }
+            g.add(crown);
+            return {
+                hideStar: false, bloom: 0.8,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    spikes.forEach((sp, i) => {
+                        const kk = clamp01((k - i * 0.02) / 0.3);
+                        const h = sp.userData.h * ease.out(kk) + 0.001;
+                        sp.scale.set(0.7, h, 0.7); sp.position.y = h / 2;
+                    });
+                    crown.position.set(0, THREE.MathUtils.lerp(16, 6, ease.inOut(clamp01((k - 0.3) / 0.7))), 0);
+                    crown.rotation.y = time * (0.3 + k * 2);
+                }
+            };
+        },
+
+        // 혼돈의 신: 세 겹 고리가 점점 미친 듯 돌고, 깨진 조각들이 사방에서 모여듦
+        chaosGod({ g, colors }) {
+            const gy = new THREE.Group(); gy.position.set(0, 3.5, 0); g.add(gy);
+            const rings = [0, 1, 2].map(i => { const r = square(7 - i * 1.4, 0.14, glowMat(colors[i % colors.length], 0.95)); gy.add(r); return r; });
+            const N = 40;
+            const shards = new THREE.InstancedMesh(BOX, new THREE.MeshStandardMaterial({ color: 0x1a1428, emissive: colors[0], emissiveIntensity: 0.35 }), N);
+            const sd = Array.from({ length: N }, () => ({ from: new THREE.Vector3(rand(-18, 18), rand(-6, 16), rand(-14, 6)), s: rand(0.4, 1.2), ph: rand(0, 6) }));
+            g.add(shards);
+            const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3(), C = new THREE.Vector3(0, 3.5, 0);
+            return {
+                bloom: 0.8,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    const sp = 0.5 + k * k * 6;
+                    rings[0].rotation.set(time * sp, 0, time * sp * 0.4);
+                    rings[1].rotation.set(Math.PI / 2, time * sp * 1.2, 0);
+                    rings[2].rotation.set(time * sp * 0.7, time * sp, Math.PI / 4);
+                    rings.forEach((r, i) => r.children.forEach(m => m.material.color.setHSL((time * 0.3 + i / 3) % 1, 1, 0.6)));
+                    const gather = ease.inOut(clamp01(k / 0.95));
+                    sd.forEach((d, i) => {
+                        p.lerpVectors(d.from, C, gather * 0.85);
+                        q.setFromEuler(e.set(time * 2 + d.ph, time + i, 0)); sc.set(d.s, d.s * 0.2, d.s);
+                        shards.setMatrixAt(i, m4.compose(p, q, sc));
+                    });
+                    shards.instanceMatrix.needsUpdate = true;
+                }
+            };
+        },
+
+        // 태양왕: 블록 태양이 지평선 아래에서 떠올라 점점 커지고, 햇살이 빨리 돌다 터짐
+        sunKing({ g, colors }) {
+            const R = 2.6, S = 0.55;
+            const cells = [];
+            for (let x = -R; x <= R; x += S) for (let y = -R; y <= R; y += S) for (let z = -R; z <= R; z += S) {
+                const d = Math.hypot(x, y, z);
+                if (d <= R && d > R - S * 1.1) cells.push([x, y, z]);
+            }
+            const sun = new THREE.InstancedMesh(BOX, new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), cells.length);
+            const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3();
+            cells.forEach(([x, y, z], i) => { sun.setMatrixAt(i, m4.compose(p.set(x, y, z), q, sc.setScalar(S * 0.95))); sun.setColorAt(i, colors[0].clone().lerp(colors[1], Math.random())); });
+            const holder = new THREE.Group(); holder.add(sun); g.add(holder);
+            const rays = new THREE.Group(); holder.add(rays);
+            for (let i = 0; i < 20; i++) { const a = (i / 20) * Math.PI * 2; const r = new THREE.Mesh(BOX, glowMat(i % 2 ? colors[0] : colors[2] || colors[1], 0.5)); r.scale.set(0.22, i % 2 ? 3 : 4.6, 0.1); r.position.set(Math.cos(a) * (R + 2.2), Math.sin(a) * (R + 2.2), 0); r.rotation.z = a - Math.PI / 2; rays.add(r); }
+            return {
+                hideStar: true, bloom: 0.6,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    const rise = ease.out(clamp01(k / 0.6));
+                    holder.position.set(0, THREE.MathUtils.lerp(-6, 3.8, rise), -5);
+                    holder.scale.setScalar(0.6 + ease.in(k) * 0.6);
+                    sun.rotation.y = time * 0.3;
+                    rays.rotation.z = time * (0.2 + k * k * 4);
+                    rays.children.forEach((r, i) => { r.material.opacity = 0.25 + k * 0.5; });
+                }
+            };
+        },
+
         // 명예와 영광: 빛의 방패벽이 칸칸이 세워지고, 하늘에서 거대한 망치가 내려와 쾅
         crusader({ g, colors }) {
             const shield = new THREE.Group(); shield.position.set(0, 3.2, -0.5); g.add(shield);

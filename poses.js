@@ -566,28 +566,99 @@ export const POSES = {
         d.head.rotation.x = -0.35; d.head.rotation.y = S(t * 0.45) * 0.4;
         set(d.legL, -0.2, 0, -0.12); set(d.legR, 0.15, 0, 0.12);
     },
-    // 명예와 영광 김민채: 방패를 펼치고(왼팔 앞으로) → 망치를 머리 위로 → 쾅 내리침
+    // 명예와 영광 김민채: 평소엔 두 손으로 망치 자루를 짚고 우뚝 섬 → 방패를 앞으로 → 두 손으로 망치를 머리 뒤로 → 앞 바닥에 쾅
     anc_honor_minchae(t, d, _r, sig) {
         const sh = sig?.shieldK ?? 0, up = sig?.raiseK ?? 0, sl = sig?.slamK ?? 0;
-        const rest = 1 - Math.max(sh, up, sl);
-        // 캐릭터 오른팔(armL)에 망치: 평소엔 어깨에 멤
-        set(d.armL, mix(mix(-2.2, -3.0, up), -1.2, sl), 0, mix(0.35, 0.1, up));
-        set(d.armR, mix(-0.2, -1.55, sh), mix(0, -0.4, sh), mix(-0.25, 0.1, sh));
-        d.root.rotation.x = sl * 0.4 - up * 0.1;
-        d.root.position.y -= sl * 0.35;
-        set(d.legL, -0.3 * sl - 0.1, 0, -0.15); set(d.legR, 0.25 * sl + 0.05, 0, 0.15);
-        d.head.rotation.x = mix(0, -0.2, up) + sl * 0.15;
-        d.root.rotation.y = rest * S(t * 0.4) * 0.15 - sh * 0.25;
+        const armX = sl > 0 ? mix(-0.5, -1.3, sl) : mix(-0.5, -2.9, up);
+        set(d.armL, armX, 0, 0.28);
+        if (sh > 0) set(d.armR, mix(armX, -1.55, sh), mix(0, -0.45, sh), mix(-0.28, 0.05, sh));
+        else set(d.armR, armX, 0, -0.28);
+        d.root.rotation.x = sl * 0.32 - up * 0.08;
+        d.root.position.y -= sl * 0.3;
+        set(d.legL, -0.15 - 0.3 * sl, 0, -0.16); set(d.legR, 0.1 + 0.25 * sl, 0, 0.16);
+        d.head.rotation.x = -up * 0.25 + sl * 0.12 + 0.03;
+        d.root.rotation.y = (1 - Math.max(sh, up, sl)) * S(t * 0.4) * 0.12 - sh * 0.3;
     },
-    // 저거너트 김민채: 대검을 어깨에 메고 육중하게 섬 → 뒤로 젖혔다가 한 바퀴 휘두름
+    // 저거너트 김민채: 대검을 어깨에 걸치고 앞으로 숙인 채 숨을 고름 → 두 손으로 머리 위로 → 앞에 내려찍음
     abs_juggernaut_minchae(t, d, _r, sig) {
-        const w = sig?.windK ?? 0, s = sig?.swingK ?? 0;
-        set(d.armL, mix(-2.6, -1.6, s), mix(0, 0.8, w), mix(0.5, 1.2, s));
-        set(d.armR, -0.3, 0, -0.35);
-        d.root.rotation.y = mix(mix(0, 0.9, w), -Math.PI * 2 * Math.min(1, s * 1.0), s > 0 ? 1 : 0);
-        d.root.rotation.x = 0.15 + w * 0.1;
-        d.root.position.y -= 0.25;
-        set(d.legL, -0.35, 0, -0.22); set(d.legR, 0.3, 0, 0.22);
-        d.head.rotation.x = 0.12;
+        const up = sig?.raiseK ?? 0, sl = sig?.slamK ?? 0;
+        const armX = sl > 0 ? mix(-1.0, -1.2, sl) : mix(-1.0, -3.0, up);
+        set(d.armL, armX, 0, mix(0.35, 0.15, Math.max(up, sl)));
+        const both = Math.max(up, sl);
+        set(d.armR, mix(0.25 + S(t * 1.5) * 0.05, armX, both), 0, mix(-0.45, -0.15, both));
+        d.root.rotation.x = 0.18 + S(t * 1.5) * 0.03 - up * 0.2 + sl * 0.45;
+        d.root.position.y -= 0.3 + sl * 0.35;
+        set(d.legL, -0.35 - sl * 0.25, 0, -0.25); set(d.legR, 0.3 + sl * 0.2, 0, 0.25);
+        d.head.rotation.x = 0.1 - up * 0.3 + sl * 0.1;
+        d.root.rotation.y = (1 - both) * S(t * 0.35) * 0.12;
+    },
+
+    // 그림자 사냥꾼 박지성: 낮게 웅크려 양손 단검을 역수로 쥠
+    ep_shadow_jisung(t, d) {
+        const k = pulse(t, 3, 0.4);
+        set(d.armL, -0.9 - k * 0.8, 0.3, 0.5); set(d.armR, -0.6, -0.3, -0.6);
+        set(d.legL, -0.7, 0, -0.25); set(d.legR, 0.5, 0, 0.25);
+        d.root.position.y -= 0.55; d.root.rotation.x = 0.3; d.head.rotation.x = -0.25;
+        d.root.rotation.y = S(t * 0.8) * 0.25;
+    },
+    // 네온 라이더 김가은: 한 손 앞으로 핸들, 바람 맞으며 몸을 숙임
+    ep_neon_gaeun(t, d) {
+        set(d.armL, -1.4, 0, 0.2); set(d.armR, -1.4, 0, -0.2);
+        set(d.legL, -1.1, 0, -0.1); set(d.legR, -1.1, 0, 0.1);
+        d.root.rotation.x = 0.35; d.root.position.y += 0.7 + S(t * 9) * 0.03;
+        d.head.rotation.x = -0.35; d.root.rotation.z = S(t * 0.7) * 0.1;
+    },
+    // 강령술사 김티비: 책을 펼친 손을 내밀고, 해골을 부를 땐 반대 손을 하늘로
+    leg_necro_tv(t, d, _r, sig) {
+        const k = sig?.castK ?? 0;
+        set(d.armR, -1.1, 0, -0.2); set(d.armL, mix(0.1, -0.4, k), 0, mix(0.15, 2.6, k));
+        d.head.rotation.x = mix(0.25, -0.2, k); d.root.position.y += 0.3 + S(t) * 0.08;
+    },
+    // 기계 천사 김민채: 공중에 떠서 두 팔을 아래로 펼침
+    leg_mechangel_minchae(t, d) {
+        set(d.armL, -0.2, 0, -0.7 - S(t * 0.9) * 0.2); set(d.armR, -0.2, 0, 0.7 + S(t * 0.9) * 0.2);
+        set(d.legL, 0.1, 0, -0.05); set(d.legR, -0.1, 0, 0.05);
+        d.root.position.y += 1.0 + S(t * 0.9) * 0.2; d.head.rotation.x = 0.15;
+    },
+    // 블랙홀 공병은: 머리 위 블랙홀에 끌려가듯 몸이 들리고 팔이 위로 당겨짐
+    myth_blackhole_byungeun(t, d) {
+        set(d.armL, -0.3, 0, -2.3 - S(t * 1.3) * 0.2); set(d.armR, -0.3, 0, 2.3 + S(t * 1.1) * 0.2);
+        set(d.legL, 0.25, 0, -0.1); set(d.legR, -0.15, 0, 0.1);
+        d.root.position.y += 1.2 + S(t * 0.6) * 0.3; d.root.rotation.z = S(t * 0.5) * 0.15; d.head.rotation.x = -0.4;
+    },
+    // 불사조 김가은: 날갯짓에 맞춰 팔을 크게 펼침
+    myth_phoenix_gaeun(t, d, _r, sig) {
+        const f = sig?.flapK ?? S(t * 2.4);
+        set(d.armL, -0.2, 0, -1.4 - f * 0.4); set(d.armR, -0.2, 0, 1.4 + f * 0.4);
+        set(d.legL, 0.1, 0, -0.05); set(d.legR, -0.1, 0, 0.05);
+        d.root.position.y += 1.1 - f * 0.15; d.head.rotation.x = -0.25;
+    },
+    // 성운의 주인 박지성: 지휘하듯 두 팔로 별을 그림
+    anc_nebula_jisung(t, d) {
+        set(d.armL, -1.0 + S(t * 0.8) * 0.5, 0, 0.9 + C(t * 0.8) * 0.4);
+        set(d.armR, -1.6 + S(t * 0.8 + 2) * 0.6, 0, -1.2 - C(t * 0.8 + 2) * 0.5);
+        d.root.position.y += 0.7 + S(t * 0.6) * 0.15; d.head.rotation.x = -0.3; d.root.rotation.y = S(t * 0.3) * 0.3;
+    },
+    // 얼음 황제 김티비: 홀을 높이 들어 얼음 가시를 부름
+    anc_iceemperor_tv(t, d, _r, sig) {
+        const k = sig?.raiseK ?? 0;
+        set(d.armL, mix(-0.7, -2.6, k), 0, 0.2); set(d.armR, 0.25, 0, -0.35);
+        d.head.rotation.x = mix(0.05, -0.25, k); d.root.rotation.x = -k * 0.05;
+        set(d.legL, 0, 0, -0.1); set(d.legR, 0, 0, 0.1);
+    },
+    // 혼돈의 신 김가은: 공중에서 비틀린 자세로 두 팔을 펼침, 가끔 몸이 끊기듯 튐
+    abs_chaos_gaeun(t, d) {
+        const g = Math.floor(t * 3) % 7 === 0 ? 0.25 : 0;
+        set(d.armL, -0.6 + S(t * 1.1) * 0.3, 0.3, 1.7 + g); set(d.armR, -0.2 + S(t * 0.9) * 0.3, -0.3, -1.3 - g);
+        d.root.position.y += 1.3 + S(t * 0.7) * 0.25; d.root.position.x += g * 0.6;
+        d.root.rotation.z = S(t * 0.6) * 0.2 + g; d.head.rotation.z = -0.3 + S(t * 1.3) * 0.15;
+        set(d.legL, 0.3, 0, -0.2); set(d.legR, -0.25, 0, 0.15);
+    },
+    // 태양왕 김건우: 가슴을 펴고 두 팔을 하늘로, 폭발할 때 더 크게
+    abs_sunking_gunwoo(t, d, _r, sig) {
+        const f = sig?.flareK ?? 0;
+        set(d.armL, -0.25, 0, -2.3 - f * 0.5); set(d.armR, -0.25, 0, 2.3 + f * 0.5);
+        d.head.rotation.x = -0.35 - f * 0.15; d.root.position.y += 0.6 + f * 0.3;
+        set(d.legL, 0, 0, -0.12); set(d.legR, 0, 0, 0.12);
     }
 };
