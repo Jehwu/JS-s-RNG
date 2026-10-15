@@ -4,9 +4,9 @@ export const CRAFT_ITEMS = [
         id: "gear_beginner",
         category: "gauntlet",
         name: "초보자의 운수대통 건틀렛",
-        desc: "영구적으로 행운이 10% 증가합니다.",
+        desc: "영구적으로 행운 10%, 속도 5%가 증가합니다.",
         luckBonus: 0.1,
-        speedBonus: 0,
+        speedBonus: 0.05,
         req: { "com_normal": 15, "com_sleepy_jisung": 10, "unc_tired": 3 }
     },
     {
@@ -79,20 +79,20 @@ export const CRAFT_ITEMS = [
     {
         id: "gacha_dice", category: "gauntlet", gacha: true,
         name: "행운의 주사위 건틀렛",
-        desc: "영구적으로 행운 150%, 속도 10%가 증가합니다.",
-        luckBonus: 1.5, speedBonus: 0.1, req: {}
+        desc: "영구적으로 행운 150%, 속도 15%가 증가합니다.",
+        luckBonus: 1.5, speedBonus: 0.15, req: {}
     },
     {
         id: "gacha_jackpot", category: "gauntlet", gacha: true,
         name: "잭팟 건틀렛",
-        desc: "영구적으로 행운 400%, 속도 20%가 증가합니다.",
-        luckBonus: 4, speedBonus: 0.2, req: {}
+        desc: "영구적으로 행운 400%, 속도 10%가 증가합니다.",
+        luckBonus: 4, speedBonus: 0.1, req: {}
     },
     {
         id: "gacha_comet", category: "gauntlet", gacha: true,
         name: "별똥별 건틀렛",
-        desc: "영구적으로 행운 800%, 속도 35%가 증가합니다.",
-        luckBonus: 8, speedBonus: 0.35, req: {}
+        desc: "영구적으로 행운 800%, 속도 5%가 증가합니다.",
+        luckBonus: 8, speedBonus: 0.05, req: {}
     },
     {
         id: "gacha_clover", category: "amulet", gacha: true,

@@ -1,7 +1,7 @@
-import { AURA_DATA } from './auras.js?v=26';
-import { CRAFT_ITEMS } from './craftItems.js?v=26';
-import { createMusicPlayer, coverArt } from './music.js?v=26';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=26';
+import { AURA_DATA } from './auras.js?v=27';
+import { CRAFT_ITEMS } from './craftItems.js?v=27';
+import { createMusicPlayer, coverArt } from './music.js?v=27';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=27';
 
 /* =========================================================
    📦 게임 데이터
@@ -41,7 +41,7 @@ const SHOP_ITEMS = [
 ];
 
 /* 🎰 상점 뽑기 (JC로 굴림). w = 가중치 */
-const GACHA_COST = 20000, GACHA_COST10 = 180000, GACHA_PITY = 60;
+const GACHA_COST = 30000, GACHA_COST10 = 270000, GACHA_PITY = 60;
 const GACHA_POOL = [
     { kind: 'jc', min: 5000, max: 30000, w: 300, tier: 'COMMON', label: 'JC 주머니' },
     { kind: 'items', items: { luck_3: 2, speed_3: 2 }, w: 200, tier: 'UNCOMMON', label: '물약 꾸러미' },
@@ -886,7 +886,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=26').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=27').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -925,11 +925,9 @@ function renderCraft() {
         if (gear.biomeBoost) chips.push(`<span class="chip biome">바이옴 ×${gear.biomeBoost} · 지속 ×${gear.biomeTime}</span>`);
         if (gear.gacha) chips.push(`<span class="chip gacha">뽑기 전용</span>`);
         const state = equipped ? '<span class="cstate on">장착 중</span>' : owned ? '<span class="cstate owned">보유</span>' : gear.gacha ? '<span class="cstate">미보유</span>' : `<span class="cstate">${metN}/${reqN}</span>`;
-        const btn = equipped
-            ? `<button class="btn btn-block" data-unequip="${gear.id}">해제</button>`
-            : owned
-                ? `<button class="btn btn-block btn-primary" data-equip="${gear.id}">장착</button>`
-                : gear.gacha
+        const btn = owned
+            ? `<button class="btn btn-block" data-gotobag="${gear.category}">가방에서 ${equipped ? '해제' : '장착'}</button>`
+            : gear.gacha
                     ? `<button class="btn btn-block" data-gotogacha="1">상점 뽑기에서 얻기</button>`
                     : `<button class="btn btn-block btn-gold" data-craft="${gear.id}" ${canCraft ? '' : 'disabled'}>${canCraft ? '제작하기' : '재료 부족'}</button>`;
         return `
@@ -1087,7 +1085,7 @@ function renderAll() {
    ========================================================= */
 
 const SHEET_RENDER = {
-    'sheet-bag': () => { renderInventory(); renderPotions(); },
+    'sheet-bag': () => { renderInventory(); renderPotions(); if (bagTab === 'gauntlet' || bagTab === 'amulet') renderBagGear(); },
     'sheet-craft': renderCraft,
     'sheet-shop': renderShop,
     'sheet-quest': renderQuests,
@@ -1105,7 +1103,7 @@ function stagger(el) {
     el._staggerT = setTimeout(() => el.classList.remove('stagger'), 1400);
 }
 const SHEET_LIST = {
-    'sheet-bag': () => [ui.inventoryGrid, ui.potionGrid],
+    'sheet-bag': () => [ui.inventoryGrid, ui.potionGrid, $('gear-grid')],
     'sheet-craft': () => [ui.craftGrid],
     'sheet-shop': () => [shopTab === 'gacha' ? $('gacha-panel') : ui.shopGrid],
     'sheet-quest': () => [ui.questList],
@@ -1124,7 +1122,7 @@ function openSheet(id) {
 function closeSheet(id) {
     const el = $(id);
     if (el.classList.contains('hidden')) return;
-    if (id === 'sheet-craft' || id === 'sheet-shop') gearPreviews?.stop();
+    if (id === 'sheet-craft' || id === 'sheet-shop' || id === 'sheet-bag') gearPreviews?.stop();
     el.classList.add('closing');
     document.querySelectorAll(`[data-sheet="${id}"]`).forEach(b => b.classList.remove('open'));
     setTimeout(() => {
@@ -1151,10 +1149,60 @@ function bindTabs(containerId, onChange) {
         onChange(tab.dataset.tab);
     });
 }
-bindTabs('bag-tabs', tab => {
+let bagTab = 'aura';
+function setBagTab(tab) {
+    bagTab = tab;
+    $('bag-tabs').querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    const gearTab = tab === 'gauntlet' || tab === 'amulet';
     ui.inventoryGrid.classList.toggle('hidden', tab !== 'aura');
     ui.potionGrid.classList.toggle('hidden', tab !== 'potion');
-    stagger(tab === 'aura' ? ui.inventoryGrid : ui.potionGrid);
+    $('gear-grid').classList.toggle('hidden', !gearTab);
+    if (gearTab) renderBagGear(); else gearPreviews?.stop();
+    stagger(tab === 'aura' ? ui.inventoryGrid : tab === 'potion' ? ui.potionGrid : $('gear-grid'));
+}
+bindTabs('bag-tabs', tab => setBagTab(tab));
+
+// 가방: 가진 건틀렛/부적 장착·해제
+function renderBagGear() {
+    const el = $('gear-grid');
+    const cat = bagTab === 'amulet' ? 'amulet' : 'gauntlet';
+    const items = CRAFT_ITEMS.filter(g => (g.category || 'gauntlet') === cat && gameState.craftedGears.includes(g.id));
+    el.classList.add('list');
+    if (!items.length) {
+        el.innerHTML = `<div class="empty">${cat === 'amulet' ? '부적' : '건틀렛'}이 없습니다.<br>제작하거나 상점 뽑기에서 얻을 수 있어요.</div>`;
+        return;
+    }
+    el.innerHTML = items.map(gear => {
+        const on = cat === 'amulet' ? gameState.amulet === gear.id : gameState.gear === gear.id;
+        const chips = [];
+        if (gear.luckBonus) chips.push(`<span class="chip luck">행운 +${Math.round(gear.luckBonus * 100)}%</span>`);
+        if (gear.speedBonus) chips.push(`<span class="chip speed">속도 +${Math.round(gear.speedBonus * 100)}%</span>`);
+        if (AMULET_MULT[gear.id]) chips.push(`<span class="chip amulet">10롤마다 행운 ×${AMULET_MULT[gear.id]}</span>`);
+        if (gear.amuletMult) chips.push(`<span class="chip amulet">${gear.amuletEvery || 10}롤마다 행운 ×${gear.amuletMult}</span>`);
+        if (gear.biomeBoost) chips.push(`<span class="chip biome">바이옴 ×${gear.biomeBoost} · 지속 ×${gear.biomeTime}</span>`);
+        return `
+        <div class="craft-card owned ${on ? 'equipped' : ''}">
+            <div class="craft-top">
+                <div class="craft-view"><canvas data-gear="${gear.id}" aria-hidden="true"></canvas>${on ? '<span class="cstate on">장착 중</span>' : ''}</div>
+                <div class="craft-info">
+                    <div class="craft-name">${gear.name}</div>
+                    <div class="chips">${chips.join('')}</div>
+                    <div class="craft-desc">${cat === 'amulet' ? '왼팔에 매다는 부적' : '오른팔에 끼는 건틀렛'}</div>
+                </div>
+            </div>
+            ${on ? `<button class="btn btn-block" data-unequip="${gear.id}">해제</button>` : `<button class="btn btn-block btn-primary" data-equip="${gear.id}">장착</button>`}
+        </div>`;
+    }).join('');
+    attachGearPreviews(el);
+}
+$('gear-grid').addEventListener('click', e => {
+    const d = e.target.dataset;
+    if (d.equip) equip(CRAFT_BY_ID[d.equip]);
+    else if (d.unequip) {
+        if (CRAFT_BY_ID[d.unequip].category === "amulet") { gameState.amulet = null; gameState.amuletStack = 0; }
+        else gameState.gear = null;
+    } else return;
+    saveGame(); renderStats(); renderBuffs(); renderBagGear(); applyGear();
 });
 bindTabs('craft-tabs', tab => { craftTab = tab; renderCraft(); stagger(ui.craftGrid); });
 bindTabs('shop-tabs', tab => setShopTab(tab));
@@ -1354,8 +1402,10 @@ ui.craftGrid.addEventListener('click', e => {
             if (gameState.inventory[r] <= 0) delete gameState.inventory[r];
         }
         gameState.craftedGears.push(gear.id);
-        equip(gear);
-        toast(`${gear.name} 제작 완료, 장착했습니다`, 'good');
+        toast(`${gear.name} 제작 완료\n가방에서 장착할 수 있어요`, 'good');
+    } else if (d.gotobag) {
+        closeSheet('sheet-craft'); openSheet('sheet-bag'); setBagTab(d.gotobag);
+        return;
     } else if (d.gotogacha) {
         closeSheet('sheet-craft'); openSheet('sheet-shop'); setShopTab('gacha');
         return;
@@ -1599,7 +1649,7 @@ function gachaGrant(e) {
             res.sub = `이미 있음 → +${fmt(e.dupe)} JC`;
         } else {
             gameState.craftedGears.push(e.id);
-            res.sub = 'NEW · 제작 탭에서 장착';
+            res.sub = 'NEW · 가방에서 장착';
             res.isNew = true;
         }
     }
@@ -1834,7 +1884,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=26')
+import('./aura3d.js?v=27')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

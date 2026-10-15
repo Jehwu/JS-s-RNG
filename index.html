@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=26">
-    <link rel="stylesheet" href="rarity.css?v=26">
+    <link rel="stylesheet" href="style.css?v=27">
+    <link rel="stylesheet" href="rarity.css?v=27">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -135,10 +135,13 @@
             <div class="tabs" id="bag-tabs">
                 <button class="tab active" data-tab="aura">칭호</button>
                 <button class="tab" data-tab="potion">물약</button>
+                <button class="tab" data-tab="gauntlet">건틀렛</button>
+                <button class="tab" data-tab="amulet">부적</button>
             </div>
             <div class="sheet-body">
                 <div id="inventory-grid"></div>
                 <div id="potion-grid" class="hidden"></div>
+                <div id="gear-grid" class="hidden"></div>
             </div>
         </div>
     </div>
@@ -357,6 +360,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=26"></script>
+    <script type="module" src="script.js?v=27"></script>
 </body>
 </html>
