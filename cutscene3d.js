@@ -14,7 +14,7 @@
      hit2 : JXS만. 두 번째 클라이맥스. hit~hit2 동안은 각성 직전 단계
    ========================================================= */
 
-import { buildLocomotive } from './auraSignatures.js?v=20';
+import { buildLocomotive } from './auraSignatures.js?v=21';
 
 export function createCutscene(ctx) {
     const { THREE, scene, camera, dummy, floor, stars, kit, bloom, stageApi } = ctx;
@@ -180,37 +180,32 @@ export function createCutscene(ctx) {
             };
         },
 
-        // 차원 파괴자: 화면 앞 공간에 유리 같은 금이 점점 번지다가, 터지는 순간 산산조각
-        dimensionBreaker({ g, colors }) {
-            const N = 30;
-            const panes = [];
-            for (let i = 0; i < N; i++) {
-                const m = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ color: colors[i % 3], transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false }));
-                const e = new THREE.LineSegments(new THREE.EdgesGeometry(BOX), new THREE.LineBasicMaterial({ color: colors[(i + 1) % 3], toneMapped: false })); m.add(e);
-                m.scale.set(rand(1.5, 3.5), rand(1.5, 3.5), 0.05);
-                m.position.set(rand(-6, 6), rand(-1, 9), rand(-3, 3));
-                m.rotation.set(rand(-0.3, 0.3), rand(-0.6, 0.6), rand(-0.8, 0.8));
-                m.userData = { base: m.position.clone(), d: m.position.distanceTo(new THREE.Vector3(0, 3.5, 0)) };
-                g.add(m); panes.push(m);
-            }
-            const cracks = [];
-            for (let i = 0; i < 14; i++) { const c = new THREE.Mesh(BOX, glowMat(colors[i % 3], 0.95)); const a = (i / 14) * Math.PI * 2; c.scale.set(0.06, 1, 0.06); c.rotation.z = a; c.userData.a = a; c.position.set(0, 3.5, 1); g.add(c); cracks.push(c); }
+        // 폭풍의 눈: 구름 벽이 점점 빨리 돌며 조여 오고, 그 안에서 번개가 번쩍임
+        stormEye({ g, colors }) {
+            const N = 60;
+            const cloud = new THREE.InstancedMesh(BOX, new THREE.MeshStandardMaterial({ color: 0x3a4152, roughness: 0.95, emissive: colors[0], emissiveIntensity: 0.1 }), N);
+            const cd = Array.from({ length: N }, (_, i) => ({ a: (i / N) * Math.PI * 6, y: (i / N) * 12 - 2.5, s: rand(1.5, 2.8) }));
+            g.add(cloud);
+            const bolts = [0, 1, 2].map(() => { const b = bolt(8, glowMat(colors[1], 1)); g.add(b); return b; });
+            const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3();
             return {
-                hideStar: false, bloom: 0.75,
+                bloom: 0.7,
                 update(time, phase, k) {
                     const vis = phase === 'build';
                     g.visible = vis;
                     if (!vis) return;
-                    panes.forEach((m, i) => {
-                        m.visible = k * 12 > m.userData.d * 0.9;
-                        m.position.copy(m.userData.base);
-                        m.position.x += Math.sin(time * 1.5 + i) * 0.1;
-                        if (k > 0.9) m.position.addScaledVector(m.userData.base, (k - 0.9) * 2.5);
+                    const r = THREE.MathUtils.lerp(14, 6, ease.inOut(k));
+                    cd.forEach((d, i) => {
+                        const u = ((d.a / (Math.PI * 2)) + time * (0.04 + k * k * 0.35)) % 1;
+                        const a = Math.PI * (1.02 + u * 0.96), edge = Math.min(1, u * 8, (1 - u) * 8);   // 뒤쪽 반원만
+                        p.set(Math.cos(a) * r, d.y, Math.sin(a) * r - 3); q.setFromEuler(e.set(0, -a, 0)); sc.set(d.s * 1.4 * edge, d.s * 0.8 * edge, d.s * edge);
+                        cloud.setMatrixAt(i, m4.compose(p, q, sc));
                     });
-                    cracks.forEach(c => {
-                        const len = ease.in(clamp01((k - 0.3) / 0.65)) * 9 + 0.01;
-                        c.scale.y = len;
-                        c.position.set(Math.sin(-c.userData.a) * len / 2, 3.5 + Math.cos(c.userData.a) * len / 2, 1);
+                    cloud.instanceMatrix.needsUpdate = true;
+                    bolts.forEach((b, i) => {
+                        const on = Math.sin(time * (3 + i) + i * 2) > 0.85 && k > 0.2;
+                        b.visible = on;
+                        if (on) { const a = time * 0.5 + i * 2.1; b.reshape([Math.cos(a) * r, 10, Math.sin(a) * r], [Math.cos(a) * r * 0.4, 0, Math.sin(a) * r * 0.4], 0.8); }
                     });
                 }
             };

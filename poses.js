@@ -639,7 +639,7 @@ export const POSES = {
         set(d.armR, -1.6 + S(t * 0.8 + 2) * 0.6, 0, -1.2 - C(t * 0.8 + 2) * 0.5);
         d.root.position.y += 0.7 + S(t * 0.6) * 0.15; d.head.rotation.x = -0.3; d.root.rotation.y = S(t * 0.3) * 0.3;
     },
-    // 얼음 황제 김티비: 홀을 높이 들어 얼음 가시를 부름
+    // 얼음 여제 김티비: 홀을 높이 들어 얼음 가시를 부름
     anc_iceemperor_tv(t, d, _r, sig) {
         const k = sig?.raiseK ?? 0;
         set(d.armL, mix(-0.7, -2.6, k), 0, 0.2); set(d.armR, 0.25, 0, -0.35);
@@ -686,7 +686,7 @@ export const POSES = {
         set(d.armL, -0.4 + S(t * 1.5) * 0.4, 0, 1.6 + S(t * 1.5) * 0.6); set(d.armR, -0.4 - S(t * 1.5) * 0.4, 0, -1.2 - C(t * 1.5) * 0.5);
         d.root.rotation.y = t * 0.9; set(d.legL, -0.4, 0, 0); d.root.position.y += 0.15 + Math.abs(S(t * 1.5)) * 0.1;
     },
-    // 사막의 왕자 김티비: 양탄자 위에 팔짱 끼고 섬
+    // 사막의 공주 김티비: 양탄자 위에 팔짱 끼고 섬
     leg_desert_tv(t, d) {
         set(d.armL, -1.3, 0.6, 0.9); set(d.armR, -1.3, -0.6, -0.9);
         d.root.position.y += 0.35 + S(t * 1.5) * 0.1; d.head.rotation.x = -0.1; d.root.rotation.y = S(t * 0.4) * 0.3;
@@ -713,14 +713,13 @@ export const POSES = {
         set(d.armL, -1.5 + S(t * 1.2) * 0.35, 0, 0.6); set(d.armR, -1.5 - S(t * 1.2) * 0.35, 0, -0.6);
         d.root.position.y += 0.5 + S(t * 0.6) * 0.12; d.head.rotation.x = 0.1; d.root.rotation.y = S(t * 0.4) * 0.2;
     },
-    // 차원 파괴자 공병은: 주먹을 뒤로 당겼다가 앞으로 내지름
+    // 폭풍의 눈 공병은: 태풍 한가운데 떠서 팔짱 → 번개를 부를 땐 한 손을 하늘로
     abs_breaker_byungeun(t, d, _r, sig) {
-        const k = sig?.punchK ?? 0, c = t % 6;
-        const wind = c > 2.0 && c < 2.6 ? (c - 2.0) / 0.6 : 0;
-        set(d.armL, wind > 0 ? mix(-0.3, 0.6, wind) : mix(-0.3, -1.6, k), 0, 0.15);
-        set(d.armR, -0.9, 0, -0.5);
-        d.root.rotation.y = wind * 0.5 - k * 0.35; d.root.rotation.x = k * 0.12;
-        set(d.legL, -0.5 * k - 0.15, 0, -0.2); set(d.legR, 0.4 * k + 0.1, 0, 0.2);
+        const k = sig?.callK ?? 0;
+        set(d.armL, mix(-1.3, -0.3, k), mix(0.6, 0, k), mix(0.9, 2.9, k)); set(d.armR, -1.3, -0.6, -0.9);
+        d.root.position.y += 1.2 + S(t * 0.7) * 0.2; d.head.rotation.x = mix(0.1, -0.35, k);
+        set(d.legL, 0.15, 0, -0.06); set(d.legR, -0.1, 0, 0.06);
+        d.root.rotation.y = S(t * 0.3) * 0.25;
     },
     // 가장 어두운 밤 김민채: 두 갈래 창을 짚고 군림 → 창을 높이 들어 → 바닥에 내리꽂음
     jxs_darkestnight_minchae(t, d, _r, sig) {

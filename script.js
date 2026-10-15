@@ -1,6 +1,6 @@
-import { AURA_DATA } from './auras.js?v=20';
-import { CRAFT_ITEMS } from './craftItems.js?v=20';
-import { createMusicPlayer, coverArt } from './music.js?v=20';
+import { AURA_DATA } from './auras.js?v=21';
+import { CRAFT_ITEMS } from './craftItems.js?v=21';
+import { createMusicPlayer, coverArt } from './music.js?v=21';
 
 /* =========================================================
    📦 게임 데이터
@@ -404,6 +404,7 @@ function getDisplayLuck() {
    ========================================================= */
 
 let isRolling = false, isAutoRolling = false, isQuickRollActive = false;
+let resultSettleTimer = 0;
 
 const workerBlob = new Blob([`
     let timer = null;
@@ -523,12 +524,18 @@ async function finishRoll() {
 
     stage3d?.setRolling(false);
     ui.display.innerHTML = `
-        <div class="result-pop">
+        <div class="result-pop" style="--res:${rolled.color}">
             <div class="result-grade ${gradeCol(rolled.grade)}">${rolled.grade}${isNew ? '<span class="new-tag">NEW</span>' : ''}</div>
             <div class="result-name">${auraNameHtml(rolled)}</div>
             <div class="result-chance">1 in ${fmt(rolled.in)}</div>
             ${soldHtml}
         </div>`;
+
+    // 결과를 잠깐 크게 보여 줬다가 작게 물러나게
+    document.body.classList.add('result-fresh');
+    clearTimeout(resultSettleTimer);
+    const pop = ui.display.querySelector('.result-pop');
+    resultSettleTimer = setTimeout(() => { pop?.classList.add('settled'); document.body.classList.remove('result-fresh'); }, HIGH_GRADES.includes(rolled.grade) ? 4000 : 2200);
 
     const cooldown = Math.max(300, (isAutoRolling ? 2000 : 1000) * (1 - getSpeedBonus()));
     ui.rollBtn.classList.remove('cooldown-active');
@@ -834,7 +841,7 @@ function attachGearPreviews() {
     if (gearPreviews) { gearPreviews.attach(ui.craftGrid); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=20').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=21').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (!$('sheet-craft').classList.contains('hidden')) gearPreviews.attach(ui.craftGrid);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1473,6 +1480,23 @@ function startStarfield2D() {
 let stage3d = null;
 const nametag = $('nametag');
 
+// 화질 설정
+const QUALITY_KEY = 'js_rng_quality';
+let qualityMode = 'auto';
+try { qualityMode = localStorage.getItem(QUALITY_KEY) || 'auto'; } catch (e) {}
+function applyQuality() {
+    stage3d?.setQualityMode(qualityMode);
+    document.querySelectorAll('#quality-seg button').forEach(b => b.classList.toggle('on', b.dataset.q === qualityMode));
+}
+$('quality-seg').addEventListener('click', e => {
+    const q = e.target.dataset.q;
+    if (!q) return;
+    qualityMode = q;
+    try { localStorage.setItem(QUALITY_KEY, q); } catch (err) {}
+    applyQuality();
+});
+applyQuality();
+
 // 건틀렛/부적을 3D 캐릭터 팔에 끼움
 function applyGear() {
     stage3d?.setGear({ gauntlet: gameState.gear, amulet: gameState.amulet, visible: gameState.showGear !== false });
@@ -1502,7 +1526,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=20')
+import('./aura3d.js?v=21')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
@@ -1511,6 +1535,7 @@ import('./aura3d.js?v=20')
             },
             onLabel: (x, y) => { nametag.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`; }
         });
+        applyQuality();
         applyEquippedAura();
     })
     .catch(err => {

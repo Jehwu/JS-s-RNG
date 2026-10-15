@@ -1031,3 +1031,57 @@ body.cine-on #nametag, body.cine-on #ambient { opacity: 0 !important; }
 .q-claim { animation: claim-glow 1.4s ease-in-out infinite; }
 @keyframes claim-glow { 50% { box-shadow: 0 0 22px color-mix(in srgb, var(--mint) 45%, transparent); } }
 .qnote { font-size: 11px; color: var(--faint); text-align: center; margin-top: 2px; }
+
+/* =========================================================
+   작은 정사각형 플레이어 (상단 바 오른쪽)
+   ========================================================= */
+.topbar-right { align-items: center; }
+.mini-player {
+    width: 40px; height: 40px; flex: none;
+    margin: 0 6px 0 0; padding: 0; gap: 0;
+    display: block;
+    border: 1px solid var(--line-2);
+    background: #0a0916;
+    animation: none;
+}
+.mini-player .mp-meta, .mini-player .mp-btn { display: none; }
+.mini-player .mp-cover { position: absolute; inset: 0; width: auto; height: auto; }
+.mini-player .mp-eq { position: absolute; left: 3px; bottom: 4px; width: 12px; height: 10px; z-index: 1; filter: drop-shadow(0 0 2px #000); }
+.mini-player.playing .mp-cover { animation: cover-pulse 1.8s ease-in-out infinite; }
+.mini-player .mp-progress { height: 2px; z-index: 1; }
+
+/* =========================================================
+   뽑기 결과 강조: 나온 직후엔 크게 + 뒤에 어두운 띠 + 빛줄기, 몇 초 뒤엔 작게 물러남
+   ========================================================= */
+#aura-display .result-pop {
+    position: relative;
+    display: inline-block;
+    padding: 14px 22px 12px;
+    transition: transform 0.6s cubic-bezier(.2, .8, .2, 1), opacity 0.6s;
+    transform-origin: 50% 0;
+}
+#aura-display .result-pop::before {
+    content: ''; position: absolute; inset: -6px -40px; z-index: -1;
+    background: radial-gradient(ellipse at 50% 50%, rgba(3, 2, 10, 0.88) 0%, rgba(3, 2, 10, 0.6) 45%, transparent 72%);
+    animation: result-back 0.6s ease-out both;
+}
+#aura-display .result-pop::after {
+    content: ''; position: absolute; left: 10%; right: 10%; bottom: 2px; height: 2px; z-index: -1;
+    background: linear-gradient(90deg, transparent, var(--res, var(--aura)), transparent);
+    box-shadow: 0 0 14px var(--res, var(--aura));
+    animation: result-line 0.9s ease-out 0.15s both;
+}
+@keyframes result-back { from { opacity: 0; transform: scaleX(0.4); } }
+@keyframes result-line { from { transform: scaleX(0); opacity: 0; } }
+#aura-display .result-pop .result-name { font-size: clamp(32px, 10.5vw, 46px); filter: drop-shadow(0 0 18px color-mix(in srgb, var(--res, var(--aura)) 55%, transparent)); }
+#aura-display .result-pop .result-grade { font-size: 12px; text-shadow: 0 0 12px currentColor; }
+#aura-display .result-pop.settled { transform: scale(0.72); opacity: 0.85; }
+#aura-display .result-pop.settled::before { opacity: 0.6; }
+/* 결과가 막 나왔을 땐 머리 위 이름표를 숨겨서 시선이 결과로 가게 */
+body.result-fresh #nametag { opacity: 0; transition: opacity 0.3s; }
+#nametag { transition: opacity 0.5s; }
+
+/* 화질 선택 */
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.seg button { font: inherit; font-size: 12.5px; padding: 9px 0; background: transparent; color: var(--muted); border: 1px solid var(--line-2); cursor: pointer; }
+.seg button.on { color: var(--text); border-color: var(--aura); background: color-mix(in srgb, var(--aura) 18%, transparent); }

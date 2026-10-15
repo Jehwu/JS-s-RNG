@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=20">
-    <link rel="stylesheet" href="rarity.css?v=20">
+    <link rel="stylesheet" href="style.css?v=21">
+    <link rel="stylesheet" href="rarity.css?v=21">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -58,6 +58,18 @@
                 <div class="readout-item"><span class="readout-label">JC</span><span id="jc-count" class="readout-val gold">0</span></div>
             </div>
             <div class="topbar-right">
+                <!-- 🎧 작은 정사각형 플레이어 (누르면 전체 플레이어) -->
+                <div id="mini-player" class="mini-player" role="button" aria-label="뮤직 플레이어 열기">
+                    <div class="mp-cover"><img id="mp-cover" alt=""></div>
+                    <div class="mp-meta">
+                        <div class="mp-title"><span id="mp-title">Abyss Drift</span></div>
+                        <div class="mp-artist" id="mp-artist">JS RNG OST</div>
+                    </div>
+                    <div class="mp-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                    <button id="mp-play" class="mp-btn" aria-label="재생/일시정지"><svg viewBox="0 0 24 24"><path class="i-play" d="M7 5l12 7-12 7z"/><path class="i-pause" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+                    <button id="mp-next" class="mp-btn" aria-label="다음 곡"><svg viewBox="0 0 24 24"><path d="M5 5l10 7-10 7zM16.5 5H19v14h-2.5z"/></svg></button>
+                    <div class="mp-progress"><div id="mp-progress-fill"></div></div>
+                </div>
                 <button id="main-dev-btn" class="icon-btn hidden" aria-label="개발자 콘솔">
                     <svg viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13.5 6l-3 12"/></svg>
                 </button>
@@ -66,19 +78,6 @@
                 </button>
             </div>
         </header>
-
-        <!-- 🎧 미니 플레이어 (누르면 전체 플레이어) -->
-        <div id="mini-player" class="mini-player" role="button" aria-label="뮤직 플레이어 열기">
-            <div class="mp-cover"><img id="mp-cover" alt=""></div>
-            <div class="mp-meta">
-                <div class="mp-title"><span id="mp-title">Abyss Drift</span></div>
-                <div class="mp-artist" id="mp-artist">JS RNG OST</div>
-            </div>
-            <div class="mp-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-            <button id="mp-play" class="mp-btn" aria-label="재생/일시정지"><svg viewBox="0 0 24 24"><path class="i-play" d="M7 5l12 7-12 7z"/><path class="i-pause" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
-            <button id="mp-next" class="mp-btn" aria-label="다음 곡"><svg viewBox="0 0 24 24"><path d="M5 5l10 7-10 7zM16.5 5H19v14h-2.5z"/></svg></button>
-            <div class="mp-progress"><div id="mp-progress-fill"></div></div>
-        </div>
 
         <!-- 3D 캐릭터가 이 영역 가운데에 서 있음. 안의 글자는 전부 겹쳐 띄워서 크기가 변해도 아래 버튼이 안 움직임 -->
         <section class="stage">
@@ -225,6 +224,14 @@
                 </div>
 
                 <div class="section">
+                    <div class="section-title">화질</div>
+                    <div class="section-desc">자동은 폰이 버벅이면 낮췄다가 여유가 생기면 다시 올려요.</div>
+                    <div class="seg" id="quality-seg">
+                        <button data-q="auto">자동</button><button data-q="high">높음</button><button data-q="mid">보통</button><button data-q="low">낮음</button>
+                    </div>
+                </div>
+
+                <div class="section">
                     <div class="section-title">장비 표시</div>
                     <div class="section-desc">장착한 건틀렛(오른팔)과 부적(왼팔)을 캐릭터에 보여줍니다.</div>
                     <button id="gear-toggle-btn" class="btn btn-block">장비 보이기 켜짐</button>
@@ -328,6 +335,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=20"></script>
+    <script type="module" src="script.js?v=21"></script>
 </body>
 </html>
