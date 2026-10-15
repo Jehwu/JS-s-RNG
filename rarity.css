@@ -359,3 +359,22 @@
 @keyframes pk-flicker { 50% { opacity: 0.45; } }
 @keyframes pk-bat { 50% { transform: translate(4px, 2px); } }
 @keyframes pk-flap { 50% { transform: translateY(1.2px); } }
+
+/* 👑 어드민 박지성 (어드민 JXS) */
+.fr-u-admin {
+    border: 2px solid transparent;
+    background:
+        radial-gradient(ellipse at 50% 120%, rgba(255, 210, 58, 0.35), transparent 60%) padding-box,
+        repeating-linear-gradient(0deg, rgba(255, 210, 58, 0.05) 0 1px, transparent 1px 8px) padding-box,
+        linear-gradient(#0c0900, #0c0900) padding-box,
+        conic-gradient(from var(--ang), #ffd23a, #fff8d0 12%, #1a1200 25%, #ffd23a 40%, #ff3b5c 52%, #1a1200 65%, #fff8d0 82%, #ffd23a) border-box;
+    animation: spin-ang 4s linear infinite, ad-breathe 2.2s ease-in-out infinite;
+    overflow: hidden;
+}
+@keyframes ad-breathe {
+    0%, 100% { box-shadow: 0 0 16px rgba(255, 210, 58, 0.45), inset 0 0 18px rgba(0, 0, 0, 0.9); }
+    50% { box-shadow: 0 0 32px rgba(255, 210, 58, 0.8), 0 0 60px rgba(255, 255, 255, 0.15), inset 0 0 18px rgba(0, 0, 0, 0.9); }
+}
+.fr-u-admin > *:not(.fr-deco) { position: relative; z-index: 1; }
+.fr-u-admin .fr-deco .cur { animation: pk-flicker 0.8s steps(2) infinite; }
+.fr-u-admin .fr-deco .cg { animation: pk-flicker 1.2s steps(2) infinite; }

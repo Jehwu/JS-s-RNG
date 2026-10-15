@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=32">
-    <link rel="stylesheet" href="rarity.css?v=32">
+    <link rel="stylesheet" href="style.css?v=33">
+    <link rel="stylesheet" href="rarity.css?v=33">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -57,6 +57,7 @@
     <div id="main-game" class="hidden">
         <header class="topbar">
             <div class="readout">
+                <button id="profile-btn" class="profile-btn guest" aria-label="프로필 · 랭킹">?</button>
                 <div class="readout-item"><span class="readout-label">ROLLS</span><span id="roll-count" class="readout-val">0</span></div>
                 <div class="readout-item"><span class="readout-label">JC</span><span id="jc-count" class="readout-val gold">0</span></div>
             </div>
@@ -75,6 +76,9 @@
                 </div>
                 <button id="main-dev-btn" class="icon-btn hidden" aria-label="개발자 콘솔">
                     <svg viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13.5 6l-3 12"/></svg>
+                </button>
+                <button id="admin-btn" class="icon-btn admin-crown hidden" aria-label="관리자 패널">
+                    <svg viewBox="0 0 24 24"><path d="M3 18h18M4 16l-1-9 5 4 4-7 4 7 5-4-1 9z"/></svg>
                 </button>
                 <button id="attend-btn" class="icon-btn" aria-label="출석 체크">
                     <svg viewBox="0 0 24 24"><path d="M4 6h16v14H4z"/><path d="M4 10h16M8 3v5M16 3v5"/><path d="M9 15l2 2 4-4"/></svg>
@@ -235,52 +239,116 @@
     <div id="sheet-settings" class="sheet-backdrop hidden">
         <div class="sheet">
             <div class="sheet-head"><h2>설정</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
+            <div class="tabs" id="set-tabs">
+                <button class="tab active" data-tab="account">계정</button>
+                <button class="tab" data-tab="sound">소리</button>
+                <button class="tab" data-tab="game">게임</button>
+                <button class="tab" data-tab="etc">기타</button>
+            </div>
             <div class="sheet-body">
-                <div class="section">
-                    <div class="section-title">사운드</div>
-                    <button id="sound-toggle-btn" class="btn btn-block">사운드 켜짐</button>
-                    <div class="slider-row"><label>마스터 <span id="vol-master-val">100</span></label><input type="range" id="vol-master" min="0" max="100"></div>
-                    <div class="slider-row"><label>BGM <span id="vol-bgm-val">70</span></label><input type="range" id="vol-bgm" min="0" max="100"></div>
-                    <button id="open-music-btn" class="btn btn-block">🎧 BGM 바꾸기</button>
-                    <div class="slider-row"><label>컷씬 · 등장음 <span id="vol-cutscene-val">50</span></label><input type="range" id="vol-cutscene" min="0" max="100"></div>
-                    <div class="slider-row"><label>클릭음 <span id="vol-click-val">100</span></label><input type="range" id="vol-click" min="0" max="100"></div>
-                    <div class="slider-row"><label>롤링음 <span id="vol-roll-val">100</span></label><input type="range" id="vol-roll" min="0" max="100"></div>
+                <!-- 계정 -->
+                <div class="set-pane" data-pane="account">
+                    <div id="account-panel"></div>
                 </div>
 
-                <div class="section">
-                    <div class="section-title">화질</div>
-                    <div class="section-desc">자동은 폰이 버벅이면 낮췄다가 여유가 생기면 다시 올려요.</div>
-                    <div class="seg" id="quality-seg">
-                        <button data-q="auto">자동</button><button data-q="high">높음</button><button data-q="mid">보통</button><button data-q="low">낮음</button>
+                <!-- 소리 -->
+                <div class="set-pane hidden" data-pane="sound">
+                    <div class="set-group">
+                        <div class="set-row"><div><b>사운드</b><small>모든 소리 켜고 끄기</small></div><button id="sound-toggle-btn" class="switch on">ON</button></div>
+                        <div class="slider-row"><label>마스터 <span id="vol-master-val">100</span></label><input type="range" id="vol-master" min="0" max="100"></div>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-group-title">배경 음악</div>
+                        <div class="slider-row"><label>BGM <span id="vol-bgm-val">70</span></label><input type="range" id="vol-bgm" min="0" max="100"></div>
+                        <button id="open-music-btn" class="btn btn-block">🎧 BGM 바꾸기</button>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-group-title">효과음</div>
+                        <div class="slider-row"><label>컷씬 · 등장음 <span id="vol-cutscene-val">50</span></label><input type="range" id="vol-cutscene" min="0" max="100"></div>
+                        <div class="slider-row"><label>클릭음 <span id="vol-click-val">100</span></label><input type="range" id="vol-click" min="0" max="100"></div>
+                        <div class="slider-row"><label>롤링음 <span id="vol-roll-val">100</span></label><input type="range" id="vol-roll" min="0" max="100"></div>
                     </div>
                 </div>
 
-                <div class="section">
-                    <div class="section-title">장비 표시</div>
-                    <div class="section-desc">장착한 건틀렛(오른팔)과 부적(왼팔)을 캐릭터에 보여줍니다.</div>
-                    <button id="gear-toggle-btn" class="btn btn-block">장비 보이기 켜짐</button>
-                </div>
-
-                <div class="section">
-                    <div class="section-title">자동 판매</div>
-                    <div class="section-desc">켜 둔 등급은 뽑자마자 JC로 바뀝니다.</div>
-                    <div id="auto-sell-grid"></div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title">쿠폰</div>
-                    <div class="input-row">
-                        <input type="text" id="code-input" placeholder="코드 입력" autocomplete="off">
-                        <button id="submit-code-btn" class="btn btn-primary">입력</button>
+                <!-- 게임 -->
+                <div class="set-pane hidden" data-pane="game">
+                    <div class="set-group">
+                        <div class="set-group-title">화질</div>
+                        <div class="seg" id="quality-seg">
+                            <button data-q="auto">자동</button><button data-q="high">높음</button><button data-q="mid">보통</button><button data-q="low">낮음</button>
+                        </div>
+                        <div class="set-note">자동은 폰이 버벅이면 낮췄다가 여유가 생기면 다시 올려요.</div>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-row"><div><b>장비 보이기</b><small>건틀렛(오른팔) · 부적(왼팔)을 캐릭터에 표시</small></div><button id="gear-toggle-btn" class="switch on">ON</button></div>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-group-title">자동 판매</div>
+                        <div class="set-note">켜 둔 등급은 뽑자마자 JC로 바뀝니다.</div>
+                        <div id="auto-sell-grid"></div>
                     </div>
                 </div>
 
-                <div class="section">
-                    <div class="section-title">등급별 확률</div>
-                    <div id="grade-table"></div>
+                <!-- 기타 -->
+                <div class="set-pane hidden" data-pane="etc">
+                    <div class="set-group">
+                        <div class="set-group-title">쿠폰</div>
+                        <div class="input-row">
+                            <input type="text" id="code-input" placeholder="코드 입력" autocomplete="off">
+                            <button id="submit-code-btn" class="btn btn-primary">입력</button>
+                        </div>
+                    </div>
+                    <div class="set-group">
+                        <div class="set-group-title">등급별 확률</div>
+                        <div id="grade-table"></div>
+                    </div>
+                    <div class="set-links">
+                        <button id="admin-open-btn" class="dev-link">👑 관리자 패널</button>
+                        <button id="dev-btn" class="dev-link">개발자 모드</button>
+                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <button id="dev-btn" class="dev-link">개발자 모드</button>
+    <!-- 🪪 프로필 · 🏆 랭킹 -->
+    <div id="sheet-profile" class="sheet-backdrop hidden">
+        <div class="sheet">
+            <div class="sheet-head"><h2>프로필</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
+            <div class="tabs" id="prof-tabs">
+                <button class="tab active" data-tab="me">내 프로필</button>
+                <button class="tab" data-tab="rank">🏆 랭킹</button>
+            </div>
+            <div class="sheet-body"><div id="profile-panel"></div></div>
+        </div>
+    </div>
+    <div id="pf-dialog" class="dialog-backdrop hidden"><div class="dialog pf-dialog" id="pf-view"></div></div>
+
+    <!-- 👑 관리자 패널 (어드민 어뷰즈) -->
+    <div id="sheet-admin" class="sheet-backdrop hidden">
+        <div class="sheet">
+            <div class="sheet-head"><h2>👑 관리자 패널</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
+            <div class="sheet-body">
+                <div class="section abuse">
+                    <div class="section-title">👑 어드민 어뷰즈 <small>(접속한 모두에게)</small> <span id="admin-status" class="admin-status">연결 확인 중…</span></div>
+                    <div class="ab-row"><span>🍀 행운 폭탄</span>
+                        <select id="ab-luck-mult"><option value="2">×2</option><option value="5">×5</option><option value="10" selected>×10</option><option value="50">×50</option><option value="100">×100</option></select>
+                        <select id="ab-luck-min"><option value="5">5분</option><option value="10" selected>10분</option><option value="30">30분</option><option value="60">60분</option></select>
+                        <button class="btn btn-sm btn-gold" data-abuse="luck">발사</button></div>
+                    <div class="ab-row"><span>🌦️ 바이옴</span>
+                        <select id="ab-biome"></select>
+                        <select id="ab-biome-min"><option value="3">3분</option><option value="5" selected>5분</option><option value="10">10분</option></select>
+                        <button class="btn btn-sm btn-gold" data-abuse="biome">발사</button></div>
+                    <div class="ab-row"><span>🎁 선물</span>
+                        <select id="ab-gift"></select>
+                        <input id="ab-gift-n" type="number" min="1" max="99" value="1">
+                        <button class="btn btn-sm btn-gold" data-abuse="gift">발사</button></div>
+                    <div class="ab-row"><span>📢 공지</span>
+                        <input id="ab-text" type="text" maxlength="80" placeholder="모두에게 보여줄 말">
+                        <button class="btn btn-sm btn-gold" data-abuse="announce">발사</button></div>
+                </div>
+                <div class="section-desc">보낸 이벤트는 나도 똑같이 받아요. 개발자 모드랑은 상관없어요.</div>
+                <button id="admin-lock-btn" class="dev-link">이 폰에서 관리자 패널 잠그기</button>
             </div>
         </div>
     </div>
@@ -302,26 +370,8 @@
                     <select id="dev-aura-select"></select>
                     <button class="btn btn-block" data-dev="next">지정</button>
                 </div>
-                <div class="section abuse">
-                    <div class="section-title">👑 어드민 어뷰즈 <small>(접속한 모두에게)</small> <span id="admin-status" class="admin-status">연결 확인 중…</span></div>
-                    <div class="ab-row"><span>🍀 행운 폭탄</span>
-                        <select id="ab-luck-mult"><option value="2">×2</option><option value="5">×5</option><option value="10" selected>×10</option><option value="50">×50</option><option value="100">×100</option></select>
-                        <select id="ab-luck-min"><option value="5">5분</option><option value="10" selected>10분</option><option value="30">30분</option><option value="60">60분</option></select>
-                        <button class="btn btn-sm btn-gold" data-abuse="luck">발사</button></div>
-                    <div class="ab-row"><span>🌦️ 바이옴</span>
-                        <select id="ab-biome"></select>
-                        <select id="ab-biome-min"><option value="3">3분</option><option value="5" selected>5분</option><option value="10">10분</option></select>
-                        <button class="btn btn-sm btn-gold" data-abuse="biome">발사</button></div>
-                    <div class="ab-row"><span>🎁 선물</span>
-                        <select id="ab-gift"></select>
-                        <input id="ab-gift-n" type="number" min="1" max="99" value="1">
-                        <button class="btn btn-sm btn-gold" data-abuse="gift">발사</button></div>
-                    <div class="ab-row"><span>📢 공지</span>
-                        <input id="ab-text" type="text" maxlength="80" placeholder="모두에게 보여줄 말">
-                        <button class="btn btn-sm btn-gold" data-abuse="announce">발사</button></div>
-                </div>
                 <div class="section">
-                    <div class="section-title">바이옴 소환 (나만)</div>
+                    <div class="section-title">바이옴 소환</div>
                     <select id="dev-biome-select"></select>
                     <button class="btn btn-block" data-dev="biome">소환</button>
                     <button class="btn btn-block" data-dev="biome-end">지금 바이옴 끝내기</button>
@@ -397,6 +447,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=32"></script>
+    <script type="module" src="script.js?v=33"></script>
 </body>
 </html>

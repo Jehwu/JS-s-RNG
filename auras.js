@@ -1,5 +1,5 @@
 /* =========================================================
-   🌟 칭호 데이터 (93개)
+   🌟 칭호 데이터 (96개)
 
    in    : 1 in N 확률
    line  : 컷씬 마지막에 칭호 아래 뜨는 한 줄 (MYTHIC 이상)
@@ -167,6 +167,9 @@ export const AURA_DATA = [
       fx: { signature: "phoenix", colors: ["#ff6a1f", "#ffd23f"], glow: 1.0 } },
     { id: "myth_aurora_gaeun", name: "오로라 여왕 김가은", grade: "MYTHIC", in: 222222, color: "#6bffb8", line: "밤하늘이 그녀를 위해 춤춘다",
       fx: { signature: "auroraQueen", colors: ["#6bffb8", "#9b7bff", "#ffffff"], glow: 0.8 } },
+    // 👑 어드민의 영역 바이옴에서만 나옴 (어드민 어뷰즈 때만)
+    { id: "myth_debugger_byungeun", name: "디버거 공병은", grade: "MYTHIC", in: 404404, color: "#3dff8a", line: "버그는 내가 잡는다", biome: "admin",
+      fx: { signature: "debugger", colors: ["#3dff8a", "#ffd23a", "#ff3b5c"], glow: 0.7 } },
     { id: "myth_witch_tv", name: "마녀 김티비", grade: "MYTHIC", in: 313131, color: "#b26bff", line: "오늘 밤 빗자루는 쉬지 않아", biome: "halloween",
       fx: { signature: "witch", colors: ["#b26bff", "#7dff6a", "#ff8a1f"], glow: 0.8 } },
     { id: "myth_thunderbeast_minchae", name: "벼락 신수 김민채", grade: "MYTHIC", in: 666666, color: "#7cc8ff", line: "울음소리 한 번에 하늘이 갈라진다",
@@ -197,6 +200,8 @@ export const AURA_DATA = [
     // 8. ABSOLUTE
     { id: "legend_gonjiam", name: "곤지암병은", grade: "ABSOLUTE", in: 29999999, color: "#00e676", line: "...거기 누구 있어요?",
       fx: { signature: "haunted", colors: ["#00e676", "#8affc1"], glow: 0.9 } },
+    { id: "abs_banhammer_gunwoo", name: "밴해머 김건우", grade: "ABSOLUTE", in: 40404040, color: "#ff2a3d", line: "규칙을 어긴 자, 서버에서 사라져라", biome: "admin",
+      fx: { signature: "banHammer", colors: ["#ff2a3d", "#ffc94d", "#ffffff"], glow: 0.8 } },
     { id: "abs_headless_gaeun", name: "목 없는 기사 김가은", grade: "ABSOLUTE", in: 31313131, color: "#7dff6a", line: "잃어버린 머리를 찾아, 오늘 밤도 달린다", biome: "halloween",
       fx: { signature: "headless", colors: ["#7dff6a", "#2aff8a", "#ff8a1f"], glow: 0.7 } },
     { id: "abs_archdemon_tv", name: "대악마 김티비", grade: "ABSOLUTE", in: 38383838, color: "#ff1f3d", line: "지옥의 문은 안쪽에서 열린다",
@@ -223,6 +228,8 @@ export const AURA_DATA = [
       fx: { signature: "thunderThrone", colors: ["#00ffff", "#7c4dff", "#ffffff"], particles: 28, rise: 1.4, glow: 1.0 } }
     ,{ id: "jxs_sans_tv", name: "샌즈. 김티비", grade: "JXS", in: 440000000, color: "#4fc3ff", line: "* 오늘 너는 아주 끔찍한 시간을 보내게 될 거야.", frame: "sans",
       fx: { signature: "sans", colors: ["#4fc3ff", "#ffe14d", "#ffffff"], particles: 6, rise: 0.4, glow: 0.25 } },
+    { id: "jxs_admin_jisung", name: "어드민 박지성", grade: "JXS", in: 404404404, color: "#ffd23a", line: "이 세계의 규칙은 내가 정한다", frame: "admin", biome: "admin",
+      fx: { signature: "admin", colors: ["#ffd23a", "#ffffff", "#ff3b5c"], particles: 24, rise: 0.8, glow: 0.8 } },
     { id: "jxs_pumpkinking_minchae", name: "호박 대왕 김민채", grade: "JXS", in: 313131313, color: "#ff8a1f", line: "사탕을 주지 않으면, 운명을 가져가겠다", frame: "pumpkin", biome: "halloween",
       fx: { signature: "pumpkinKing", colors: ["#ff8a1f", "#9a4dff", "#7dff6a"], particles: 20, rise: 0.7, glow: 0.7 } },
     { id: "jxs_darkestnight_minchae", name: "가장 어두운 밤 김민채", grade: "JXS", in: 444444444, color: "#5cf2ff", line: "모든 영혼은 결국 나에게 온다", frame: "hades",

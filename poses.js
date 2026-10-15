@@ -609,6 +609,21 @@ export const POSES = {
         d.head.rotation.x = -0.35; d.root.rotation.z = S(t * 0.7) * 0.1;
     },
     // 강령술사 김티비: 책을 펼친 손을 내밀고, 해골을 부를 땐 반대 손을 하늘로
+    // 디버거 공병은: 허공의 키보드를 두드림 (두 팔 앞으로, 손이 번갈아 톡톡)
+    myth_debugger_byungeun(t, d) {
+        set(d.armL, -1.25 + S(t * 14) * 0.08, 0, -0.05); set(d.armR, -1.25 + S(t * 14 + 1.6) * 0.08, 0, 0.05);
+        d.head.rotation.x = 0.18 + S(t * 0.7) * 0.05; d.head.rotation.y = S(t * 0.9) * 0.25;
+        d.root.position.y += 0.4 + S(t * 1.4) * 0.08;
+        set(d.legL, -0.15, 0, -0.04); set(d.legR, 0.1, 0, 0.04);
+    },
+    // 밴해머 김건우: 망치를 높이 들었다가(phase 1) 앞으로 쾅
+    abs_banhammer_gunwoo(t, d, _r, sig) {
+        const k = sig?.phase ?? 0;
+        set(d.armL, mix(-0.9, -3.05, k), 0, -0.1);
+        set(d.armR, mix(-0.3, -0.7, k), 0, 0.25);
+        d.root.rotation.x = mix(0.18, -0.12, k); d.head.rotation.x = mix(0.25, -0.15, k);
+        set(d.legL, mix(-0.35, -0.1, k), 0, -0.08); set(d.legR, mix(0.3, 0.1, k), 0, 0.08);
+    },
     // 호박머리 공병은: 등불을 앞으로 들고 흐느적, 가끔 고개를 갸웃
     leg_pumpkin_byungeun(t, d) {
         const tilt = pulse(t, 4, 1.4);
@@ -756,6 +771,15 @@ export const POSES = {
         d.root.rotation.y = S(t * 0.3) * 0.25;
     },
     // 가장 어두운 밤 김민채: 두 갈래 창을 짚고 군림 → 창을 높이 들어 → 바닥에 내리꽂음
+    // 어드민 박지성: 떠서 한 손을 들어 명령, 커서가 누를 때 손가락으로 딱
+    jxs_admin_jisung(t, d, _r, sig) {
+        const k = sig?.click ?? 0;
+        d.root.position.y += 0.9 + S(t * 1.2) * 0.12;
+        set(d.armL, mix(-0.4, -1.9, k), 0, mix(-0.4, -0.1, k));
+        set(d.armR, -0.25, 0, 0.55 + S(t * 1.2) * 0.05);
+        set(d.legL, 0.15, 0, -0.06); set(d.legR, -0.1, 0, 0.06);
+        d.head.rotation.x = -0.12; d.head.rotation.y = S(t * 0.5) * 0.15;
+    },
     // 호박 대왕 김민채: 낫을 짚고 서 있다가, 거대 호박이 웃을 때 빈손을 번쩍
     jxs_pumpkinking_minchae(t, d, _r, sig) {
         const k = sig?.laugh ?? 0;

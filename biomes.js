@@ -38,10 +38,16 @@ export const BIOMES = [
     {
         id: 'halloween', event: 'halloween', name: '할로윈의 밤', icon: '🎃', color: '#ff8a1f', chance: 60, duration: 150, luck: 4, boost: 6,
         msg: '호박등에 불이 켜졌다', auras: ['legend_gonjiam', 'leg_necro_tv', 'abs_archdemon_tv', 'ep_mushroom_tv', 'ep_shadow_jisung', 'jxs_sans_tv', 'jxs_darkestnight_minchae']
+    },
+    // 👑 어드민 어뷰즈로만 열림 (자연적으로는 절대 안 옴)
+    {
+        id: 'admin', event: 'admin', name: '어드민의 영역', icon: '👑', color: '#ffd23a', chance: 1e12, duration: 300, luck: 10, boost: 10,
+        msg: '관리자가 세계를 다시 쓴다', auras: ['cosmic_steel_emperor', 'js_lightning_jisung', 'divine_god', 'anc_fate_gunwoo']
     }
 ];
 export const BIOME_BY_ID = Object.fromEntries(BIOMES.map(b => [b.id, b]));
 export const BIOME_CHECK_MS = 60000;
+const ADMIN_CMDS = [':luck all 100', ':give all heaven', ':biome void', ':fly me', ':god', ':ban hacker', ':roll jxs', ':speed 9999', ':admin', ':reset rng'];
 
 // 이번 판정에서 올 바이옴 (없으면 null). mult: 확률 배율 (나침반 부적 등), events: 지금 열린 이벤트 이름들
 const usable = events => BIOMES.filter(b => !b.event || events.includes(b.event));
@@ -86,6 +92,10 @@ export function createBiomeFx(canvas) {
             case 'starfall': p.x = R(-W * 0.2, W * 1.1); p.y = init ? R(-H, H * 0.5) : R(-H * 0.6, -20); p.v = R(7, 14) * S; p.len = R(60, 160) * S; p.c = Math.random() < 0.5 ? '#ffffff' : '#d7b8ff'; break;
             case 'bloodmoon': p.y = init ? R(0, H) : H + 10; p.v = R(0.4, 1.3) * S; p.s = R(2, 4) * S; p.w = R(0, 6); break;
             case 'void': p.s = R(2, 7) * S; p.v = R(0.2, 0.9) * S; p.a = R(0, 6); break;
+            case 'admin':
+                p.code = Math.random() < 0.4; p.v = R(1.2, 3) * S; p.s = R(10, 18) * S; p.r = R(0, 6);
+                p.y = init ? R(0, H) : -30; p.t = ADMIN_CMDS[Math.floor(Math.random() * ADMIN_CMDS.length)];
+                break;
             case 'halloween':
                 p.bat = Math.random() < 0.45; p.a = R(0, 6);
                 if (p.bat) { p.x = init ? R(0, W) : -30; p.y = R(H * 0.05, H * 0.6); p.v = R(1.5, 3.5) * S; p.s = R(8, 14) * S; }
@@ -94,7 +104,7 @@ export function createBiomeFx(canvas) {
         }
         return p;
     }
-    const COUNT = { windy: 46, snowy: 110, sandstorm: 150, storm: 120, starfall: 7, bloodmoon: 40, void: 60, halloween: 22 };
+    const COUNT = { windy: 46, snowy: 110, sandstorm: 150, storm: 120, starfall: 7, bloodmoon: 40, void: 60, halloween: 22, admin: 34 };
 
     function makeBolt() {
         const pts = [];
@@ -121,6 +131,8 @@ export function createBiomeFx(canvas) {
                 g = ctx.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, H * 0.8); g.addColorStop(0, 'rgba(120,0,10,0.08)'); g.addColorStop(1, `rgba(150,0,20,${0.42 + Math.sin(t * 1.2) * 0.06})`); break;
             case 'void':
                 g = ctx.createRadialGradient(W / 2, H / 2, H * 0.1, W / 2, H / 2, H * 0.75); g.addColorStop(0, 'rgba(40,0,60,0.10)'); g.addColorStop(1, 'rgba(10,0,20,0.6)'); break;
+            case 'admin':
+                g = ctx.createRadialGradient(W / 2, H * 0.35, H * 0.05, W / 2, H * 0.4, H * 0.8); g.addColorStop(0, `rgba(255,220,90,${0.16 + Math.sin(t * 2) * 0.04})`); g.addColorStop(1, 'rgba(40,24,0,0.45)'); break;
             case 'halloween':
                 g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(70,20,110,0.38)'); g.addColorStop(0.6, 'rgba(30,10,40,0.08)'); g.addColorStop(1, `rgba(255,110,20,${0.22 + Math.sin(t * 1.5) * 0.05})`); break;
         }
@@ -159,6 +171,23 @@ export function createBiomeFx(canvas) {
             }
         }
 
+        if (id === 'admin') {
+            // 금빛 격자 + 위에서 아래로 훑는 스캔선 + 가끔 크게 뜨는 ADMIN
+            ctx.strokeStyle = 'rgba(255,210,58,0.12)'; ctx.lineWidth = 1 * S;
+            const gs = 48 * S, off = (t * 20 * S) % gs;
+            for (let x = -gs + off; x < W; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+            for (let y = -gs + off; y < H; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+            const sy = ((t * 0.25) % 1) * H;
+            const sg = ctx.createLinearGradient(0, sy - 40 * S, 0, sy + 4 * S);
+            sg.addColorStop(0, 'rgba(255,230,120,0)'); sg.addColorStop(1, 'rgba(255,230,120,0.35)');
+            ctx.fillStyle = sg; ctx.fillRect(0, sy - 40 * S, W, 44 * S);
+            const k = (t % 7) / 7;
+            if (k < 0.12) {
+                ctx.save(); ctx.globalAlpha = alpha * Math.sin(k / 0.12 * Math.PI) * 0.35;
+                ctx.font = `bold ${Math.round(W * 0.22)}px monospace`; ctx.textAlign = 'center'; ctx.fillStyle = '#ffd23a';
+                ctx.fillText('ADMIN', W / 2 + (Math.random() - 0.5) * 8 * S, H * 0.3); ctx.restore();
+            }
+        }
         if (id === 'halloween') {
             // 주황 보름달 + 지나가는 마녀 실루엣
             const mx = W * 0.22, my = H * 0.14, ms = Math.min(W, H) * 0.14;
@@ -219,6 +248,23 @@ export function createBiomeFx(canvas) {
                     p.y -= p.v; p.x += Math.sin(t * 1.3 + p.w) * 0.5 * S;
                     ctx.fillStyle = `rgba(255,${60 + 40 * Math.sin(t * 3 + p.w)},60,0.75)`; ctx.fillRect(p.x, p.y, p.s, p.s);
                     if (p.y < -10) Object.assign(p, spawn(id, false));
+                    break;
+                case 'admin':
+                    p.y += p.v; p.r += dt;
+                    if (p.code) {
+                        ctx.font = `${Math.round(11 * S)}px monospace`; ctx.fillStyle = 'rgba(255,225,120,0.6)'; ctx.textAlign = 'left';
+                        ctx.fillText(p.t, p.x, p.y);
+                    } else {
+                        // 픽셀 왕관
+                        const s2 = p.s, u = s2 / 5;
+                        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.sin(p.r * 2) * 0.3);
+                        ctx.fillStyle = '#ffd23a';
+                        ctx.fillRect(-2.5 * u, 0, 5 * u, 1.4 * u);
+                        ctx.fillRect(-2.5 * u, -1.6 * u, u, 1.6 * u); ctx.fillRect(-0.5 * u, -2.2 * u, u, 2.2 * u); ctx.fillRect(1.5 * u, -1.6 * u, u, 1.6 * u);
+                        ctx.fillStyle = '#ff3b5c'; ctx.fillRect(-0.4 * u, 0.3 * u, 0.8 * u, 0.8 * u);
+                        ctx.restore();
+                    }
+                    if (p.y > H + 30) Object.assign(p, spawn(id, false));
                     break;
                 case 'halloween':
                     p.a += dt;

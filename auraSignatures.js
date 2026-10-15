@@ -14,6 +14,336 @@
 
 export const SIGNATURES = {
 
+    /* =================== 👑 어드민의 영역 전용 =================== */
+
+    /* 디버거 공병은 — 허공의 코드 창을 두드리고, 바닥을 기어다니는 버그를 잡음. 몸이 가끔 지지직 */
+    debugger({ group, tick, pick, dummy, kit, stage, sig }) {
+        const { THREE, BOX, glowMat, rand, TMP } = kit;
+        stage.setSky('#020a06');
+        const owned = [];
+        const attach = (parent, obj) => { parent.add(obj); owned.push([parent, obj]); };
+        stage.onClear(() => owned.forEach(([p, o]) => p.remove(o)));
+        const box = (m, w, h, d, x, y, z) => { const b = new THREE.Mesh(BOX, m); b.scale.set(w, h, d); b.position.set(x, y, z); return b; };
+        // 헤드셋 + 안경
+        const dark = new THREE.MeshStandardMaterial({ color: 0x15181c, roughness: 0.4, metalness: 0.5 });
+        attach(dummy.head, box(dark, 1.36, 0.12, 0.3, 0, 0.66, 0));
+        for (const s of [-1, 1]) attach(dummy.head, box(dark, 0.14, 0.5, 0.5, s * 0.68, 0.1, 0));
+        attach(dummy.head, box(dark, 0.08, 0.08, 0.5, 0.68, -0.18, 0.35));
+        const lens = glowMat(pick(0), 0.85);
+        for (const s of [-1, 1]) attach(dummy.head, box(lens, 0.34, 0.2, 0.04, s * 0.27, 0.08, 0.62));
+        attach(dummy.head, box(dark, 0.9, 0.05, 0.04, 0, 0.08, 0.63));
+        // 코드 창 (캔버스 글자)
+        const LINES = ['if (luck > 1e9) {', '  roll(JXS);', '}', 'bug.fix();', '// TODO: nerf', 'while(true) rng++', 'admin.abuse()', 'return 404;'];
+        function codeTex(seed) {
+            const c = document.createElement('canvas'); c.width = 256; c.height = 160;
+            const g = c.getContext('2d');
+            g.fillStyle = 'rgba(0,30,12,0.85)'; g.fillRect(0, 0, 256, 160);
+            g.strokeStyle = '#3dff8a'; g.lineWidth = 4; g.strokeRect(2, 2, 252, 156);
+            g.fillStyle = '#3dff8a'; g.fillRect(0, 0, 256, 18);
+            g.fillStyle = '#021'; g.font = 'bold 12px monospace'; g.fillText('debug.js', 8, 13);
+            g.font = '15px monospace';
+            for (let i = 0; i < 6; i++) { g.fillStyle = i === seed % 6 ? '#ffd23a' : '#9dffbf'; g.fillText(LINES[(seed + i) % LINES.length], 10, 40 + i * 20); }
+            const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+        }
+        const panels = [];
+        [[-2.4, 4.6, 0.6, 0.35], [2.4, 4.3, 0.6, -0.35], [0, 6.6, -0.8, 0], [-2.7, 2.3, -0.4, 0.5], [2.7, 2.1, -0.4, -0.5]].forEach(([x, y, z, ry], i) => {
+            const m = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ map: codeTex(i * 3), transparent: true, opacity: 0.92, toneMapped: false }));
+            m.scale.set(1.9, 1.2, 0.02); m.position.set(x, y, z); m.rotation.y = ry;
+            group.add(m); panels.push({ m, y, ph: i });
+        });
+        // 버그들 (네모 몸 + 다리)
+        const bugM = new THREE.MeshStandardMaterial({ color: 0xff3b5c, roughness: 0.5, emissive: 0x500010, emissiveIntensity: 0.6 });
+        const bugs = [];
+        for (let i = 0; i < 6; i++) {
+            const b = new THREE.Group();
+            b.add(box(bugM, 0.36, 0.2, 0.5, 0, 0.18, 0));
+            b.add(box(bugM, 0.24, 0.18, 0.2, 0, 0.2, 0.32));
+            for (const s of [-1, 1]) for (const z of [-0.15, 0.05, 0.22]) b.add(box(bugM, 0.26, 0.04, 0.04, s * 0.26, 0.08, z));
+            const zap = box(glowMat(0x3dff8a, 1), 0.7, 0.7, 0.7, 0, 0.2, 0); zap.visible = false; b.add(zap);
+            b.userData = { a: rand(0, 6.3), r: rand(2, 3.6), sp: rand(0.5, 1) * (i % 2 ? 1 : -1), zap, dead: 0 };
+            group.add(b); bugs.push(b);
+        }
+        // 지지직 잔상
+        const ghost = kit.ghost(pick(0), 0.18); ghost.visible = false; group.add(ghost);
+        const ghost2 = kit.ghost(0xff3b5c, 0.14); ghost2.visible = false; group.add(ghost2);
+        sig.type = 0;
+        tick((t, dt) => {
+            sig.type = t;
+            panels.forEach(({ m, y, ph }) => { m.position.y = y + Math.sin(t * 1.2 + ph) * 0.15 + dummy.root.position.y; m.material.opacity = 0.8 + Math.sin(t * 9 + ph) * 0.1; });
+            bugs.forEach((b, i) => {
+                const u = b.userData;
+                if (u.dead > 0) { u.dead -= dt; u.zap.visible = true; u.zap.scale.setScalar(0.7 + (0.6 - u.dead) * 2); u.zap.material.opacity = Math.max(0, u.dead / 0.6); b.children.forEach(c => { if (c !== u.zap) c.visible = false; }); if (u.dead <= 0) { b.children.forEach(c => c.visible = c !== u.zap); u.a = rand(0, 6.3); } return; }
+                u.a += u.sp * dt;
+                b.position.set(Math.cos(u.a) * u.r, 0, Math.sin(u.a) * u.r * 0.7);
+                b.rotation.y = -u.a + (u.sp > 0 ? 0 : Math.PI);
+                b.position.y = Math.abs(Math.sin(t * 14 + i)) * 0.05;
+                if (Math.random() < dt * 0.25) u.dead = 0.6;
+            });
+            const glitch = (t % 3.3) < 0.18;
+            ghost.visible = ghost2.visible = glitch;
+            if (glitch) {
+                ghost.position.set(rand(-0.3, 0.3), dummy.root.position.y, 0.05);
+                ghost2.position.set(rand(-0.4, 0.4), dummy.root.position.y + rand(-0.1, 0.1), -0.05);
+            }
+        });
+    },
+
+    /* 밴해머 김건우 — 거대한 밴 망치를 휘둘러 내려찍으면 BANNED 도장이 쾅, 주변 꼬마들이 튕겨 날아감 */
+    banHammer({ group, tick, pick, dummy, kit, stage, sig }) {
+        const { THREE, BOX, glowMat, solidMat, square, mini, rand } = kit;
+        stage.setSky('#0a0204');
+        const owned = [];
+        const attach = (parent, obj) => { parent.add(obj); owned.push([parent, obj]); };
+        stage.onClear(() => owned.forEach(([p, o]) => p.remove(o)));
+        const box = (m, w, h, d, x, y, z) => { const b = new THREE.Mesh(BOX, m); b.scale.set(w, h, d); b.position.set(x, y, z); return b; };
+        function textTex(text, bg, fg, w = 512, h = 128, size = 86) {
+            const c = document.createElement('canvas'); c.width = w; c.height = h;
+            const g = c.getContext('2d');
+            if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); }
+            g.strokeStyle = fg; g.lineWidth = 10; g.strokeRect(8, 8, w - 16, h - 16);
+            g.fillStyle = fg; g.font = `900 ${size}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.fillText(text, w / 2, h / 2 + 4);
+            const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+        }
+        // 심판관 옷: 검은 법복 + 빨간 띠
+        const robe = new THREE.MeshStandardMaterial({ color: 0x111014, roughness: 0.7 });
+        const red = new THREE.MeshStandardMaterial({ color: 0xc8102a, roughness: 0.4, emissive: 0x400008, emissiveIntensity: 0.6 });
+        const gold = solidMat(new THREE.Color('#ffc94d'), 0.35);
+        attach(dummy.torso, box(robe, 2.14, 2.1, 1.14, 0, 0, 0));
+        attach(dummy.torso, box(red, 0.5, 2.12, 1.16, 0, 0, 0));
+        for (const leg of [dummy.legL, dummy.legR]) attach(leg, box(robe, 1.08, 2.04, 1.08, 0, -1.0, 0));
+        for (const arm of [dummy.armL, dummy.armR]) attach(arm, box(robe, 1.1, 1.5, 1.1, 0, -0.55, 0));
+        attach(dummy.head, box(robe, 1.34, 0.25, 1.3, 0, 0.6, 0));
+        // 망치 (캐릭터 오른손 = armL). 손잡이가 팔 끝에서 이어지고, 머리는 앞뒤(z)로 길어서 끝면으로 찍음
+        const hammer = new THREE.Group(); hammer.position.set(0, -1.95, 0);
+        const wood = new THREE.MeshStandardMaterial({ color: 0x3a2412, roughness: 0.6 });
+        hammer.add(box(wood, 0.28, 3.6, 0.28, 0, -1.7, 0));
+        hammer.add(box(gold, 0.4, 0.3, 0.4, 0, -0.1, 0));
+        const head = new THREE.Group(); head.position.y = -3.7; hammer.add(head);
+        head.add(box(red, 1.5, 1.4, 2.8, 0, 0, 0));
+        head.add(box(gold, 1.56, 0.2, 2.86, 0, 0.55, 0)); head.add(box(gold, 1.56, 0.2, 2.86, 0, -0.55, 0));
+        const banTex = textTex('BAN', null, '#ffffff', 256, 128, 92);
+        for (const s of [-1, 1]) { const f = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ map: banTex, transparent: true, toneMapped: false })); f.scale.set(2.2, 0.9, 0.02); f.position.set(s * 0.77, 0, 0); f.rotation.y = s * Math.PI / 2; head.add(f); }
+        const faceGlow = box(glowMat(pick(0), 0.9), 1.3, 1.2, 0.06, 0, 0, 1.43); head.add(faceGlow);
+        attach(dummy.armL, hammer);
+        // BANNED 도장 (찍은 자리 바닥에)
+        const stamp = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ map: textTex('BANNED', 'rgba(120,0,10,0.35)', '#ff2a3d'), transparent: true, opacity: 0, toneMapped: false, depthWrite: false }));
+        stamp.scale.set(4.4, 0.02, 1.1); stamp.position.set(0, 0.06, 2.6); group.add(stamp);
+        const stampUp = new THREE.Mesh(BOX, stamp.material); stampUp.scale.set(5, 1.25, 0.02); stampUp.position.set(0, 7.2, -1); group.add(stampUp);
+        const shock = square(1, 0.16, glowMat(pick(0), 0.9)); shock.visible = false; group.add(shock);
+        // 쫓겨나는 꼬마들
+        const victims = [];
+        const vm = new THREE.MeshStandardMaterial({ color: 0x9aa0ad, roughness: 0.6 });
+        for (let i = 0; i < 5; i++) {
+            const m = mini(0x9aa0ad, { scale: 0.32 });
+            m.root.traverse(o => { if (o.isMesh) o.material = vm; });
+            m.root.userData.noFit = true;
+            const a = -0.9 + i * 0.45;
+            group.add(m.root);
+            victims.push({ m, home: new THREE.Vector3(Math.sin(a) * 3.4, 0, 2.2 + Math.cos(a) * 0.6), v: new THREE.Vector3(), fly: 0 });
+        }
+        // 바닥 금 (내려찍으면 빛남)
+        const cracks = [];
+        for (let i = 0; i < 8; i++) { const c = box(glowMat(pick(0), 0), 0.12, 0.03, rand(1.2, 2.6), 0, 0.05, 2.6); c.rotation.y = (i / 8) * Math.PI * 2; c.position.x += Math.sin(c.rotation.y) * 0.8; c.position.z += Math.cos(c.rotation.y) * 0.8; group.add(c); cracks.push(c); }
+        sig.phase = 0;
+        let lastHit = -1;
+        tick((t, dt) => {
+            const c = t % 5;
+            // 0~2.6 들어올림, 2.6~2.9 내려찍기, 2.9~ 여운
+            sig.phase = c < 2.6 ? Math.min(1, c / 1.4) : c < 2.9 ? 1 - (c - 2.6) / 0.3 : 0;
+            const n = Math.floor(t / 5);
+            if (c >= 2.9 && lastHit !== n) {
+                lastHit = n;
+                shock.visible = true; shock.userData.k = 0;
+                stage.shake?.(0.3); stage.flash?.(0.35);
+                victims.forEach(v => { v.fly = 1; v.v.set(v.home.x * rand(1.2, 2), rand(6, 9), rand(2, 5)); });
+            }
+            const after = c - 2.9;
+            const sk = after > 0 ? Math.max(0, 1 - after / 1.8) : 0;
+            stamp.material.opacity = sk;
+            stampUp.scale.set(5 * (after > 0 && after < 0.25 ? 1.4 - after * 1.6 : 1), 1.25, 0.02);
+            cracks.forEach(cr => { cr.material.opacity = sk * 0.9; });
+            faceGlow.material.opacity = 0.5 + sig.phase * 0.5;
+            if (shock.visible) {
+                shock.userData.k += dt * 1.4;
+                const k = shock.userData.k;
+                shock.position.set(0, 0.1, 2.6); shock.scale.setScalar(1 + k * 12);
+                shock.children.forEach(ch => { ch.material.opacity = 0.9 * (1 - k); });
+                if (k >= 1) shock.visible = false;
+            }
+            victims.forEach((v, i) => {
+                const m = v.m.root;
+                if (v.fly > 0) {
+                    v.v.y -= 14 * dt;
+                    m.position.addScaledVector(v.v, dt);
+                    m.rotation.x += dt * 8; m.rotation.z += dt * 5;
+                    v.fly -= dt * 0.55;
+                    if (v.fly <= 0) { m.position.copy(v.home).setY(-3); m.rotation.set(0, Math.PI, 0); }
+                } else {
+                    m.position.x = v.home.x; m.position.z = v.home.z;
+                    m.position.y = Math.min(0, m.position.y + dt * 3);
+                    m.rotation.set(0, Math.PI + Math.atan2(v.home.x, v.home.z), 0);
+                    const shake = Math.sin(t * 20 + i) * 0.08 * sig.phase;
+                    v.m.armL.rotation.x = -2.6 + shake; v.m.armR.rotation.x = -2.6 - shake;   // 손 들고 벌벌
+                }
+            });
+        });
+    },
+
+    /* 어드민 박지성 — 세계를 만든 사람. 금빛 왕관과 흰 망토로 떠 있고, 명령어 창이 차례로 떠서 실행되며,
+       하늘의 거대한 커서가 딸깍 누를 때마다 번개가 떨어짐. 꼬마 플레이어들이 둘러서 절함 */
+    admin({ group, tick, pick, dummy, kit, stage, sig }) {
+        const { THREE, BOX, glowMat, solidMat, square, mini, rand, TMP } = kit;
+        stage.setSky('#060400');
+        const owned = [];
+        const attach = (parent, obj) => { parent.add(obj); owned.push([parent, obj]); };
+        stage.onClear(() => owned.forEach(([p, o]) => p.remove(o)));
+        const box = (m, w, h, d, x, y, z) => { const b = new THREE.Mesh(BOX, m); b.scale.set(w, h, d); b.position.set(x, y, z); return b; };
+        const gold = solidMat(new THREE.Color('#ffd23a'), 0.45);
+        const white = new THREE.MeshStandardMaterial({ color: 0xf6f3ea, roughness: 0.4, emissive: 0x3a3020, emissiveIntensity: 0.4 });
+        // 왕관
+        const crown = new THREE.Group(); crown.position.y = 0.75;
+        crown.add(box(gold, 1.46, 0.32, 1.46, 0, 0, 0));
+        for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; crown.add(box(gold, 0.22, 0.4 + (i % 2) * 0.3, 0.22, Math.cos(a) * 0.64, 0.3 + (i % 2) * 0.15, Math.sin(a) * 0.64)); }
+        const gem = box(glowMat(0xff3b5c, 1), 0.26, 0.26, 0.06, 0, 0.02, 0.74); crown.add(gem);
+        attach(dummy.head, crown);
+        // 흰 옷 + 금 장식 + 망토
+        attach(dummy.torso, box(white, 2.12, 2.1, 1.12, 0, 0, 0));
+        attach(dummy.torso, box(gold, 2.14, 0.18, 1.14, 0, -0.95, 0));
+        attach(dummy.torso, box(gold, 0.18, 2.12, 1.14, 0.55, 0, 0));
+        for (const arm of [dummy.armL, dummy.armR]) { attach(arm, box(white, 1.08, 1.6, 1.08, 0, -0.6, 0)); attach(arm, box(gold, 1.12, 0.16, 1.12, 0, -1.4, 0)); }
+        for (const leg of [dummy.legL, dummy.legR]) attach(leg, box(white, 1.04, 2.04, 1.06, 0, -1.0, 0));
+        const cape = new THREE.Group(); cape.position.set(0, 4.0, -0.66);
+        const capeSegs = [];
+        for (let i = 0; i < 7; i++) { const s = new THREE.Group(); s.position.y = -i * 0.6; s.add(box(white, 2.5 + i * 0.25, 0.62, 0.06, 0, -0.3, 0)); s.add(box(gold, 2.52 + i * 0.25, 0.1, 0.07, 0, -0.62, 0)); cape.add(s); capeSegs.push(s); }
+        attach(dummy.root, cape);
+        // 뒤의 금빛 후광 (네모 링 겹)
+        const halo = new THREE.Group(); halo.position.set(0, 5.2, -1.2); group.add(halo);
+        const rings = [2.4, 3.2, 4.1].map((s, i) => { const r = square(s, 0.08, glowMat(i === 1 ? 0xffffff : pick(0), 0.7)); r.rotation.x = Math.PI / 2; halo.add(r); return r; });
+        // 명령어 창
+        const CMDS = [':luck all 100', ':biome admin', ':give all heaven', ':fly jisung', ':god me', ':ban bug', ':roll jxs', ':spawn crown'];
+        function cmdTex(text, done) {
+            const c = document.createElement('canvas'); c.width = 320; c.height = 96;
+            const g = c.getContext('2d');
+            g.fillStyle = 'rgba(12,10,4,0.9)'; g.fillRect(0, 0, 320, 96);
+            g.strokeStyle = '#ffd23a'; g.lineWidth = 5; g.strokeRect(2, 2, 316, 92);
+            g.fillStyle = '#ffd23a'; g.fillRect(0, 0, 320, 20);
+            g.fillStyle = '#1a1200'; g.font = 'bold 13px monospace'; g.fillText('ADMIN CONSOLE', 10, 15);
+            g.font = 'bold 26px monospace'; g.fillStyle = '#fff3c0'; g.fillText('> ' + text, 12, 60);
+            g.font = 'bold 15px monospace'; g.fillStyle = done ? '#3dff8a' : '#ffd23a'; g.fillText(done ? '✓ executed' : 'running…', 12, 85);
+            const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+        }
+        const wins = [];
+        for (let i = 0; i < 4; i++) {
+            const mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, toneMapped: false });
+            const m = new THREE.Mesh(BOX, mat); m.scale.set(2.6, 0.78, 0.02);
+            group.add(m); wins.push({ m, mat, cmd: -1, done: false });
+        }
+        const winPos = [[-2.6, 6.2], [2.6, 5.4], [-2.8, 3.4], [2.8, 2.6]];
+        // 하늘의 커서
+        const cursor = new THREE.Group(); cursor.userData.noFit = true; group.add(cursor);
+        const CUR = ['10000000', '11000000', '11100000', '11110000', '11111000', '11111100', '11111110', '11111000', '11011000', '10001100', '00001100', '00000110'];
+        const curM = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), curB = new THREE.MeshBasicMaterial({ color: 0x111111 });
+        CUR.forEach((row, r) => [...row].forEach((ch, k) => { if (ch === '1') { const edge = k === 0 || row[k + 1] !== '1' || (CUR[r + 1] || '')[k] !== '1'; cursor.add(box(edge ? curB : curM, 0.42, 0.42, 0.2, k * 0.42, -r * 0.42, 0)); } }));
+        // 번개
+        const boltMat = glowMat(0xfff3a0, 1);
+        const bolt = kit.bolt(10, boltMat); bolt.visible = false; group.add(bolt);
+        const hit = square(1, 0.14, glowMat(pick(0), 0.9)); hit.visible = false; group.add(hit);
+        // 절하는 플레이어들
+        const fans = [];
+        const fanCols = [0x5ab0ff, 0xff7eb6, 0x7dff6a, 0xffb347, 0xc08bff, 0x7fe0ff];
+        for (let i = 0; i < 6; i++) {
+            const m = mini(fanCols[i], { scale: 0.34 });
+            const a = Math.PI * 0.15 + (i / 5) * Math.PI * 0.7;
+            m.root.position.set(Math.cos(a) * 4, 0, Math.sin(a) * 2.6 + 0.4);
+            m.root.rotation.y = Math.atan2(-m.root.position.x, -m.root.position.z);
+            m.root.userData.noFit = true;
+            group.add(m.root); fans.push(m);
+        }
+        // 금빛 입자 + 바닥 룬
+        const runes = [0, 1].map(i => { const r = square(4 + i * 2, 0.1, glowMat(pick(0), 0.5)); r.position.y = 0.1; group.add(r); return r; });
+        const NP = 36;
+        const dust = new THREE.InstancedMesh(BOX, glowMat(0xffe27a, 0.9), NP);
+        const dD = Array.from({ length: NP }, () => ({ a: rand(0, 6.3), r: rand(1.4, 3.4), y: rand(0, 8), v: rand(0.5, 1.2) }));
+        group.add(dust);
+        sig.click = 0;
+        let lastCmd = -1, clickN = -1;
+        const target = new THREE.Vector3();
+        tick((t, dt) => {
+            const lift = dummy.root.position.y;
+            halo.position.y = 5.2 + lift;
+            rings.forEach((r, i) => { r.rotation.y = t * (i % 2 ? -0.6 : 0.4); });
+            capeSegs.forEach((s, i) => { s.rotation.x = -0.15 - Math.sin(t * 2 + i * 0.6) * 0.05 * (i + 1) * 0.4; });
+            gem.material.opacity = 0.7 + Math.sin(t * 4) * 0.3;
+            // 1.5초마다 명령어 하나씩
+            const ci = Math.floor(t / 1.5);
+            if (ci !== lastCmd) {
+                lastCmd = ci;
+                const w = wins[ci % wins.length];
+                w.text = CMDS[ci % CMDS.length];
+                w.mat.map?.dispose(); w.mat.map = cmdTex(w.text, false); w.mat.needsUpdate = true;
+                w.born = t; w.done = false;
+            }
+            wins.forEach((w, i) => {
+                if (w.born === undefined) return;
+                const age = t - w.born;
+                if (!w.done && age > 0.9) { w.done = true; w.mat.map.dispose(); w.mat.map = cmdTex(w.text, true); }
+                const [x, y] = winPos[i];
+                w.m.position.set(x, y + lift + Math.sin(t + i) * 0.1, 0.4);
+                w.m.rotation.y = x > 0 ? -0.35 : 0.35;
+                const pop = Math.min(1, age / 0.2);
+                w.m.scale.set(2.6 * pop, 0.78 * pop, 0.02);
+                w.mat.opacity = age > 5.2 ? Math.max(0, 1 - (age - 5.2) / 0.5) : 0.95;
+            });
+            // 커서: 하늘을 떠다니다 4초마다 바닥 한 곳을 딸깍 → 번개
+            const c = t % 4;
+            const cn = Math.floor(t / 4);
+            const tx = Math.sin(cn * 2.3) * 2.6, tz = 1.4 + Math.cos(cn * 1.7) * 0.8;
+            const move = Math.min(1, c / 2);
+            cursor.position.set(THREE.MathUtils.lerp(Math.sin((cn - 1) * 2.3) * 2.6, tx, move) + 0.2, 9.5 - (c > 2 && c < 2.25 ? 0.4 : 0), -2);
+            const press = c > 2 && c < 2.25;
+            cursor.scale.setScalar(press ? 0.85 : 1);
+            sig.click = c > 1.8 && c < 2.8 ? 1 : 0;
+            if (c > 2 && clickN !== cn) {
+                clickN = cn;
+                target.set(tx, 0, tz);
+                bolt.visible = true; bolt.userData.k = 0;
+                hit.visible = true; hit.userData.k = 0;
+                stage.flash?.(0.3);
+            }
+            if (bolt.visible) {
+                bolt.userData.k += dt * 3;
+                bolt.reshape([cursor.position.x - 0.2, 9, cursor.position.z + 1], [target.x, 0.1, target.z], 0.5);
+                boltMat.opacity = Math.max(0, 1 - bolt.userData.k);
+                if (bolt.userData.k >= 1) bolt.visible = false;
+            }
+            if (hit.visible) {
+                hit.userData.k += dt * 1.5;
+                const k = hit.userData.k;
+                hit.position.set(target.x, 0.12, target.z); hit.scale.setScalar(0.5 + k * 5);
+                hit.children.forEach(ch => { ch.material.opacity = 0.9 * (1 - k); });
+                if (k >= 1) hit.visible = false;
+            }
+            // 플레이어들 절하기
+            fans.forEach((m, i) => {
+                const bow = (Math.sin(t * 2.2 + i * 0.5) * 0.5 + 0.5);
+                m.root.rotation.x = 0;
+                m.torso.rotation.x = bow * 0.9; m.head.rotation.x = bow * 0.5;
+                m.armL.rotation.x = -0.4 - bow * 1.2; m.armR.rotation.x = -0.4 - bow * 1.2;
+                m.head.position.z = bow * 0.6; m.armL.position.z = m.armR.position.z = bow * 0.5;
+            });
+            runes.forEach((r, i) => { r.rotation.y = t * (i ? -0.25 : 0.18); });
+            dD.forEach((d, i) => {
+                d.y += d.v * dt; if (d.y > 8) d.y = 0;
+                TMP.p.set(Math.cos(d.a + t * 0.3) * d.r, d.y, Math.sin(d.a + t * 0.3) * d.r);
+                TMP.q.setFromEuler(TMP.e.set(t + i, t * 2, 0.78)); TMP.sc.setScalar(0.12 * (1 - d.y / 8) + 0.03);
+                dust.setMatrixAt(i, TMP.m4.compose(TMP.p, TMP.q, TMP.sc));
+            });
+            dust.instanceMatrix.needsUpdate = true;
+        });
+    },
+
+
     /* =================== 🎃 할로윈의 밤 전용 =================== */
 
     /* 호박머리 공병은 — 머리가 잭오랜턴, 손에 흔들리는 등불, 주위를 둥실 도는 꼬마 호박들 */

@@ -14,7 +14,7 @@
      hit2 : JXS만. 두 번째 클라이맥스. hit~hit2 동안은 각성 직전 단계
    ========================================================= */
 
-import { buildLocomotive } from './auraSignatures.js?v=32';
+import { buildLocomotive } from './auraSignatures.js?v=33';
 
 export function createCutscene(ctx) {
     const { THREE, scene, camera, dummy, floor, stars, kit, bloom, stageApi } = ctx;
@@ -146,6 +146,65 @@ export function createCutscene(ctx) {
        update(time, phase, k, dt)  phase: 'build' | 'phase2' | 'reveal'
        ========================================================= */
     const MOTIFS = {
+
+        // 👑 밴해머: 하늘에서 거대한 망치가 천천히 들어 올려졌다가 터지기 직전 별 위로 쾅
+        banHammer({ g, colors }) {
+            const red = new THREE.MeshStandardMaterial({ color: 0xc8102a, emissive: 0x500010, emissiveIntensity: 0.8, roughness: 0.4 });
+            const wood = new THREE.MeshStandardMaterial({ color: 0x3a2412, roughness: 0.6 });
+            const ham = new THREE.Group(); g.add(ham);
+            const handle = new THREE.Mesh(BOX, wood); handle.scale.set(0.9, 14, 0.9); handle.position.y = 7; ham.add(handle);
+            const head = new THREE.Mesh(BOX, red); head.scale.set(5, 4.4, 9); ham.add(head);
+            const face = new THREE.Mesh(BOX, glowMat(colors[0], 0.9)); face.scale.set(4.4, 3.8, 0.2); face.position.z = 4.6; ham.add(face);
+            ham.position.set(0, 3.5, -12);
+            const rings = [0, 1, 2].map(i => { const r = square(4 + i * 3, 0.14, glowMat(colors[i % 2], 0.8)); r.position.y = 3.5; g.add(r); return r; });
+            return {
+                bloom: 0.7,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    // 0~0.8 천천히 뒤로 젖힘, 0.8~1 앞으로 내려찍음
+                    const back = ease.out(clamp01(k / 0.8)), slam = ease.in(clamp01((k - 0.8) / 0.2));
+                    ham.rotation.x = -0.2 - back * 1.2 + slam * 2.6;
+                    face.material.opacity = 0.4 + k * 0.6;
+                    rings.forEach((r, i) => { r.rotation.set(Math.PI / 2, time * (i % 2 ? -1 : 1) * (0.5 + k * 3), 0); r.scale.setScalar(1.2 - k * 0.6); });
+                }
+            };
+        },
+
+        // 👑 어드민: 별 둘레에 명령어 창이 하나씩 뜨고, 거대한 커서가 내려와 별을 딸깍
+        admin({ g, colors }) {
+            const CMDS = [':luck all', ':biome admin', ':roll jxs', ':god me', ':give all', ':admin'];
+            const wins = CMDS.map((txt, i) => {
+                const c = document.createElement('canvas'); c.width = 256; c.height = 80;
+                const x = c.getContext('2d');
+                x.fillStyle = 'rgba(12,10,4,0.92)'; x.fillRect(0, 0, 256, 80);
+                x.strokeStyle = '#ffd23a'; x.lineWidth = 5; x.strokeRect(2, 2, 252, 76);
+                x.fillStyle = '#ffd23a'; x.fillRect(0, 0, 256, 16);
+                x.font = 'bold 26px monospace'; x.fillStyle = '#fff3c0'; x.fillText('> ' + txt, 12, 56);
+                const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+                const m = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false }));
+                const a = (i / CMDS.length) * Math.PI * 2;
+                m.position.set(Math.cos(a) * 7, 3.5 + Math.sin(a) * 4.5, -2);
+                m.scale.set(4.4, 1.4, 0.05);
+                g.add(m); return m;
+            });
+            const CUR = ['10000000', '11000000', '11100000', '11110000', '11111000', '11111100', '11111110', '11111000', '11011000', '10001100', '00001100', '00000110'];
+            const cursor = new THREE.Group(); g.add(cursor);
+            const wm = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
+            CUR.forEach((row, r) => [...row].forEach((ch, k) => { if (ch === '1') { const b = new THREE.Mesh(BOX, wm); b.scale.set(0.7, 0.7, 0.3); b.position.set(k * 0.7, -r * 0.7, 0); cursor.add(b); } }));
+            return {
+                bloom: 0.6,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    wins.forEach((w, i) => { const on = k > 0.08 + i * 0.12; w.visible = on; if (on) w.scale.set(4.4 * Math.min(1, (k - 0.08 - i * 0.12) * 12), 1.4, 0.05); });
+                    const d = ease.inOut(clamp01((k - 0.6) / 0.35));
+                    cursor.position.set(THREE.MathUtils.lerp(9, 0.2, d), THREE.MathUtils.lerp(16, 3.6, d) - (k > 0.96 ? 0.4 : 0), 1);
+                }
+            };
+        },
 
         // 🎃 뱀파이어: 핏빛 달이 떠오르고, 사방에서 박쥐 떼가 별로 몰려듦
         vampire({ g, colors }) {

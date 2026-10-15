@@ -1,7 +1,7 @@
-import { AURA_DATA } from './auras.js?v=32';
-import { CRAFT_ITEMS } from './craftItems.js?v=32';
-import { createMusicPlayer, coverArt } from './music.js?v=32';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=32';
+import { AURA_DATA } from './auras.js?v=33';
+import { CRAFT_ITEMS } from './craftItems.js?v=33';
+import { createMusicPlayer, coverArt } from './music.js?v=33';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=33';
 
 /* =========================================================
    📦 게임 데이터
@@ -221,7 +221,13 @@ function pumpkinDeco() {
     const bat = (x, y) => `<g class="bt" style="--d:${(x % 7) * 0.2}s"><rect x="${x}" y="${y}" width="3" height="1.6" fill="#0a0410"/><rect class="w" x="${x - 3}" y="${y - 0.8}" width="3" height="1" fill="#0a0410"/><rect class="w" x="${x + 3}" y="${y - 0.8}" width="3" height="1" fill="#0a0410"/></g>`;
     return `<svg class="fr-deco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${[4, 30, 58, 86].map(pk).join('')}${bat(18, 8)}${bat(70, 12)}${bat(45, 5)}</svg>`;
 }
+function adminDeco() {
+    // 위엔 ADMIN 콘솔 줄, 아래엔 금 왕관 셋
+    const crown = x => `<g><rect x="${x}" y="88" width="10" height="3" fill="#ffd23a"/><rect x="${x}" y="84" width="2" height="4" fill="#ffd23a"/><rect x="${x + 4}" y="82.5" width="2" height="5.5" fill="#ffd23a"/><rect x="${x + 8}" y="84" width="2" height="4" fill="#ffd23a"/><rect class="cg" x="${x + 4.2}" y="88.6" width="1.6" height="1.6" fill="#ff3b5c"/></g>`;
+    return `<svg class="fr-deco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="0" width="100" height="7" fill="rgba(255,210,58,0.85)"/><text x="3" y="5.4" font-size="5" font-family="monospace" font-weight="bold" fill="#1a1200">ADMIN CONSOLE</text><rect class="cur" x="88" y="1.6" width="2" height="4" fill="#1a1200"/>${[20, 45, 70].map(crown).join('')}</svg>`;
+}
 function frameDeco(grade, unique) {
+    if (unique === 'admin') return adminDeco();
     if (unique === 'pumpkin') return pumpkinDeco();
     if (unique === 'void') return voidCracks();
     if (unique === 'hades') return hadesDeco();
@@ -864,6 +870,13 @@ function renderBuffs() {
     const gear = getGear();
     if (gear) pills.push(`<span class="buff gear">${gear.name}</span>`);
     if (gameState.amulet) pills.push(`<span class="buff gear">${CRAFT_BY_ID[gameState.amulet]?.name || ''}</span>`);
+    // 숫자(남은 시간)만 바뀐 거면 글자만 고침 → 알약이 매초 새로 생기며 튀어나오지 않게
+    const sig = pills.map(p => p.replace(/[\d:,]/g, '')).join('|');
+    if (ui.buffs.dataset.sig === sig && ui.buffs.children.length === pills.length) {
+        pills.forEach((p, i) => { const t = p.replace(/<[^>]+>/g, ''); if (ui.buffs.children[i].textContent !== t) ui.buffs.children[i].textContent = t; });
+        return;
+    }
+    ui.buffs.dataset.sig = sig;
     ui.buffs.innerHTML = pills.join('');
 }
 
@@ -933,7 +946,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=32').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=33').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1125,8 +1138,8 @@ function renderSoundUI() {
         $(`vol-${key}-val`).textContent = v;
     }
     const btn = $('sound-toggle-btn');
-    btn.textContent = soundSettings.enabled ? '사운드 켜짐' : '사운드 꺼짐';
-    btn.className = `btn btn-block ${soundSettings.enabled ? 'btn-green' : 'btn-red'}`;
+    btn.textContent = soundSettings.enabled ? 'ON' : 'OFF';
+    btn.classList.toggle('on', soundSettings.enabled);
 }
 
 function renderAll() {
@@ -1145,7 +1158,8 @@ const SHEET_RENDER = {
     'sheet-shop': renderShop,
     'sheet-quest': renderQuests,
     'sheet-index': renderIndex,
-    'sheet-settings': () => { renderSoundUI(); renderAutoSell(); },
+    'sheet-settings': () => { renderSoundUI(); renderAutoSell(); if (setTab === 'account') renderAccount(); },
+    'sheet-profile': () => renderProfileSheet(),
     'sheet-attend': () => renderAttend()
 };
 
@@ -1164,7 +1178,7 @@ const SHEET_LIST = {
     'sheet-shop': () => [BANNERS[shopTab] ? $('gacha-panel') : ui.shopGrid],
     'sheet-quest': () => [ui.questList],
     'sheet-index': () => [ui.indexGrid.querySelector('.index-grid')],
-    'sheet-settings': () => [$('sheet-settings').querySelector('.sheet-body')]
+    'sheet-settings': () => [$('sheet-settings').querySelector(`.set-pane[data-pane="${setTab}"]`)]
 };
 
 function openSheet(id) {
@@ -1278,6 +1292,15 @@ $('gear-grid').addEventListener('click', e => {
 });
 bindTabs('craft-tabs', tab => { craftTab = tab; renderCraft(); stagger(ui.craftGrid); });
 bindTabs('shop-tabs', tab => setShopTab(tab));
+// 설정 탭
+let setTab = 'account';
+function setSettingsTab(tab) {
+    setTab = tab;
+    $('set-tabs').querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('#sheet-settings .set-pane').forEach(p => p.classList.toggle('hidden', p.dataset.pane !== tab));
+    if (tab === 'account') renderAccount();
+}
+bindTabs('set-tabs', tab => setSettingsTab(tab));
 $('shop-tabs').querySelector('[data-tab="halloween"]').classList.toggle('hidden', !isHalloween());
 
 /* =========================================================
@@ -1562,6 +1585,34 @@ function redeemCode() {
 }
 
 /* ---------- 개발자 모드 ---------- */
+// 👑 관리자 패널 (개발자 모드와 따로. 내 데이터 그대로라 어드민 이벤트 보상도 받음)
+const ADMIN_KEY = 'js_rng_admin';
+function openAdminSheet() {
+    const absel = $('ab-biome');
+    if (!absel.children.length) absel.innerHTML = BIOMES.map(b => `<option value="${b.id}">${b.icon} ${b.name}</option>`).join('');
+    const gsel = $('ab-gift');
+    if (!gsel.children.length) gsel.innerHTML = `<option value="jc">🪙 10만 JC</option>` + SHOP_ITEMS.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+    setOnline(!!evOnline);
+    closeSheet('sheet-settings');
+    openSheet('sheet-admin');
+}
+function showAdminBtn() { try { $('admin-btn').classList.toggle('hidden', localStorage.getItem(ADMIN_KEY) !== '1'); } catch (e) {} }
+$('admin-open-btn').addEventListener('click', async () => {
+    let ok = false;
+    try { ok = localStorage.getItem(ADMIN_KEY) === '1'; } catch (e) {}
+    if (!ok) {
+        const pwd = await ask({ title: '관리자 패널', message: '비밀번호를 입력하세요', input: true });
+        if (pwd === null) return;
+        if (pwd !== DEV_PASSWORD) { toast('비밀번호가 틀렸어요', 'bad'); return; }
+        try { localStorage.setItem(ADMIN_KEY, '1'); } catch (e) {}
+        showAdminBtn();
+    }
+    openAdminSheet();
+});
+$('admin-btn').addEventListener('click', openAdminSheet);
+$('admin-lock-btn').addEventListener('click', () => { try { localStorage.removeItem(ADMIN_KEY); } catch (e) {} showAdminBtn(); closeSheet('sheet-admin'); toast('관리자 패널 잠금'); });
+showAdminBtn();
+
 $('dev-btn').addEventListener('click', async () => {
     if (backupGameState !== null) { openSheet('sheet-dev'); return; }
     const pwd = await ask({ title: '개발자 모드', message: '비밀번호를 입력하세요', input: true });
@@ -1575,11 +1626,6 @@ $('dev-btn').addEventListener('click', async () => {
     }
     const bsel = $('dev-biome-select');
     if (!bsel.children.length) bsel.innerHTML = BIOMES.map(b => `<option value="${b.id}">${b.icon} ${b.name}</option>`).join('');
-    const absel = $('ab-biome');
-    if (!absel.children.length) absel.innerHTML = BIOMES.map(b => `<option value="${b.id}">${b.icon} ${b.name}</option>`).join('');
-    const gsel = $('ab-gift');
-    if (!gsel.children.length) gsel.innerHTML = `<option value="jc">🪙 10만 JC</option>` + SHOP_ITEMS.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
-    setOnline(!!evOnline);
     closeSheet('sheet-settings');
     openSheet('sheet-dev');
     toast('개발자 모드 ON. 끌 때까지 저장되지 않습니다.', 'gold');
@@ -1951,7 +1997,7 @@ async function sendAdminEvent(kind, data, duration) {
         pollAdminEvents(false);
     } catch (e) { toast('서버에 못 보냈어요. 표를 만들었는지 확인해 주세요', 'bad'); }
 }
-$('sheet-dev').addEventListener('click', e => {
+$('sheet-admin').addEventListener('click', e => {
     const b = e.target.closest('[data-abuse]');
     if (!b) return;
     const k = b.dataset.abuse;
@@ -1966,6 +2012,269 @@ $('sheet-dev').addEventListener('click', e => {
         sendAdminEvent('gift', v === 'jc' ? { jc: 100000 * n } : { items: { [v]: n } }, 1800);   // 30분 안에 들어온 사람까지 받음
     }
 });
+
+/* =========================================================
+   🔑 계정 · 클라우드 저장 · 프로필 · 랭킹 (Supabase)
+   - 닉네임 + 비밀번호로 가입/로그인 (이메일 대신 닉네임으로 가짜 주소를 만들어 씀)
+   - 저장은 3분마다 + 게임을 내릴 때만 (롤마다 안 함 → 데이터 아낌)
+   - 랭킹은 랭킹 창을 열 때만 한 번 읽음
+   ========================================================= */
+
+const SESSION_KEY = 'js_rng_session';
+let session = null;
+try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) {}
+let cloudSavedAt = 0, cloudLastRolls = -1, cloudBusy = false;
+const saveSession = () => { try { session ? localStorage.setItem(SESSION_KEY, JSON.stringify(session)) : localStorage.removeItem(SESSION_KEY); } catch (e) {} };
+
+async function nickEmail(nick) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('jsrng:' + nick.normalize('NFC').toLowerCase()));
+    return 'p' + [...new Uint8Array(buf)].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('') + '@jsrng.app';
+}
+async function authCall(path, body, token) {
+    const r = await fetch(`${SB_URL}/auth/v1/${path}`, {
+        method: 'POST', cache: 'no-store',
+        headers: { apikey: SB_KEY, 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(body || {})
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j.msg || j.error_description || j.message || `auth ${r.status}`), { code: j.error_code || j.code, status: r.status });
+    return j;
+}
+function takeSession(j, nick) {
+    session = { access: j.access_token, refresh: j.refresh_token, exp: Date.now() + (j.expires_in || 3600) * 1000, uid: j.user?.id, nick: nick || session?.nick };
+    saveSession();
+}
+async function userToken() {
+    if (!session) return null;
+    if (Date.now() > session.exp - 60000) {
+        try { takeSession(await authCall('token?grant_type=refresh_token', { refresh_token: session.refresh })); }
+        catch (e) { if (e.status === 400 || e.status === 401) { session = null; saveSession(); renderAccount(); renderProfileBtn(); } return null; }
+    }
+    return session.access;
+}
+// 로그인한 사람으로 표 읽기/쓰기
+async function userFetch(path, opts = {}) {
+    const tok = await userToken();
+    if (!tok) throw new Error('로그인이 필요해요');
+    const r = await fetch(`${SB_URL}/rest/v1/${path}`, { ...opts, cache: 'no-store', headers: { apikey: SB_KEY, Authorization: `Bearer ${tok}`, ...(opts.headers || {}) } });
+    if (!r.ok) { const j = await r.json().catch(() => ({})); throw Object.assign(new Error(j.message || `db ${r.status}`), { code: j.code, status: r.status }); }
+    const txt = await r.text();
+    return txt ? JSON.parse(txt) : null;
+}
+
+const NICK_RE = /^[가-힣a-zA-Z0-9_]{2,12}$/;
+async function signUp(nick, pw) {
+    if (!NICK_RE.test(nick)) throw new Error('닉네임은 한글·영어·숫자 2~12자예요');
+    if (pw.length < 6) throw new Error('비밀번호는 6자 이상이에요');
+    let j;
+    try { j = await authCall('signup', { email: await nickEmail(nick), password: pw, data: { nickname: nick } }); }
+    catch (e) { if (/registered|exists/i.test(e.message)) throw new Error('이미 있는 닉네임이에요'); throw e; }
+    if (!j.access_token) throw new Error('Supabase에서 이메일 확인(Confirm email)을 꺼야 해요');
+    takeSession(j, nick);
+    await userFetch('profiles', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ id: session.uid, nickname: nick }) });
+    await cloudUpload(true);
+}
+async function logIn(nick, pw) {
+    let j;
+    try { j = await authCall('token?grant_type=password', { email: await nickEmail(nick), password: pw }); }
+    catch (e) { throw new Error(/invalid/i.test(e.message) ? '닉네임이나 비밀번호가 틀렸어요' : e.message); }
+    takeSession(j, nick);
+    // 서버 기록과 이 폰 기록 중 고르기
+    const rows = await userFetch(`saves?select=data,updated_at&id=eq.${session.uid}`);
+    const cloud = rows?.[0]?.data;
+    if (cloud && (cloud.rolls || 0) > 0) {
+        const useCloud = (gameState.rolls || 0) === 0 || await ask({
+            title: '어떤 기록을 쓸까요?',
+            message: `☁️ 서버 기록: ${fmt(cloud.rolls)} 롤 · ${fmt(cloud.jc)} JC\n📱 이 폰 기록: ${fmt(gameState.rolls)} 롤 · ${fmt(gameState.jc)} JC\n\n확인 = 서버 기록 불러오기\n취소 = 이 폰 기록으로 서버 덮어쓰기`,
+            okText: '서버 기록 불러오기'
+        });
+        if (useCloud) {
+            gameState = { ...createInitialGameState(), ...cloud, activeBuffs: { ...createInitialGameState().activeBuffs, ...(cloud.activeBuffs || {}) } };
+            saveGame(); renderAll(); applyEquippedAura(); applyBiome(false);
+            cloudLastRolls = gameState.rolls;
+            toast('☁️ 서버 기록을 불러왔어요', 'good');
+            return;
+        }
+    }
+    await cloudUpload(true);
+}
+async function logOut() {
+    await cloudUpload(true).catch(() => {});
+    try { await authCall('logout', {}, session?.access); } catch (e) {}
+    session = null; saveSession();
+}
+
+// 랭킹·프로필용 숫자들
+function profileStats() {
+    const found = new Set([...gameState.discoveredAuras, ...Object.keys(gameState.inventory)]);
+    let best = null;
+    for (const id of found) { const a = AURA_BY_ID[id]; if (a && (!best || a.in > best.in)) best = a; }
+    return { rolls: gameState.rolls || 0, jc: Math.floor(gameState.jc || 0), found: AURA_DATA.filter(a => found.has(a.id)).length, best_aura: best?.id || null, best_in: best?.in || 0, equipped: gameState.equippedAura || null, attend: gameState.attend?.total || 0 };
+}
+async function cloudUpload(force) {
+    if (!session || backupGameState !== null || cloudBusy) return;
+    if (!force && gameState.rolls === cloudLastRolls) return;
+    cloudBusy = true;
+    try {
+        const now = new Date().toISOString();
+        await userFetch('saves?on_conflict=id', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: session.uid, data: gameState, updated_at: now }) });
+        await userFetch(`profiles?id=eq.${session.uid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ ...profileStats(), updated_at: now }) });
+        cloudSavedAt = Date.now(); cloudLastRolls = gameState.rolls;
+        if (!$('sheet-settings').classList.contains('hidden') && setTab === 'account') renderAccount();
+    } catch (e) { console.warn('클라우드 저장 실패', e); }
+    finally { cloudBusy = false; }
+}
+setInterval(() => cloudUpload(false), 180000);
+document.addEventListener('visibilitychange', () => { if (document.hidden) cloudUpload(false); });
+
+/* ---------- 설정 → 계정 탭 ---------- */
+let accMode = 'login';
+function renderAccount() {
+    const el = $('account-panel');
+    if (!el) return;
+    if (session) {
+        const ago = cloudSavedAt ? `${Math.max(0, Math.round((Date.now() - cloudSavedAt) / 60000))}분 전` : '아직 안 함';
+        el.innerHTML = `
+            <div class="acc-card">
+                <div class="acc-ava" style="--c:${AURA_BY_ID[gameState.equippedAura]?.color || '#5b4dff'}">${escapeHtml(session.nick?.[0] || '?')}</div>
+                <div class="acc-info"><b>${escapeHtml(session.nick || '')}</b><small>☁️ 마지막 서버 저장: ${ago}</small></div>
+            </div>
+            <div class="acc-btns">
+                <button class="btn btn-block btn-primary" data-acc="profile">내 프로필 · 랭킹</button>
+                <button class="btn btn-block" data-acc="save">지금 서버에 저장</button>
+                <button class="btn btn-block btn-red" data-acc="logout">로그아웃</button>
+            </div>
+            <div class="set-note">저장은 3분마다, 그리고 게임을 내릴 때 자동으로 돼요.</div>`;
+    } else {
+        el.innerHTML = `
+            <div class="acc-hero"><b>로그인하면</b><span>☁️ 폰을 바꿔도 기록 유지 · 🏆 랭킹 · 🪪 프로필</span></div>
+            <div class="seg seg2" id="acc-seg"><button data-am="login" class="${accMode === 'login' ? 'on' : ''}">로그인</button><button data-am="signup" class="${accMode === 'signup' ? 'on' : ''}">새 계정</button></div>
+            <input id="acc-nick" type="text" maxlength="12" placeholder="닉네임 (한글·영어·숫자 2~12자)" autocomplete="username">
+            <input id="acc-pw" type="password" placeholder="비밀번호 (6자 이상)" autocomplete="${accMode === 'login' ? 'current-password' : 'new-password'}">
+            <button class="btn btn-block btn-gold" data-acc="go">${accMode === 'login' ? '로그인' : '계정 만들기'}</button>
+            <div class="set-note">${accMode === 'signup' ? '지금 이 폰 기록이 새 계정으로 올라가요. 비밀번호는 잊어버리면 찾을 수 없어요!' : '로그인 안 해도 지금처럼 이 폰에서 계속 할 수 있어요.'}</div>`;
+    }
+}
+$('account-panel').addEventListener('click', async e => {
+    const am = e.target.closest('[data-am]');
+    if (am) { accMode = am.dataset.am; renderAccount(); return; }
+    const b = e.target.closest('[data-acc]');
+    if (!b) return;
+    const act = b.dataset.acc;
+    if (act === 'go') {
+        const nick = $('acc-nick').value.trim(), pw = $('acc-pw').value;
+        if (!nick || !pw) { toast('닉네임과 비밀번호를 넣어 주세요', 'bad'); return; }
+        b.disabled = true; b.textContent = '잠깐만요…';
+        try {
+            if (accMode === 'signup') { await signUp(nick, pw); toast(`🎉 ${nick} 계정을 만들었어요`, 'gold'); }
+            else { await logIn(nick, pw); toast(`👋 ${nick} 로그인`, 'good'); }
+        } catch (err) { toast(err.message || '실패했어요', 'bad'); }
+        renderAccount(); renderProfileBtn();
+    } else if (act === 'save') {
+        b.disabled = true; await cloudUpload(true); toast(cloudSavedAt > Date.now() - 5000 ? '☁️ 저장했어요' : '저장 실패. 인터넷을 확인해 주세요', cloudSavedAt > Date.now() - 5000 ? 'good' : 'bad'); renderAccount();
+    } else if (act === 'logout') {
+        if (!await ask({ title: '로그아웃할까요?', message: '이 폰의 기록은 그대로 남아요.', okText: '로그아웃', danger: true })) return;
+        await logOut(); renderAccount(); renderProfileBtn(); toast('로그아웃했어요');
+    } else if (act === 'profile') {
+        closeSheet('sheet-settings'); setTimeout(() => openSheet('sheet-profile'), 200);
+    }
+});
+
+/* ---------- 프로필 · 랭킹 창 ---------- */
+let profTab = 'me', rankKey = 'rolls';
+const RANK_KEYS = { rolls: ['롤 수', p => `${fmt(p.rolls)} 롤`], best_in: ['최고 칭호', p => AURA_BY_ID[p.best_aura]?.name || '-'], found: ['도감', p => `${p.found} / ${AURA_DATA.length}`] };
+function renderProfileBtn() {
+    const btn = $('profile-btn');
+    if (!btn) return;
+    const a = AURA_BY_ID[gameState.equippedAura];
+    btn.style.setProperty('--c', a?.color || '#5b4dff');
+    btn.textContent = session?.nick?.[0] || '?';
+    btn.classList.toggle('guest', !session);
+}
+function profileCardHtml(p, mine) {
+    const eq = AURA_BY_ID[p.equipped], best = AURA_BY_ID[p.best_aura];
+    const since = p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : '';
+    return `
+        <div class="pf-card" style="--c:${eq?.color || '#5b4dff'}">
+            <div class="pf-top">
+                <div class="pf-ava">${escapeHtml((p.nickname || '?')[0])}</div>
+                <div class="pf-name"><b>${escapeHtml(p.nickname || '게스트')}</b>${since ? `<small>${since} 가입</small>` : '<small>로그인 안 함</small>'}</div>
+            </div>
+            <div class="pf-bio">${p.bio ? escapeHtml(p.bio) : '<i>자기소개가 없어요</i>'}${mine && session ? ' <button class="pf-edit" data-pf="bio">✏️</button>' : ''}</div>
+            ${eq ? `<div ${frameAttrs(eq.grade, auraColors(eq), eq.frame).replace('class="', 'class="pf-eq ')}>${frameDeco(eq.grade, eq.frame)}<span class="pf-label">장착 칭호</span><div class="pf-eq-name">${auraNameHtml(eq)}</div><span class="pf-eq-sub ${gradeCol(eq.grade)}">${eq.grade} · 1 in ${fmt(eq.in)}</span></div>` : ''}
+            <div class="pf-stats">
+                <div><span>롤</span><b>${fmt(p.rolls)}</b></div>
+                <div><span>도감</span><b>${p.found}<small>/${AURA_DATA.length}</small></b></div>
+                <div><span>출석</span><b>${fmt(p.attend || 0)}일</b></div>
+                <div class="wide"><span>최고 칭호</span><b class="${best ? gradeCol(best.grade) : ''}">${best ? `${best.name} <small>1 in ${fmt(best.in)}</small>` : '-'}</b></div>
+            </div>
+        </div>`;
+}
+async function renderProfileSheet() {
+    const el = $('profile-panel');
+    $('prof-tabs').querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === profTab));
+    if (profTab === 'me') {
+        const p = { ...profileStats(), nickname: session?.nick, bio: '', created_at: null };
+        el.innerHTML = profileCardHtml(p, true) + (session ? '' : `<button class="btn btn-block btn-gold" data-pf="login">로그인하고 랭킹에 올라가기</button>`);
+        if (session) {
+            try {
+                const r = await userFetch(`profiles?select=bio,created_at&id=eq.${session.uid}`);
+                if (profTab === 'me' && r?.[0]) { p.bio = r[0].bio; p.created_at = r[0].created_at; el.innerHTML = profileCardHtml(p, true); }
+            } catch (e) {}
+        }
+        return;
+    }
+    el.innerHTML = `<div class="seg seg3" id="rank-seg">${Object.entries(RANK_KEYS).map(([k, [label]]) => `<button data-rk="${k}" class="${rankKey === k ? 'on' : ''}">${label}</button>`).join('')}</div><div class="rank-list"><div class="empty">불러오는 중…</div></div>`;
+    try {
+        const r = await fetch(`${SB_URL}/rest/v1/profiles?select=id,nickname,rolls,best_aura,best_in,found,equipped,attend,bio,created_at&order=${rankKey}.desc&limit=30`, { headers: SB_HEADERS, cache: 'no-store' });
+        if (!r.ok) throw new Error();
+        const rows = await r.json();
+        rankRows = rows;
+        const list = el.querySelector('.rank-list');
+        if (!list) return;
+        list.innerHTML = rows.length ? rows.map((p, i) => {
+            const eq = AURA_BY_ID[p.equipped];
+            return `<button class="rank-row ${p.id === session?.uid ? 'me' : ''} ${i < 3 ? 'top' + (i + 1) : ''}" data-rank="${i}">
+                <span class="rk-no">${i + 1}</span>
+                <span class="rk-ava" style="--c:${eq?.color || '#5b4dff'}">${escapeHtml((p.nickname || '?')[0])}</span>
+                <span class="rk-main"><b>${escapeHtml(p.nickname)}</b><small>${eq ? eq.name : '칭호 없음'}</small></span>
+                <span class="rk-val">${RANK_KEYS[rankKey][1](p)}</span>
+            </button>`;
+        }).join('') : `<div class="empty">아직 아무도 없어요.<br>로그인하면 첫 번째가 될 수 있어요!</div>`;
+    } catch (e) {
+        const list = el.querySelector('.rank-list');
+        if (list) list.innerHTML = `<div class="empty">랭킹을 못 불러왔어요.<br>인터넷을 확인해 주세요.</div>`;
+    }
+}
+let rankRows = [];
+bindTabs('prof-tabs', tab => { profTab = tab; renderProfileSheet(); });
+$('profile-panel').addEventListener('click', async e => {
+    const rk = e.target.closest('[data-rk]');
+    if (rk) { rankKey = rk.dataset.rk; renderProfileSheet(); return; }
+    const row = e.target.closest('[data-rank]');
+    if (row) {
+        const p = rankRows[+row.dataset.rank];
+        if (!p) return;
+        $('pf-view').innerHTML = profileCardHtml(p, false) + `<button class="btn btn-block" data-pfclose>닫기</button>`;
+        $('pf-dialog').classList.remove('hidden');
+        return;
+    }
+    const pf = e.target.closest('[data-pf]');
+    if (!pf) return;
+    if (pf.dataset.pf === 'login') { closeSheet('sheet-profile'); setTimeout(() => { openSheet('sheet-settings'); setSettingsTab('account'); }, 200); }
+    else if (pf.dataset.pf === 'bio') {
+        const text = await ask({ title: '자기소개', message: '최대 40자', input: true, okText: '저장' });
+        if (text === null) return;
+        try {
+            await userFetch(`profiles?id=eq.${session.uid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ bio: text.trim().slice(0, 40) }) });
+            toast('저장했어요', 'good'); renderProfileSheet();
+        } catch (err) { toast('저장 실패', 'bad'); }
+    }
+});
+$('pf-dialog').addEventListener('click', e => { if (e.target.id === 'pf-dialog' || e.target.closest('[data-pfclose]')) $('pf-dialog').classList.add('hidden'); });
+$('profile-btn').addEventListener('click', () => openSheet('sheet-profile'));
+renderProfileBtn();
+if (session) setTimeout(() => cloudUpload(true), 8000);   // 켜고 조금 뒤 한 번 맞춰 둠
 
 /* =========================================================
    📅 일일 출석 (7일 한 바퀴, 하루 빠져도 이어서 받음)
@@ -2172,7 +2481,7 @@ applyQuality();
 function applyGear() {
     stage3d?.setGear({ gauntlet: gameState.gear, amulet: gameState.amulet, visible: gameState.showGear !== false });
     const btn = $('gear-toggle-btn');
-    if (btn) btn.textContent = gameState.showGear !== false ? '장비 보이기 켜짐' : '장비 보이기 꺼짐';
+    if (btn) { btn.textContent = gameState.showGear !== false ? 'ON' : 'OFF'; btn.classList.toggle('on', gameState.showGear !== false); }
 }
 $('gear-toggle-btn').addEventListener('click', () => {
     gameState.showGear = gameState.showGear === false;
@@ -2197,7 +2506,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=32')
+import('./aura3d.js?v=33')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
