@@ -1,7 +1,7 @@
-import { AURA_DATA } from './auras.js?v=27';
-import { CRAFT_ITEMS } from './craftItems.js?v=27';
-import { createMusicPlayer, coverArt } from './music.js?v=27';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=27';
+import { AURA_DATA } from './auras.js?v=28';
+import { CRAFT_ITEMS } from './craftItems.js?v=28';
+import { createMusicPlayer, coverArt } from './music.js?v=28';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=28';
 
 /* =========================================================
    📦 게임 데이터
@@ -41,25 +41,29 @@ const SHOP_ITEMS = [
 ];
 
 /* 🎰 상점 뽑기 (JC로 굴림). w = 가중치 */
-const GACHA_COST = 30000, GACHA_COST10 = 270000, GACHA_PITY = 60;
+const GACHA_COST = 30000, GACHA_COST10 = 270000, GACHA_PITY = 100;
 const GACHA_POOL = [
-    { kind: 'jc', min: 5000, max: 30000, w: 300, tier: 'COMMON', label: 'JC 주머니' },
-    { kind: 'items', items: { luck_3: 2, speed_3: 2 }, w: 200, tier: 'UNCOMMON', label: '물약 꾸러미' },
-    { kind: 'items', items: { limit_potion: 1 }, w: 120, tier: 'RARE' },
-    { kind: 'items', items: { dice_potion: 1 }, w: 110, tier: 'RARE' },
-    { kind: 'items', items: { warp_potion: 1 }, w: 80, tier: 'EPIC' },
-    { kind: 'items', items: { star_potion: 1 }, w: 60, tier: 'EPIC' },
-    { kind: 'items', items: { biome_potion: 1 }, w: 60, tier: 'EPIC' },
-    { kind: 'items', items: { overcome_potion: 1 }, w: 25, tier: 'LEGEND' },
-    { kind: 'gear', id: 'gacha_clover', w: 14, tier: 'LEGEND', dupe: 60000 },
-    { kind: 'gear', id: 'gacha_dice', w: 12, tier: 'LEGEND', dupe: 80000 },
-    { kind: 'gear', id: 'gacha_compass', w: 8, tier: 'MYTHIC', dupe: 150000 },
-    { kind: 'gear', id: 'gacha_jackpot', w: 5, tier: 'MYTHIC', dupe: 300000 },
-    { kind: 'items', items: { heaven_potion: 1 }, w: 3.5, tier: 'MYTHIC' },
-    { kind: 'gear', id: 'gacha_cat', w: 1.5, tier: 'ANCIENT', dupe: 800000 },
-    { kind: 'gear', id: 'gacha_comet', w: 0.8, tier: 'ABSOLUTE', dupe: 1500000 }
+    // 한 번(3만 JC)에 평균 2만 8천 JC어치 정도 나오게 맞춤 (물약은 상점가 기준). 장비가 나오면 이득
+    { kind: 'jc', min: 5000, max: 25000, w: 340, tier: 'COMMON', label: 'JC 주머니' },
+    { kind: 'items', items: { luck_3: 2, speed_3: 2 }, w: 230, tier: 'UNCOMMON', label: '물약 꾸러미' },
+    { kind: 'items', items: { limit_potion: 1 }, w: 100, tier: 'RARE' },
+    { kind: 'items', items: { dice_potion: 1 }, w: 60, tier: 'RARE' },
+    { kind: 'items', items: { warp_potion: 1 }, w: 70, tier: 'EPIC' },
+    { kind: 'items', items: { star_potion: 1 }, w: 55, tier: 'EPIC' },
+    { kind: 'items', items: { biome_potion: 1 }, w: 50, tier: 'EPIC' },
+    { kind: 'items', items: { overcome_potion: 1 }, w: 15, tier: 'LEGEND' },
+    { kind: 'gear', id: 'gacha_clover', w: 10, tier: 'LEGEND', dupe: 60000 },
+    { kind: 'gear', id: 'gacha_dice', w: 9, tier: 'LEGEND', dupe: 80000 },
+    { kind: 'gear', id: 'gacha_compass', w: 6, tier: 'MYTHIC', dupe: 150000 },
+    { kind: 'gear', id: 'gacha_jackpot', w: 3.5, tier: 'MYTHIC', dupe: 300000 },
+    { kind: 'items', items: { heaven_potion: 1 }, w: 2.5, tier: 'MYTHIC' },
+    { kind: 'gear', id: 'gacha_cat', w: 1, tier: 'ANCIENT', dupe: 800000 },
+    { kind: 'gear', id: 'gacha_comet', w: 0.5, tier: 'ABSOLUTE', dupe: 1500000 }
 ];
 const GACHA_TOTAL_W = GACHA_POOL.reduce((s, e) => s + e.w, 0);
+const GACHA_GEAR_W = GACHA_POOL.filter(e => e.kind === 'gear').reduce((s, e) => s + e.w, 0);
+// 확률 글자: 1% 밑이면 소수 둘째 자리까지
+const gachaPct = (w, total = GACHA_TOTAL_W) => { const p = w / total * 100; return p.toFixed(p < 1 ? 2 : 1) + '%'; };
 
 const QUEST_DATA = [
     {
@@ -886,7 +890,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=27').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=28').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1589,7 +1593,8 @@ function renderGacha() {
         <div class="gpity">
             <div class="gpity-top"><span>장비 천장</span><span><b>${pity}</b> / ${GACHA_PITY}</span></div>
             <div class="gpity-bar"><div style="width:${pity / GACHA_PITY * 100}%"></div></div>
-            <div class="gpity-note">${GACHA_PITY}번 안에 뽑기 전용 장비 하나는 꼭 나와요</div>
+            <div class="gpity-note">${GACHA_PITY}번 안에 장비가 안 나오면 ${GACHA_PITY}번째에 아래 확률로 장비 하나가 확정으로 나와요</div>
+            <div class="gpity-odds">${gears.map(e => `<span style="--c:${TIER_COL[e.tier]}"><i></i>${CRAFT_BY_ID[e.id].name.replace(/ (건틀렛|부적)$/, '')}<b>${gachaPct(e.w, GACHA_GEAR_W)}</b></span>`).join('')}</div>
         </div>
         <div class="gbtns">
             <button class="gbtn" data-pull="1" ${gameState.jc < GACHA_COST ? 'disabled' : ''}><span>1회 뽑기</span><b>${fmt(GACHA_COST)} JC</b></button>
@@ -1598,10 +1603,10 @@ function renderGacha() {
         <div class="glabel">뽑기 전용 장비</div>
         <div class="ggears">${gears.map(e => {
             const g = CRAFT_BY_ID[e.id], own = gameState.craftedGears.includes(e.id);
-            return `<div class="ggear ${own ? 'own' : ''}" style="--c:${TIER_COL[e.tier]}">
+            return `<div class="ggear ${own ? 'own' : ''}" style="--c:${TIER_COL[e.tier]}" data-ggear="${e.id}" role="button">
                 <div class="ggear-view"><canvas data-gear="${e.id}" aria-hidden="true"></canvas>${own ? '<span class="ggear-own">보유</span>' : ''}</div>
                 <div class="ggear-name">${g.name}</div>
-                <div class="ggear-tier">${e.tier} · ${(e.w / GACHA_TOTAL_W * 100).toFixed(e.w < 5 ? 2 : 1)}%</div>
+                <div class="ggear-tier">${e.tier} · ${gachaPct(e.w)}</div>
             </div>`;
         }).join('')}</div>
         <div class="glabel">뽑기 전용 물약</div>
@@ -1612,7 +1617,7 @@ function renderGacha() {
                 <div class="row-side"><div class="row-have">${gameState.itemInventory[item.id] ? '×' + fmt(gameState.itemInventory[item.id]) : ''}</div></div>
             </div>`).join('')}</div>
         <details class="godds"><summary>전체 확률 보기</summary>${GACHA_POOL.slice().sort((a, b) => b.w - a.w).map(e => `
-            <div class="godd"><i style="background:${TIER_COL[e.tier]}"></i><span>${gachaEntryName(e)}${e.kind === 'jc' ? ` (${fmt(e.min)}~${fmt(e.max)})` : ''}</span><b>${(e.w / GACHA_TOTAL_W * 100).toFixed(e.w < 5 ? 2 : 1)}%</b></div>`).join('')}
+            <div class="godd"><i style="background:${TIER_COL[e.tier]}"></i><span>${gachaEntryName(e)}${e.kind === 'jc' ? ` (${fmt(e.min)}~${fmt(e.max)})` : ''}</span><b>${gachaPct(e.w)}</b></div>`).join('')}
             <div class="godd-note">이미 가진 장비가 또 나오면 JC로 바꿔 줘요</div>
         </details>`;
     attachGearPreviews(el.querySelector('.ggears'));
@@ -1708,6 +1713,43 @@ $('gacha-result').addEventListener('click', e => {
 $('gacha-panel').addEventListener('click', e => {
     const b = e.target.closest('[data-pull]');
     if (b) pullGacha(+b.dataset.pull);
+    const g = e.target.closest('[data-ggear]');
+    if (g) openGearDetail(g.dataset.ggear);
+});
+
+// 뽑기 장비를 누르면 크게 보여 줌 (3D + 효과 + 확률)
+function openGearDetail(id) {
+    const gear = CRAFT_BY_ID[id], e = GACHA_POOL.find(x => x.id === id);
+    if (!gear || !e) return;
+    const own = gameState.craftedGears.includes(id);
+    const chips = [];
+    if (gear.luckBonus) chips.push(`<span class="chip luck">행운 +${Math.round(gear.luckBonus * 100)}%</span>`);
+    if (gear.speedBonus) chips.push(`<span class="chip speed">속도 +${Math.round(gear.speedBonus * 100)}%</span>`);
+    if (gear.amuletMult) chips.push(`<span class="chip amulet">${gear.amuletEvery || 10}롤마다 행운 ×${gear.amuletMult}</span>`);
+    if (gear.biomeBoost) chips.push(`<span class="chip biome">바이옴 ×${gear.biomeBoost} · 지속 ×${gear.biomeTime}</span>`);
+    const box = $('gear-detail');
+    box.style.setProperty('--c', TIER_COL[e.tier]);
+    box.querySelector('.gd-card').innerHTML = `
+        <button class="gd-close" data-gdclose aria-label="닫기">✕</button>
+        <div class="gd-view"><canvas data-gear="${id}" aria-hidden="true"></canvas></div>
+        <div class="gd-tier">${e.tier}</div>
+        <div class="gd-name">${gear.name}</div>
+        <div class="chips gd-chips">${chips.join('')}</div>
+        <div class="gd-desc">${gear.desc}<br><span>${gear.category === 'amulet' ? '왼팔에 매다는 부적' : '오른팔에 끼는 건틀렛'}</span></div>
+        <div class="gd-odds">
+            <div><span>뽑기 1회</span><b>${gachaPct(e.w)}</b></div>
+            <div><span>천장 때</span><b>${gachaPct(e.w, GACHA_GEAR_W)}</b></div>
+            <div><span>중복이면</span><b>+${fmt(e.dupe)} JC</b></div>
+        </div>
+        <div class="gd-own ${own ? 'on' : ''}">${own ? '보유 중 · 가방에서 장착' : '아직 없음'}</div>`;
+    box.classList.remove('hidden');
+    attachGearPreviews(box);
+}
+$('gear-detail').addEventListener('click', e => {
+    if (e.target.closest('[data-gdclose]') || e.target.id === 'gear-detail') {
+        $('gear-detail').classList.add('hidden');
+        attachGearPreviews($('gacha-panel').querySelector('.ggears'));
+    }
 });
 
 /* =========================================================
@@ -1884,7 +1926,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=27')
+import('./aura3d.js?v=28')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

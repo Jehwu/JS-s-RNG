@@ -4,9 +4,9 @@ export const CRAFT_ITEMS = [
         id: "gear_beginner",
         category: "gauntlet",
         name: "초보자의 운수대통 건틀렛",
-        desc: "영구적으로 행운 10%, 속도 5%가 증가합니다.",
+        desc: "영구적으로 행운이 10% 증가합니다.",
         luckBonus: 0.1,
-        speedBonus: 0.05,
+        speedBonus: 0,
         req: { "com_normal": 15, "com_sleepy_jisung": 10, "unc_tired": 3 }
     },
     {
