@@ -1,7 +1,7 @@
-import { AURA_DATA } from './auras.js?v=33';
-import { CRAFT_ITEMS } from './craftItems.js?v=33';
-import { createMusicPlayer, coverArt } from './music.js?v=33';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=33';
+import { AURA_DATA } from './auras.js?v=34';
+import { CRAFT_ITEMS } from './craftItems.js?v=34';
+import { createMusicPlayer, coverArt } from './music.js?v=34';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=34';
 
 /* =========================================================
    📦 게임 데이터
@@ -946,7 +946,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=33').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=34').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -2099,9 +2099,14 @@ async function logIn(nick, pw) {
     await cloudUpload(true);
 }
 async function logOut() {
-    await cloudUpload(true).catch(() => {});
+    await cloudUpload(true);
+    if (cloudSavedAt < Date.now() - 10000) throw new Error('서버에 저장을 못 해서 로그아웃을 멈췄어요. 인터넷을 확인해 주세요');
     try { await authCall('logout', {}, session?.access); } catch (e) {}
     session = null; saveSession();
+    // 이 폰은 새 게임으로 (기록은 서버에 있어서 다시 로그인하면 돌아옴)
+    gameState = createInitialGameState();
+    cloudLastRolls = -1; cloudSavedAt = 0;
+    saveGame(); renderAll(); applyEquippedAura(); applyBiome(false); updateAttendDot();
 }
 
 // 랭킹·프로필용 숫자들
@@ -2151,8 +2156,9 @@ function renderAccount() {
             <div class="seg seg2" id="acc-seg"><button data-am="login" class="${accMode === 'login' ? 'on' : ''}">로그인</button><button data-am="signup" class="${accMode === 'signup' ? 'on' : ''}">새 계정</button></div>
             <input id="acc-nick" type="text" maxlength="12" placeholder="닉네임 (한글·영어·숫자 2~12자)" autocomplete="username">
             <input id="acc-pw" type="password" placeholder="비밀번호 (6자 이상)" autocomplete="${accMode === 'login' ? 'current-password' : 'new-password'}">
+            ${accMode === 'signup' ? '<input id="acc-pw2" type="password" placeholder="비밀번호 한 번 더" autocomplete="new-password">' : ''}
             <button class="btn btn-block btn-gold" data-acc="go">${accMode === 'login' ? '로그인' : '계정 만들기'}</button>
-            <div class="set-note">${accMode === 'signup' ? '지금 이 폰 기록이 새 계정으로 올라가요. 비밀번호는 잊어버리면 찾을 수 없어요!' : '로그인 안 해도 지금처럼 이 폰에서 계속 할 수 있어요.'}</div>`;
+            <div class="set-note">${accMode === 'signup' ? '지금 이 폰에서 하던 기록이 새 계정으로 올라가요. 비밀번호는 잊어버리면 찾을 수 없어요!' : '로그인 안 해도 지금처럼 이 폰에서 계속 할 수 있어요.'}</div>`;
     }
 }
 $('account-panel').addEventListener('click', async e => {
@@ -2164,6 +2170,7 @@ $('account-panel').addEventListener('click', async e => {
     if (act === 'go') {
         const nick = $('acc-nick').value.trim(), pw = $('acc-pw').value;
         if (!nick || !pw) { toast('닉네임과 비밀번호를 넣어 주세요', 'bad'); return; }
+        if (accMode === 'signup' && pw !== $('acc-pw2').value) { toast('비밀번호가 서로 달라요', 'bad'); return; }
         b.disabled = true; b.textContent = '잠깐만요…';
         try {
             if (accMode === 'signup') { await signUp(nick, pw); toast(`🎉 ${nick} 계정을 만들었어요`, 'gold'); }
@@ -2173,8 +2180,11 @@ $('account-panel').addEventListener('click', async e => {
     } else if (act === 'save') {
         b.disabled = true; await cloudUpload(true); toast(cloudSavedAt > Date.now() - 5000 ? '☁️ 저장했어요' : '저장 실패. 인터넷을 확인해 주세요', cloudSavedAt > Date.now() - 5000 ? 'good' : 'bad'); renderAccount();
     } else if (act === 'logout') {
-        if (!await ask({ title: '로그아웃할까요?', message: '이 폰의 기록은 그대로 남아요.', okText: '로그아웃', danger: true })) return;
-        await logOut(); renderAccount(); renderProfileBtn(); toast('로그아웃했어요');
+        if (!await ask({ title: '로그아웃할까요?', message: '지금 기록을 서버에 저장하고, 이 폰은 새 게임으로 시작해요.\n다시 로그인하면 기록이 그대로 돌아와요.', okText: '로그아웃', danger: true })) return;
+        b.disabled = true;
+        try { await logOut(); accMode = 'login'; toast('로그아웃했어요. 새 게임으로 시작해요'); }
+        catch (err) { toast(err.message, 'bad'); }
+        renderAccount(); renderProfileBtn();
     } else if (act === 'profile') {
         closeSheet('sheet-settings'); setTimeout(() => openSheet('sheet-profile'), 200);
     }
@@ -2506,7 +2516,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=33')
+import('./aura3d.js?v=34')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
