@@ -1,7 +1,7 @@
-import { AURA_DATA } from './auras.js?v=30';
-import { CRAFT_ITEMS } from './craftItems.js?v=30';
-import { createMusicPlayer, coverArt } from './music.js?v=30';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=30';
+import { AURA_DATA } from './auras.js?v=31';
+import { CRAFT_ITEMS } from './craftItems.js?v=31';
+import { createMusicPlayer, coverArt } from './music.js?v=31';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=31';
 
 /* =========================================================
    📦 게임 데이터
@@ -932,7 +932,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=30').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=31').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1144,7 +1144,8 @@ const SHEET_RENDER = {
     'sheet-shop': renderShop,
     'sheet-quest': renderQuests,
     'sheet-index': renderIndex,
-    'sheet-settings': () => { renderSoundUI(); renderAutoSell(); }
+    'sheet-settings': () => { renderSoundUI(); renderAutoSell(); },
+    'sheet-attend': () => renderAttend()
 };
 
 function stagger(el) {
@@ -1295,6 +1296,8 @@ $('game-start-btn').addEventListener('click', () => {
         stage3d?.resize();
         applyEquippedAura();
         applyBiome(false);   // 저장된 바이옴이 남아 있으면 이어서
+        updateAttendDot();
+        if (canAttend()) setTimeout(() => openSheet('sheet-attend'), 900);   // 오늘 출석 안 했으면 바로 띄움
     }, 420);
     playBgm('main');
 });
@@ -1845,6 +1848,61 @@ $('gear-detail').addEventListener('click', e => {
 });
 
 /* =========================================================
+   📅 일일 출석 (7일 한 바퀴, 하루 빠져도 이어서 받음)
+   ========================================================= */
+
+const ATTEND_REWARDS = [
+    { jc: 5000 },
+    { items: { luck_3: 3 } },
+    { jc: 15000 },
+    { items: { limit_potion: 1 } },
+    { items: { dice_potion: 1 } },
+    { jc: 40000, items: { speed_3: 3 } },
+    { items: { overcome_potion: 1, biome_potion: 1 }, big: true }
+];
+const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+function attendState() { return gameState.attend || (gameState.attend = { last: '', count: 0, total: 0 }); }
+const canAttend = () => attendState().last !== todayKey();
+function rewardChips(r) {
+    const out = [];
+    if (r.jc) out.push(`<span class="at-rw"><i class="coin"></i>${fmt(r.jc)}</span>`);
+    for (const id in r.items || {}) out.push(`<span class="at-rw">${vialHtml(SHOP_BY_ID[id])}<small>${SHOP_BY_ID[id].name} ×${r.items[id]}</small></span>`);
+    return out.join('');
+}
+function renderAttend() {
+    const st = attendState(), can = canAttend();
+    const idx = st.count % 7;              // 오늘 받을 칸
+    $('attend-panel').innerHTML = `
+        <div class="at-head">
+            <div><b>${fmt(st.total)}</b>일째 출석</div>
+            <div class="at-sub">7일마다 한 바퀴 · 하루 빠져도 이어서 받아요</div>
+        </div>
+        <div class="at-grid">${ATTEND_REWARDS.map((r, i) => {
+            const claimed = can ? i < idx : i < (idx === 0 ? 7 : idx);
+            const today = can && i === idx;
+            return `<div class="at-day ${claimed ? 'done' : ''} ${today ? 'today' : ''} ${r.big ? 'big' : ''}">
+                <div class="at-num">DAY ${i + 1}</div>
+                <div class="at-items">${rewardChips(r)}</div>
+                ${claimed ? '<i class="at-check"></i>' : ''}
+            </div>`;
+        }).join('')}</div>
+        <button class="btn btn-block ${can ? 'btn-gold' : ''}" data-attend ${can ? '' : 'disabled'}>${can ? `DAY ${idx + 1} 보상 받기` : '오늘은 받았어요 · 내일 또 와요'}</button>`;
+}
+function updateAttendDot() { document.querySelector('.attend-dot')?.classList.toggle('hidden', !canAttend()); }
+$('attend-btn').addEventListener('click', () => openSheet('sheet-attend'));
+$('attend-panel').addEventListener('click', e => {
+    if (!e.target.closest('[data-attend]') || !canAttend()) return;
+    const st = attendState();
+    const r = ATTEND_REWARDS[st.count % 7];
+    if (r.jc) gameState.jc += r.jc;
+    if (r.items) addItems(r.items);
+    st.last = todayKey(); st.count++; st.total++;
+    saveGame(); renderStats(); renderAttend(); updateAttendDot();
+    playDropSound('LEGEND');
+    toast(`📅 출석 ${st.total}일째!\n${[r.jc ? `${fmt(r.jc)} JC` : '', ...Object.entries(r.items || {}).map(([id, n]) => `${SHOP_BY_ID[id].name} ×${n}`)].filter(Boolean).join(' · ')}`, 'gold');
+});
+
+/* =========================================================
    🌦️ 바이옴
    ========================================================= */
 
@@ -2019,7 +2077,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=30')
+import('./aura3d.js?v=31')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

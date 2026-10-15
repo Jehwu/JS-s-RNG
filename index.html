@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=30">
-    <link rel="stylesheet" href="rarity.css?v=30">
+    <link rel="stylesheet" href="style.css?v=31">
+    <link rel="stylesheet" href="rarity.css?v=31">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -74,6 +74,10 @@
                 </div>
                 <button id="main-dev-btn" class="icon-btn hidden" aria-label="개발자 콘솔">
                     <svg viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13.5 6l-3 12"/></svg>
+                </button>
+                <button id="attend-btn" class="icon-btn" aria-label="출석 체크">
+                    <svg viewBox="0 0 24 24"><path d="M4 6h16v14H4z"/><path d="M4 10h16M8 3v5M16 3v5"/><path d="M9 15l2 2 4-4"/></svg>
+                    <i class="attend-dot hidden"></i>
                 </button>
                 <button id="settings-btn" class="icon-btn" aria-label="설정">
                     <svg viewBox="0 0 24 24"><path d="M9 9h6v6H9z"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>
@@ -172,6 +176,14 @@
     </div>
 
     <!-- 📜 퀘스트 -->
+    <div id="sheet-attend" class="sheet-backdrop hidden">
+        <div class="sheet">
+            <div class="sheet-head"><h2>출석 체크</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
+            <div class="sheet-body"><div id="attend-panel"></div></div>
+        </div>
+    </div>
+
+    <!-- 📜 퀘스트 (위 출석 체크) -->
     <div id="sheet-quest" class="sheet-backdrop hidden">
         <div class="sheet">
             <div class="sheet-head"><h2>퀘스트</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
@@ -366,6 +378,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=30"></script>
+    <script type="module" src="script.js?v=31"></script>
 </body>
 </html>

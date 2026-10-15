@@ -1376,3 +1376,32 @@ body.cine-on #biome-fx { opacity: 0; }
 #biome-badge { width: auto; min-width: 58px; max-width: 76px; }
 #biome-badge .bb-name { white-space: normal; text-align: center; line-height: 1.15; word-break: keep-all; }
 .biome-tag { display: block; margin-top: 3px; font-size: 9.5px; color: var(--bc); letter-spacing: 0.02em; }
+
+/* =========================================================
+   📅 출석
+   ========================================================= */
+#attend-btn { position: relative; }
+.attend-dot { position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; background: var(--red); box-shadow: 0 0 8px var(--red); animation: gm-blink 1s steps(2) infinite; }
+#attend-panel { display: flex; flex-direction: column; gap: 14px; }
+.at-head { text-align: center; }
+.at-head b { font-family: var(--display); font-weight: 400; font-size: 30px; color: var(--gold); text-shadow: 0 0 16px rgba(242, 205, 92, 0.45); }
+.at-sub { font-size: 11.5px; color: var(--faint); margin-top: 4px; }
+.at-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.at-day {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 10px 6px 12px; min-height: 104px;
+    background: rgba(255, 255, 255, 0.025); border: 1px solid var(--line);
+}
+.at-day.big { grid-column: 1 / -1; min-height: 0; flex-direction: row; justify-content: center; gap: 14px; border-color: color-mix(in srgb, var(--gold) 45%, transparent); background: linear-gradient(90deg, rgba(242, 205, 92, 0.1), rgba(176, 38, 255, 0.08)); }
+.at-num { font-size: 10px; letter-spacing: 0.2em; color: var(--muted); }
+.at-items { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.at-rw { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.at-rw small { font-size: 9.5px; color: #c9c9dc; text-align: center; line-height: 1.25; word-break: keep-all; }
+.at-rw .coin { width: 18px; height: 18px; margin-bottom: 2px; }
+.at-rw .vial { transform: scale(0.8); }
+.at-day.today { border-color: var(--gold); box-shadow: 0 0 18px rgba(242, 205, 92, 0.3), inset 0 0 16px rgba(242, 205, 92, 0.12); animation: at-pulse 1.6s ease-in-out infinite; }
+.at-day.today .at-num { color: var(--gold); }
+@keyframes at-pulse { 50% { box-shadow: 0 0 28px rgba(242, 205, 92, 0.5), inset 0 0 20px rgba(242, 205, 92, 0.18); } }
+.at-day.done { opacity: 0.45; }
+.at-check { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.at-check::after { content: ''; width: 26px; height: 14px; border-left: 4px solid var(--mint); border-bottom: 4px solid var(--mint); transform: rotate(-45deg) translate(2px, -2px); filter: drop-shadow(0 0 6px var(--mint)); }
