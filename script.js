@@ -1,6 +1,6 @@
-import { AURA_DATA } from './auras.js?v=24';
-import { CRAFT_ITEMS } from './craftItems.js?v=24';
-import { createMusicPlayer, coverArt } from './music.js?v=24';
+import { AURA_DATA } from './auras.js?v=25';
+import { CRAFT_ITEMS } from './craftItems.js?v=25';
+import { createMusicPlayer, coverArt } from './music.js?v=25';
 
 /* =========================================================
    📦 게임 데이터
@@ -472,20 +472,16 @@ function pickAura() {
     // 배수 물약은 행운만 크게 올려 줌 → 희귀 칭호 확률이 행운만큼 올라가고,
     // 행운보다 흔한 칭호 중 가장 희귀한 것이 바닥(보장)이 됨.
     // (예전엔 행운보다 흔한 칭호를 통째로 빼서 특정 칭호 하나만 쏟아지던 버그)
-    // 배수 물약을 쓴 롤: 칭호마다 따로 판정하면 희귀 칭호가 많을수록 좋은 게 몰려 나와서
-    // (예: ×70만에서 ANCIENT 이상 63%) 한 번만 뽑는 방식으로 계산.
-    // '1 in X' 하나를 뽑아 행운만큼 곱하고, X 이하인 칭호 중 가장 희귀한 쪽에서 고름
-    // → '1 in N 보다 희귀한 게 나올 확률'이 정확히 행운 ÷ N (×70만이면 ANCIENT 이상 약 19%)
+    // 배수 물약을 쓴 롤: 모든 칭호 확률(1/N)에 배율을 곱함.
+    // 배율보다 흔한 칭호(N ≤ 배율)는 아예 안 나오고, 나머지는 '배율 ÷ N' 비율로 한 번에 뽑음.
+    // (확률 합이 1보다 작으면 남는 몫은 배율 바로 아래 칭호가 가져감)
     if (multBonus > 0) {
-        const X = totalLuck / (1 - Math.random());
-        const cand = [];
-        for (let i = AURA_DATA.length - 1; i >= 0 && cand.length < 3; i--) if (AURA_DATA[i].in <= X) cand.push(AURA_DATA[i]);
-        if (!cand.length) return AURA_DATA[0];
-        // 확률이 거의 같은 이웃 칭호끼리는 원래 비율대로 나눠 가짐
-        const top = cand.filter(c => c.in >= cand[0].in / 2);
-        let w = Math.random() * top.reduce((sum, c) => sum + 1 / c.in, 0);
-        for (const c of top) { w -= 1 / c.in; if (w <= 0) return c; }
-        return top[0];
+        const pool = AURA_DATA.filter(a => a.in > totalLuck);
+        const sum = pool.reduce((s, a) => s + totalLuck / a.in, 0);
+        let r = Math.random() * Math.max(1, sum);
+        for (const a of pool) { r -= totalLuck / a.in; if (r <= 0) return a; }
+        for (let i = AURA_DATA.length - 1; i >= 0; i--) if (AURA_DATA[i].in <= totalLuck) return AURA_DATA[i];
+        return AURA_DATA[0];
     }
     for (let i = AURA_DATA.length - 1; i >= 0; i--) {
         if (Math.random() < totalLuck / AURA_DATA[i].in) return AURA_DATA[i];
@@ -856,7 +852,7 @@ function attachGearPreviews() {
     if (gearPreviews) { gearPreviews.attach(ui.craftGrid); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=24').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=25').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (!$('sheet-craft').classList.contains('hidden')) gearPreviews.attach(ui.craftGrid);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1541,7 +1537,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=24')
+import('./aura3d.js?v=25')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
