@@ -1,8 +1,8 @@
-import { AURA_DATA } from './auras.js?v=40';
-import { CRAFT_ITEMS } from './craftItems.js?v=40';
-import { createMusicPlayer, coverArt } from './music.js?v=40';
-import { PETS, PET_BY_ID, EGGS, EGG_BY_ID, STAR_MAX, starMult } from './petsData.js?v=40';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=40';
+import { AURA_DATA } from './auras.js?v=41';
+import { CRAFT_ITEMS } from './craftItems.js?v=41';
+import { createMusicPlayer, coverArt } from './music.js?v=41';
+import { PETS, PET_BY_ID, EGGS, EGG_BY_ID, STAR_MAX, starMult } from './petsData.js?v=41';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=41';
 
 /* =========================================================
    📦 게임 데이터
@@ -1000,7 +1000,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=40').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=41').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -2044,7 +2044,7 @@ function renderPets() {
         const eggsOwned = EGGS.filter(e => st.eggs[e.id] > 0);
         el.innerHTML = `
             <div class="nests">${st.nests.map((n, i) => {
-                if (!n) return `<button class="nest empty ${petPickNest === i ? 'pick' : ''}" data-nest="${i}"><div class="nest-view"><canvas data-gear="nest::idle" aria-hidden="true"></canvas><span class="nest-plus">＋</span></div><div class="nest-name">빈 둥지</div><small>${petPickNest === i ? '아래에서 알 고르기' : '눌러서 알 넣기'}</small></button>`;
+                if (!n) return `<button class="nest nest-empty ${petPickNest === i ? 'pick' : ''}" data-nest="${i}"><div class="nest-view"><canvas data-gear="nest::idle" aria-hidden="true"></canvas><span class="nest-plus">＋</span></div><div class="nest-name">빈 둥지</div><small>${petPickNest === i ? '아래에서 알 고르기' : '눌러서 알 넣기'}</small></button>`;
                 const egg = EGG_BY_ID[n.egg], left = n.end - now, ready = left <= 0;
                 const pct = Math.min(100, (now - n.start) / (n.end - n.start) * 100);
                 return `<button class="nest ${ready ? 'ready' : ''}" data-nest="${i}">
@@ -2072,22 +2072,65 @@ function renderPets() {
             el.querySelectorAll('[data-left]').forEach(s => { const l = +s.dataset.left - Date.now(); if (l <= 0) redo = true; else s.textContent = fmtLeft(l); });
             if (redo) { renderPets(); updatePetDot(); }
         }, 10000);
-    } else if (petTab === 'mine') {
-        const list = st.petList.slice().sort((a, b) => (a.u === gameState.pet ? -1 : b.u === gameState.pet ? 1 : 0) || PETS.indexOf(PET_BY_ID[b.id]) - PETS.indexOf(PET_BY_ID[a.id]) || b.s - a.s);
-        if (!list.length) { el.innerHTML = `<div class="empty">아직 펫이 없어요.<br>둥지에 알을 넣어 부화시켜 봐요.</div>`; return; }
-        const same = (a) => st.petList.filter(p => p.id === a.id && p.s === a.s).length;
-        el.innerHTML = `<div class="set-note">같은 펫 · 같은 성 2마리를 <b>합성</b>하면 한 성 올라가요 (최대 ${STAR_MAX}성)</div>
-            <div class="bg-list">${list.map(p => {
-                const d = PET_BY_ID[p.id], on = p.u === gameState.pet, canMerge = p.s < STAR_MAX && same(p) >= 2;
-                return `<div class="bg-row pet-row ${on ? 'on' : ''}" style="border-color:color-mix(in srgb, ${TIER_COL[d.tier]} ${on ? 90 : 40}%, transparent)">
-                    <div class="bg-row-view"><canvas data-gear="${p.id}" aria-hidden="true"></canvas></div>
-                    <div class="bg-row-info"><div class="bg-name">${d.name}</div>${petStarHtml(p.s)}<div class="bg-eff"><b class="ef-luck">${petEffectText(d, p.s)}</b></div></div>
-                    <div class="pet-btns">
-                        <button class="btn btn-sm ${on ? '' : 'btn-gold'}" data-petuse="${p.u}">${on ? '집에 보내기' : '데려가기'}</button>
-                        ${canMerge ? `<button class="btn btn-sm pet-merge" data-merge="${p.u}">합성 ★${p.s + 1}</button>` : ''}
-                    </div>
-                </div>`;
-            }).join('')}</div>`;
+    } else if (petTab === 'mine' || petTab === 'merge') {
+        // 같은 펫 · 같은 성끼리 한 칸으로 묶음
+        const groups = [];
+        for (const p of st.petList) {
+            let g = groups.find(x => x.id === p.id && x.s === p.s);
+            if (!g) groups.push(g = { id: p.id, s: p.s, list: [] });
+            g.list.push(p);
+        }
+        const score = g => { const d = PET_BY_ID[g.id]; return ((d.luck || 0) + (d.speed || 0) * 4) * starMult(g.s); };
+        groups.sort((a, b) => score(b) - score(a));
+        if (!groups.length) { el.innerHTML = `<div class="empty">아직 펫이 없어요.<br>🪺 둥지에 알을 넣어 부화시켜 봐요.</div>`; return; }
+        const on = petOn();
+        if (petTab === 'mine') {
+            const od = on && PET_BY_ID[on.id];
+            el.innerHTML = `
+                <div class="pet-hero ${on ? '' : 'none'}" ${on ? `style="--c:${TIER_COL[od.tier]}"` : ''}>
+                    ${on ? `<div class="pet-hero-view"><canvas data-gear="${on.id}" aria-hidden="true"></canvas></div>
+                    <div class="pet-hero-info">
+                        <div class="pet-hero-label">함께하는 펫</div>
+                        <div class="pet-hero-name">${od.name}</div>
+                        ${petStarHtml(on.s)}
+                        <div class="pet-hero-eff">${petEffectText(od, on.s)}</div>
+                        <button class="btn btn-sm" data-petuse="${on.u}">집에 보내기</button>
+                    </div>` : `<div class="pet-hero-empty">함께하는 펫이 없어요<br><small>아래에서 눌러서 데려가요</small></div>`}
+                </div>
+                <div class="glabel">내 펫 <span style="letter-spacing:0">${st.petList.length}마리</span> <span class="pet-hint">· 누르면 데려가기</span></div>
+                <div class="pet-grid">${groups.map(g => {
+                    const d = PET_BY_ID[g.id], isOn = on && g.list.some(p => p.u === on.u);
+                    return `<button class="pet-card ${isOn ? 'on' : ''}" data-petuse="${isOn ? '' : g.list[0].u}" style="--c:${TIER_COL[d.tier]}">
+                        <div class="pet-card-view"><canvas data-gear="${g.id}" aria-hidden="true"></canvas>
+                            ${g.list.length > 1 ? `<span class="pet-cnt">×${g.list.length}</span>` : ''}${isOn ? '<span class="pet-on">함께하는 중</span>' : ''}</div>
+                        <div class="pet-card-name">${d.name}</div>
+                        ${petStarHtml(g.s)}
+                        <div class="pet-card-eff">${petEffectText(d, g.s)}</div>
+                    </button>`;
+                }).join('')}</div>`;
+        } else {
+            const can = groups.filter(g => g.s < STAR_MAX && g.list.length >= 2);
+            el.innerHTML = `
+                <div class="merge-intro"><b>같은 펫 + 같은 성 2마리</b> → <b>한 성 위 1마리</b><br><small>최대 ★${STAR_MAX} · ★2 ×1.4 · ★3 ×1.9 · ★4 ×2.5 · ★5 ×3.2 효과</small></div>
+                ${can.length ? `<button class="btn btn-block btn-gold" data-mergeall>✨ 할 수 있는 거 전부 합성 (${can.reduce((n, g) => n + Math.floor(g.list.length / 2), 0)}번)</button>
+                <div class="merge-list">${can.map(g => {
+                    const d = PET_BY_ID[g.id];
+                    return `<div class="merge-row" style="--c:${TIER_COL[d.tier]}">
+                        <div class="merge-side">
+                            <div class="merge-view"><canvas data-gear="${g.id}" aria-hidden="true"></canvas><span class="pet-cnt">×${g.list.length}</span></div>
+                            ${petStarHtml(g.s)}<small>${petEffectText(d, g.s)}</small>
+                        </div>
+                        <div class="merge-arrow">2 → 1<i>▶</i></div>
+                        <div class="merge-side up">
+                            <div class="merge-name">${d.name}</div>
+                            ${petStarHtml(g.s + 1)}<small class="up">${petEffectText(d, g.s + 1)}</small>
+                            <button class="btn btn-sm btn-gold" data-merge="${g.list[0].u}">합성</button>
+                        </div>
+                    </div>`;
+                }).join('')}</div>` : `<div class="empty">지금 합성할 수 있는 펫이 없어요.<br><small>같은 펫 · 같은 성을 2마리 모아 봐요</small></div>`}
+                ${groups.filter(g => !(g.s < STAR_MAX && g.list.length >= 2)).length ? `<div class="glabel">한 마리 더 필요해요</div>
+                <div class="merge-wait">${groups.filter(g => g.s < STAR_MAX && g.list.length < 2).map(g => `<span style="--c:${TIER_COL[PET_BY_ID[g.id].tier]}">${PET_BY_ID[g.id].name} ★${g.s} <b>1/2</b></span>`).join('')}</div>` : ''}`;
+        }
         attachGearPreviews(el);
     } else {
         el.innerHTML = `<div class="glabel">펫 도감 <span style="letter-spacing:0">${PETS.filter(p => st.petList.some(x => x.id === p.id)).length} / ${PETS.length}</span></div>
@@ -2146,7 +2189,19 @@ function devHatch(kind) {
     if (!got.length) { toast('깔 알이 없어요', 'bad'); return; }
     showHatch(best, got);
 }
-function mergePet(u) {
+function mergeAllPets() {
+    const st = petState();
+    let n = 0, guard = 0;
+    for (;;) {
+        if (guard++ > 500) break;
+        const p = st.petList.find(a => a.s < STAR_MAX && st.petList.some(b => b !== a && b.id === a.id && b.s === a.s));
+        if (!p) break;
+        mergePet(p.u, true); n++;
+    }
+    saveGame(); renderStats(); applyGear(); renderPets(); stagger($('pet-panel'));
+    toast(`✨ ${n}번 합성했어요!`, 'gold');
+}
+function mergePet(u, quiet = false) {
     const st = petState(), a = st.petList.find(p => p.u === u);
     if (!a || a.s >= STAR_MAX) return;
     // 데리고 있는 애는 남기고, 다른 한 마리를 재료로 씀
@@ -2155,6 +2210,7 @@ function mergePet(u) {
     const keep = b.u === gameState.pet ? b : a, gone = keep === a ? b : a;
     st.petList.splice(st.petList.indexOf(gone), 1);
     keep.s++;
+    if (quiet) return;
     saveGame(); renderStats(); applyGear(); renderPets(); stagger($('pet-panel'));
     toast(`✨ ${PET_BY_ID[keep.id].name} ★${keep.s} 달성!`, 'gold');
     playTone(660, 'triangle', 0.12 * soundSettings.master, 0.01, 0.3);
@@ -2191,6 +2247,7 @@ $('sheet-pet').addEventListener('click', e => {
     }
     const use = e.target.closest('[data-petuse]');
     if (use) {
+        if (!use.dataset.petuse) return;
         gameState.pet = gameState.pet === use.dataset.petuse ? null : use.dataset.petuse;
         if (gameState.pet) toast(`🐾 ${PET_BY_ID[petOn().id].name}와(과) 함께해요`, 'good');
         saveGame(); renderStats(); applyGear(); renderPets();
@@ -2198,6 +2255,7 @@ $('sheet-pet').addEventListener('click', e => {
     }
     const dh = e.target.closest('[data-devhatch]');
     if (dh) { devHatch(dh.dataset.devhatch); return; }
+    if (e.target.closest('[data-mergeall]')) { mergeAllPets(); return; }
     const mg = e.target.closest('[data-merge]');
     if (mg) mergePet(mg.dataset.merge);
 });
@@ -3085,7 +3143,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=40')
+import('./aura3d.js?v=41')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
