@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=37">
-    <link rel="stylesheet" href="rarity.css?v=37">
+    <link rel="stylesheet" href="style.css?v=38">
+    <link rel="stylesheet" href="rarity.css?v=38">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -22,6 +22,7 @@
     <canvas id="biome-fx" aria-hidden="true"></canvas>
     <div id="biome-banner" class="hidden" aria-live="polite"></div>
     <div id="admin-banner" class="hidden" aria-live="polite"></div>
+    <div id="rare-banner" class="rare-banner" aria-live="polite"></div>
     <div id="ambient" aria-hidden="true"></div>
     <div id="nametag" class="hidden"></div>
 
@@ -146,6 +147,7 @@
                 <button class="tab" data-tab="potion">물약</button>
                 <button class="tab" data-tab="gauntlet">건틀렛</button>
                 <button class="tab" data-tab="amulet">부적</button>
+                <button class="tab" data-tab="pet">펫</button>
             </div>
             <div class="sheet-body">
                 <div id="inventory-grid"></div>
@@ -174,6 +176,7 @@
             <div class="tabs" id="shop-tabs">
                 <button class="tab active" data-tab="potion">물약</button>
                 <button class="tab" data-tab="gacha">행운 뽑기</button>
+                <button class="tab" data-tab="eggs">🥚 펫 알</button>
                 <button class="tab tab-hw" data-tab="halloween">🎃 할로윈</button>
             </div>
             <div class="sheet-body"><div id="shop-grid"></div><div id="gacha-panel" class="hidden"></div></div>
@@ -237,6 +240,18 @@
                     <p class="hint-small">추가한 곡은 이 기기에만 저장돼요. 메인 화면에선 고른 곡이 계속 나와요.</p>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 스포트라이트 튜토리얼 -->
+    <div id="tut" class="tut hidden" aria-live="polite">
+        <div class="tut-catch"></div>
+        <div class="tut-hole"><i class="tut-ring"></i></div>
+        <div class="tut-hand" aria-hidden="true">👆</div>
+        <div class="tut-bubble">
+            <div class="tut-step"></div>
+            <div class="tut-text"></div>
+            <div class="tut-btns"><button class="tut-skip">건너뛰기</button><button class="btn btn-sm btn-gold tut-next">다음</button></div>
         </div>
     </div>
 
@@ -308,6 +323,9 @@
                             <input type="text" id="code-input" placeholder="코드 입력" autocomplete="off">
                             <button id="submit-code-btn" class="btn btn-primary">입력</button>
                         </div>
+                    </div>
+                    <div class="set-group">
+                        <button id="tut-replay-btn" class="btn btn-block">📖 튜토리얼 다시 보기</button>
                     </div>
                     <div class="set-group">
                         <div class="set-group-title">등급별 확률</div>
@@ -460,6 +478,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=37"></script>
+    <script type="module" src="script.js?v=38"></script>
 </body>
 </html>

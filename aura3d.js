@@ -9,9 +9,10 @@ import { EffectComposer } from './lib/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './lib/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './lib/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './lib/jsm/postprocessing/OutputPass.js';
-import { SIGNATURES, jxsGrand } from './auraSignatures.js?v=37';
-import { POSES } from './poses.js?v=37';
-import { createGearRig } from './gear3d.js?v=37';
+import { SIGNATURES, jxsGrand } from './auraSignatures.js?v=38';
+import { POSES } from './poses.js?v=38';
+import { createGearRig } from './gear3d.js?v=38';
+import { createPetRig } from './pets3d.js?v=38';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -553,6 +554,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
     const dummy = makeDummy();
     scene.add(dummy.root);
     const gear = createGearRig(dummy);   // 건틀렛/부적
+    const pet = createPetRig(dummy);     // 따라다니는 펫
     const defaultFace = dummy.faceMat.map;
 
     // 아우라
@@ -871,6 +873,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         if (m.lift > 0.5) dummy.head.rotation.x = -0.12 - Math.sin(t * 0.9) * 0.05;   // 고개를 살짝 듦
         if (current?.pose) current.pose(t, dummy, rolling, current.sig);            // 칭호별 포즈
         gear.update(t, dt, speed);
+        pet.update(t);
         if (m.burst && current && !cine?.active) {
             burstAt -= dt;
             if (burstAt <= 0) { fireBurst(current.grade === 'JXS' ? 1.4 : 1); burstAt = m.burst; if (current.grade === 'JXS') shakeAmt = Math.max(shakeAmt, 0.12); }
@@ -908,6 +911,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         resize,
         setRolling(v) { rolling = v; },
         setGear(opts) { gear.set(opts); },
+        setPet(id) { pet.set(id); },
         getRenderer() { return renderer; },
         // 화질: 'auto'(자동) | 'high' | 'mid' | 'low'
         setQualityMode(mode) {
@@ -925,7 +929,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         // 3D 컷씬 재생. cfg = { hit, hit2, total, tier }, getTime() = 지금 컷씬 몇 초인지
         async playCutscene(aura, cfg, getTime) {
             if (!cine) {
-                const { createCutscene } = await import('./cutscene3d.js?v=37');
+                const { createCutscene } = await import('./cutscene3d.js?v=38');
                 cine = createCutscene(cineCtx);
             }
             return cine.play(aura, cfg, getTime, { shake: a => { shakeAmt = Math.max(shakeAmt, a); } });

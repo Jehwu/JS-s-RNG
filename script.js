@@ -1,7 +1,8 @@
-import { AURA_DATA } from './auras.js?v=37';
-import { CRAFT_ITEMS } from './craftItems.js?v=37';
-import { createMusicPlayer, coverArt } from './music.js?v=37';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=37';
+import { AURA_DATA } from './auras.js?v=38';
+import { CRAFT_ITEMS } from './craftItems.js?v=38';
+import { createMusicPlayer, coverArt } from './music.js?v=38';
+import { PETS, PET_BY_ID, EGGS, PET_MAX_LV, petMult } from './petsData.js?v=38';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=38';
 
 /* =========================================================
    📦 게임 데이터
@@ -103,7 +104,7 @@ const QUEST_DATA = [
         desc: "빠른 롤을 쓸 자격을 증명하세요.",
         rewardDesc: "빠른 롤 해금 + 천상의 물약 5개",
         reward: { unlockQuickRoll: true, items: { heaven_potion: 5 } },
-        targets: { rolls: 5000, ancient: 15, absolute: 5, jc: 3000000, shopPurchases: 20 }
+        targets: { rolls: 2500, ancient: 8, absolute: 3, jc: 1500000, shopPurchases: 10 }
     },
     {
         id: "quest_repeat_overcome", name: "극복의 시련", repeatable: true,
@@ -346,6 +347,7 @@ function createInitialGameState() {
         activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0, luckLevel: 0, speedLevel: 0 },
         activeMultBuffs: [],
         gear: null, amulet: null, amuletStack: 0, craftedGears: [], usedCodes: [],
+        pets: {}, pet: null,
         completedQuests: [], activeQuest: null, questProgress: {}, quickRollUnlocked: false,
         equippedAura: null
     };
@@ -475,11 +477,22 @@ function getAmuletEvery() { return CRAFT_BY_ID[gameState.amulet]?.amuletEvery ||
 function getMultBonus() {
     return (gameState.activeMultBuffs || []).reduce((s, b) => s + b.bonus, 0);
 }
+// 데리고 다니는 펫 효과 (레벨마다 +25%)
+function getPetBonus() {
+    const p = PET_BY_ID[gameState.pet], lv = (gameState.pets || {})[gameState.pet] || 0;
+    if (!p || !lv) return { luck: 0, speed: 0 };
+    const m = petMult(lv);
+    return { luck: (p.luck || 0) * m, speed: (p.speed || 0) * m };
+}
+function petEffectText(p, lv) {
+    const m = petMult(lv);
+    return [p.luck ? `행운 +${Math.round(p.luck * m * 100)}%` : '', p.speed ? `속도 +${Math.round(p.speed * m * 100)}%` : ''].filter(Boolean).join(' · ');
+}
 function getSpeedBonus() {
-    return (gameState.activeBuffs.speedBonus || 0) + (getGear()?.speedBonus || 0) + getSetBonus().speed;
+    return (gameState.activeBuffs.speedBonus || 0) + (getGear()?.speedBonus || 0) + getSetBonus().speed + getPetBonus().speed;
 }
 function getBaseLuck() {
-    return (gameState.luck + (getGear()?.luckBonus || 0) + (gameState.activeBuffs.luckBonus || 0) + getSetBonus().luck) * (getBiome()?.luck || 1) * getAdminLuck();
+    return (gameState.luck + (getGear()?.luckBonus || 0) + (gameState.activeBuffs.luckBonus || 0) + getSetBonus().luck + getPetBonus().luck) * (getBiome()?.luck || 1) * getAdminLuck();
 }
 // 화면 표시용 (다음 롤 기준)
 function getDisplayLuck() {
@@ -597,6 +610,7 @@ async function finishRoll() {
     const isNew = !gameState.discoveredAuras.includes(rolled.id);
     if (isNew) { gameState.discoveredAuras.push(rolled.id); setBonusCache = null; announceSetDone(rolled.id); }
 
+    if (['ANCIENT', 'ABSOLUTE', 'JXS'].includes(rolled.grade)) broadcastRare(rolled);   // 접속한 모두에게 알림
     if (CUT_CFG[rolled.grade] && stage3d) {
         await playCinematic(rolled);
     } else if (CUTSCENE_GRADES.includes(rolled.grade)) {
@@ -958,7 +972,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=37').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=38').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1024,6 +1038,7 @@ function renderCraft() {
 
 function renderShop() {
     if (BANNERS[shopTab]) renderGacha();
+    if (shopTab === 'eggs') renderEggs();
     ui.shopGrid.classList.add('row-list');
     ui.shopGrid.innerHTML = SHOP_ITEMS.filter(item => !item.gacha).map(item => {
         const have = gameState.itemInventory[item.id] || 0;
@@ -1265,7 +1280,7 @@ function renderAll() {
    ========================================================= */
 
 const SHEET_RENDER = {
-    'sheet-bag': () => { renderInventory(); renderPotions(); if (bagTab === 'gauntlet' || bagTab === 'amulet') renderBagGear(); },
+    'sheet-bag': () => { renderInventory(); renderPotions(); if (bagTab === 'gauntlet' || bagTab === 'amulet') renderBagGear(); if (bagTab === 'pet') renderBagPets(); },
     'sheet-craft': renderCraft,
     'sheet-shop': renderShop,
     'sheet-quest': renderQuests,
@@ -1287,7 +1302,7 @@ function stagger(el) {
 const SHEET_LIST = {
     'sheet-bag': () => [ui.inventoryGrid, ui.potionGrid, $('gear-grid')],
     'sheet-craft': () => [ui.craftGrid],
-    'sheet-shop': () => [BANNERS[shopTab] ? $('gacha-panel') : ui.shopGrid],
+    'sheet-shop': () => [BANNERS[shopTab] || shopTab === 'eggs' ? $('gacha-panel') : ui.shopGrid],
     'sheet-quest': () => [ui.questList],
     'sheet-index': () => [indexTab === 'sets' ? $('set-grid') : ui.indexGrid.querySelector('.index-grid')],
     'sheet-settings': () => [$('sheet-settings').querySelector(`.set-pane[data-pane="${setTab}"]`)]
@@ -1335,11 +1350,11 @@ let bagTab = 'aura';
 function setBagTab(tab) {
     bagTab = tab;
     $('bag-tabs').querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-    const gearTab = tab === 'gauntlet' || tab === 'amulet';
+    const gearTab = tab === 'gauntlet' || tab === 'amulet' || tab === 'pet';
     ui.inventoryGrid.classList.toggle('hidden', tab !== 'aura');
     ui.potionGrid.classList.toggle('hidden', tab !== 'potion');
     $('gear-grid').classList.toggle('hidden', !gearTab);
-    if (gearTab) renderBagGear(); else gearPreviews?.stop();
+    if (gearTab) (tab === 'pet' ? renderBagPets() : renderBagGear()); else gearPreviews?.stop();
     stagger(tab === 'aura' ? ui.inventoryGrid : tab === 'potion' ? ui.potionGrid : $('gear-grid'));
 }
 bindTabs('bag-tabs', tab => setBagTab(tab));
@@ -1357,6 +1372,42 @@ function gearEffectHtml(gear) {
     return parts.join('');
 }
 function gearPower(g) { return (g.luckBonus || 0) * 10 + (g.speedBonus || 0) + (g.amuletMult || AMULET_MULT[g.id] || 0) * 10 / (g.amuletEvery || 10) + (g.biomeBoost || 0) + (g.jcBonus || 0); }
+// 가방: 펫 (위에 데리고 다니는 펫, 아래에 가진 펫)
+function petStars(lv) { return `<span class="pet-lv">Lv.${lv}${lv >= PET_MAX_LV ? ' MAX' : ''}</span>`; }
+function renderBagPets() {
+    const el = $('gear-grid');
+    el.classList.remove('list');
+    const owned = PETS.filter(p => (gameState.pets || {})[p.id]).sort((a, b) => (b.luck || 0) + (b.speed || 0) * 4 - (a.luck || 0) - (a.speed || 0) * 4);
+    if (!owned.length) {
+        el.innerHTML = `<div class="empty">아직 펫이 없어요.<br>상점 → 🥚 펫 알에서 부화시킬 수 있어요.</div><button class="btn btn-block btn-gold" data-gotoeggs>펫 알 보러 가기</button>`;
+        return;
+    }
+    const on = PET_BY_ID[gameState.pet];
+    const rest = owned.filter(p => p.id !== gameState.pet);
+    const lvOf = p => gameState.pets[p.id];
+    el.innerHTML = `
+        <div class="bg-slot ${on ? '' : 'empty-slot'}">
+            <div class="bg-label">데리고 다니는 펫</div>
+            ${on ? `<div class="bg-slot-card" style="--mint:${TIER_COL[on.tier]}">
+                <div class="bg-slot-view"><canvas data-gear="${on.id}" aria-hidden="true"></canvas></div>
+                <div class="bg-slot-info">
+                    <div class="bg-name">${on.name} ${petStars(lvOf(on))}</div>
+                    <div class="bg-eff"><b class="ef-luck">${petEffectText(on, lvOf(on))}</b></div>
+                    <div class="set-note">${on.desc}</div>
+                    <button class="btn btn-sm bg-off" data-petoff>집에 보내기</button>
+                </div>
+            </div>` : `<div class="bg-slot-none">비어 있어요 · 아래에서 눌러서 데려가기</div>`}
+        </div>
+        ${rest.length ? `<div class="bg-label">가진 펫 <span>${rest.length}</span></div>
+        <div class="bg-list">${rest.map(p => `
+            <button type="button" class="bg-row" data-petequip="${p.id}" style="border-color:color-mix(in srgb, ${TIER_COL[p.tier]} 40%, transparent)">
+                <div class="bg-row-view"><canvas data-gear="${p.id}" aria-hidden="true"></canvas></div>
+                <div class="bg-row-info"><div class="bg-name">${p.name} ${petStars(lvOf(p))}</div><div class="bg-eff"><b class="ef-luck">${petEffectText(p, lvOf(p))}</b></div></div>
+                <span class="bg-row-go">데려가기</span>
+            </button>`).join('')}</div>` : ''}
+        <div class="set-note">같은 펫이 또 나오면 레벨이 올라요. 레벨마다 효과 +25% (최대 Lv.${PET_MAX_LV})</div>`;
+    attachGearPreviews(el);
+}
 function renderBagGear() {
     const el = $('gear-grid');
     const cat = bagTab === 'amulet' ? 'amulet' : 'gauntlet';
@@ -1393,6 +1444,14 @@ function renderBagGear() {
     attachGearPreviews(el);
 }
 $('gear-grid').addEventListener('click', e => {
+    const pe = e.target.closest('[data-petequip]'), po = e.target.closest('[data-petoff]'), ge = e.target.closest('[data-gotoeggs]');
+    if (ge) { closeSheet('sheet-bag'); openSheet('sheet-shop'); setShopTab('eggs'); return; }
+    if (pe || po) {
+        gameState.pet = pe ? pe.dataset.petequip : null;
+        if (pe) toast(`🐾 ${PET_BY_ID[gameState.pet].name}와(과) 함께해요`, 'good');
+        saveGame(); renderStats(); renderBagPets(); applyGear(); stagger($('gear-grid'));
+        return;
+    }
     const eq = e.target.closest('[data-equip]'), un = e.target.closest('[data-unequip]');
     if (eq) { equip(CRAFT_BY_ID[eq.dataset.equip]); toast(`${CRAFT_BY_ID[eq.dataset.equip].name} 장착`, 'good'); }
     else if (un) {
@@ -1434,7 +1493,8 @@ $('game-start-btn').addEventListener('click', () => {
         applyBiome(false);   // 저장된 바이옴이 남아 있으면 이어서
         updateAttendDot();
         startAdminEvents();
-        if (canAttend()) setTimeout(() => openSheet('sheet-attend'), 900);   // 오늘 출석 안 했으면 바로 띄움
+        if (!gameState.tutorialDone && !(gameState.rolls > 0)) setTimeout(() => startTutorial(true), 900);   // 처음 온 사람은 튜토리얼부터
+        else if (canAttend()) setTimeout(() => openSheet('sheet-attend'), 900);   // 오늘 출석 안 했으면 바로 띄움
     }, 420);
     playBgm('main');
 });
@@ -1799,8 +1859,9 @@ function setShopTab(tab) {
     shopTab = tab;
     $('shop-tabs').querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     ui.shopGrid.classList.toggle('hidden', tab !== 'potion');
-    $('gacha-panel').classList.toggle('hidden', !BANNERS[tab]);
-    if (BANNERS[tab]) { renderGacha(); stagger($('gacha-panel')); }
+    $('gacha-panel').classList.toggle('hidden', !BANNERS[tab] && tab !== 'eggs');
+    if (tab === 'eggs') { renderEggs(); stagger($('gacha-panel')); }
+    else if (BANNERS[tab]) { renderGacha(); stagger($('gacha-panel')); }
     else { gearPreviews?.stop(); renderShop(); stagger(ui.shopGrid); }
 }
 
@@ -1933,6 +1994,7 @@ function showGachaResult(results) {
     box.style.setProperty('--best', col);
     box.classList.remove('hidden', 'revealed');
     box.classList.toggle('big', bi >= TIER_ORDER.indexOf('MYTHIC'));
+    if (!box.classList.contains('egg-mode')) box.querySelector('.gr-capsule').innerHTML = '<i></i><i></i>';
     const grid = box.querySelector('.gr-grid');
     grid.classList.toggle('single', results.length === 1);
     grid.innerHTML = results.map((r, i) => `
@@ -1961,11 +2023,65 @@ function showGachaResult(results) {
 $('gacha-result').addEventListener('click', e => {
     if (!e.target.closest('.gr-ok')) return;
     $('gacha-result').classList.add('hidden');
-    renderGacha();
+    $('gacha-result').classList.remove('egg-mode');
+    shopTab === 'eggs' ? renderEggs() : renderGacha();
 });
+
+/* ---------- 🥚 펫 알 ---------- */
+function eggHtml(egg, cls = '') {
+    return `<div class="egg ${cls}" style="--ec:${egg.color};--es:${egg.spot}"><i></i><i></i><i></i><i></i></div>`;
+}
+function renderEggs() {
+    const el = $('gacha-panel');
+    el.classList.remove('hw');
+    const pct = (o, t) => Math.round(o / Object.values(t).reduce((s, v) => s + v, 0) * 100);
+    el.innerHTML = `
+        <div class="egg-intro">🥚 알을 사면 바로 부화해요. 같은 펫이 또 나오면 <b>레벨 업</b>!</div>
+        <div class="egg-list">${EGGS.map(egg => `
+            <div class="egg-card" style="--ec:${egg.color}">
+                ${eggHtml(egg)}
+                <div class="egg-info">
+                    <div class="egg-name">${egg.name}</div>
+                    <div class="egg-odds">${Object.entries(egg.odds).map(([t, w]) => `<span style="color:${TIER_COL[t]}">${t} ${pct(w, egg.odds)}%</span>`).join('')}</div>
+                </div>
+                <button class="btn btn-sm btn-gold egg-buy" data-egg="${egg.id}" ${gameState.jc < egg.price ? 'disabled' : ''}>${fmt(egg.price)}<small> JC</small></button>
+            </div>`).join('')}</div>
+        <div class="glabel">펫 도감 <span style="letter-spacing:0">${PETS.filter(p => gameState.pets?.[p.id]).length} / ${PETS.length}</span></div>
+        <div class="ggears">${PETS.map(p => {
+            const lv = gameState.pets?.[p.id] || 0;
+            return `<div class="ggear ${lv ? 'own' : 'locked'}" style="--c:${TIER_COL[p.tier]}">
+                <div class="ggear-view"><canvas data-gear="${p.id}" aria-hidden="true"></canvas>${lv ? `<span class="ggear-own">Lv.${lv}</span>` : ''}</div>
+                <div class="ggear-name">${lv ? p.name : '???'}</div>
+                <div class="ggear-tier">${p.tier} · ${petEffectText(p, 1)}</div>
+            </div>`;
+        }).join('')}</div>`;
+    attachGearPreviews(el.querySelector('.ggears'));
+}
+function hatchEgg(id) {
+    const egg = EGGS.find(e => e.id === id);
+    if (!egg || gameState.jc < egg.price) { toast('JC가 부족해요', 'bad'); return; }
+    gameState.jc -= egg.price;
+    let r = Math.random() * Object.values(egg.odds).reduce((s, v) => s + v, 0), tier = 'COMMON';
+    for (const [t, w] of Object.entries(egg.odds)) { r -= w; if (r <= 0) { tier = t; break; } }
+    const pool = PETS.filter(p => p.tier === tier);
+    const pet = pool[Math.floor(Math.random() * pool.length)];
+    gameState.pets = gameState.pets || {};
+    const lv = gameState.pets[pet.id] || 0;
+    let sub;
+    if (!lv) { gameState.pets[pet.id] = 1; sub = 'NEW! 가방 → 펫에서 데려가기'; if (!gameState.pet) gameState.pet = pet.id; }
+    else if (lv < PET_MAX_LV) { gameState.pets[pet.id] = lv + 1; sub = `레벨 업! Lv.${lv} → Lv.${lv + 1}`; }
+    else { const back = Math.round(egg.price * 0.3); gameState.jc += back; sub = `이미 MAX → +${fmt(back)} JC`; }
+    trackQuestProgress("shopPurchases", 1);
+    saveGame(); renderStats(); applyGear();
+    $('gacha-result').classList.add('egg-mode');
+    $('gacha-result').querySelector('.gr-capsule').innerHTML = eggHtml(egg, 'big');
+    showGachaResult([{ tier, name: pet.name, sub, icon: `<canvas data-gear="${pet.id}" aria-hidden="true"></canvas>`, gear: true, isNew: !lv }]);
+}
 $('gacha-panel').addEventListener('click', e => {
     const b = e.target.closest('[data-pull]');
     if (b) pullGacha(+b.dataset.pull);
+    const eg = e.target.closest('[data-egg]');
+    if (eg) hatchEgg(eg.dataset.egg);
     const g = e.target.closest('[data-ggear]');
     if (g) openGearDetail(g.dataset.ggear);
     if (e.target.closest('[data-pityhelp]')) {
@@ -2055,6 +2171,11 @@ function applyAdminEvent(ev, late) {
     } else if (ev.kind === 'announce') {
         if (late && now - start > 90000) return;
         adminBanner('📢', d.text || '', '관리자 공지', '#7ae8ff', 6500);
+    } else if (ev.kind === 'rare') {
+        if (d.cid === CLIENT_ID) return;               // 내가 뽑은 건 내 컷씬으로 봄
+        if (late && now - start > 60000) return;
+        const a = AURA_BY_ID[d.aura];
+        if (a) queueRareBanner(d.nick || '누군가', a);
     } else if (ev.kind === 'gift') {
         if (end <= now) return;
         gameState.claimedEvents = gameState.claimedEvents || [];
@@ -2081,11 +2202,36 @@ function adminBanner(icon, title, sub, color, ms = 4200) {
     setTimeout(() => playTone(1046, 'triangle', 0.14 * soundSettings.master, 0.01, 0.8), 280);
 }
 
+/* ---------- 🌟 희귀 칭호 전체 알림 (ANCIENT 이상) ---------- */
+const CLIENT_ID = (() => { try { let c = localStorage.getItem('js_rng_cid'); if (!c) { c = Math.random().toString(36).slice(2, 12); localStorage.setItem('js_rng_cid', c); } return c; } catch (e) { return 'x' + Math.random(); } })();
+function broadcastRare(a) {
+    if (backupGameState !== null) return;   // 개발자 모드는 방송 안 함
+    const nick = session?.nick || '게스트';
+    fetch(`${SB_URL}/rest/v1/admin_events`, { method: 'POST', cache: 'no-store', headers: { ...SB_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ kind: 'rare', data: { nick, aura: a.id, cid: CLIENT_ID }, duration: 0 }) }).catch(() => {});
+}
+const rareQueue = [];
+let rareShowing = false;
+function queueRareBanner(nick, a) { rareQueue.push({ nick, a }); showNextRare(); }
+function showNextRare() {
+    if (rareShowing || !rareQueue.length) return;
+    if (document.body.classList.contains('cine-on')) { setTimeout(showNextRare, 1500); return; }   // 내 컷씬 끝나고
+    rareShowing = true;
+    const { nick, a } = rareQueue.shift();
+    const el = $('rare-banner');
+    el.style.setProperty('--rc', a.color);
+    el.innerHTML = `<span class="rb-star">${a.grade === 'JXS' ? '👑' : a.grade === 'ABSOLUTE' ? '💠' : '🌟'}</span>
+        <span class="rb-text"><b>${escapeHtml(nick)}</b>님이 <span class="rb-grade ${gradeCol(a.grade)}">${a.grade}</span> <b class="rb-name">${escapeHtml(a.name)}</b>을(를) 뽑았습니다!<small>1 in ${fmt(a.in)}</small></span>`;
+    el.className = `rare-banner g-${a.grade.toLowerCase()}`;
+    void el.offsetWidth; el.classList.add('show');
+    playTone(a.grade === 'JXS' ? 880 : 660, 'triangle', 0.12 * soundSettings.master, 0.01, 0.6);
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => { rareShowing = false; showNextRare(); }, 500); }, a.grade === 'JXS' ? 7000 : 5000);
+}
+
 async function pollAdminEvents(first) {
     try {
         // 처음엔 최근 6시간치(진행 중인 이벤트 따라잡기), 그다음부턴 새 줄만
         const q = first
-            ? `admin_events?select=*&created_at=gte.${new Date(Date.now() - 6 * 3600000).toISOString()}&order=id.asc&limit=50`
+            ? `admin_events?select=*&created_at=gte.${new Date(Date.now() - 6 * 3600000).toISOString()}&order=id.asc&limit=200`
             : `admin_events?select=*&id=gt.${evLastId}&order=id.asc&limit=20`;
         const rows = await sbFetch(q);
         setOnline(true);
@@ -2475,6 +2621,100 @@ function rewardChips(r) {
     for (const id in r.items || {}) out.push(`<span class="at-rw">${vialHtml(SHOP_BY_ID[id])}<small>${SHOP_BY_ID[id].name} ×${r.items[id]}</small></span>`);
     return out.join('');
 }
+/* ---------- 📖 스포트라이트 튜토리얼 (누를 곳만 밝게) ---------- */
+const TUT_STEPS = [
+    { sel: '#roll-btn', text: '먼저 <b>ROLL</b>을 눌러서 아우라를 뽑아 봐요!', click: true, wait: 2600 },
+    { sel: '#aura-display', text: '방금 뽑은 아우라가 여기 나와요.<br>희귀할수록 <b>1/숫자</b>가 커지고 연출도 화려해져요.' },
+    { sel: '.stats', text: '<b>LUCK</b>이 높을수록 희귀한 게 잘 나오고<br><b>SPEED</b>가 높을수록 빨리 굴려요.' },
+    { sel: '#auto-roll-btn', text: '<b>AUTO</b>를 켜면 알아서 계속 굴려요.<br>폰 켜 두고 방치해도 OK!' },
+    { sel: '.bottom-nav', text: '<b>가방</b> 아우라·장비·펫 · <b>제작</b> 건틀릿·부적<br><b>상점</b> 물약·뽑기·펫 알 · <b>퀘스트</b> · <b>도감</b> 세트 버프', pad: 4 },
+    { sel: '.nav-btn[data-sheet="sheet-shop"]', text: '상점을 눌러 볼까요?', click: true, wait: 450 },
+    { sel: '#sheet-shop .sheet', text: '물약으로 행운·속도를 올리고<br><b>뽑기</b>와 <b>🥚 펫 알</b>도 여기 있어요.', close: 'sheet-shop', pad: -2 },
+    { sel: '#attend-btn', text: '매일 <b>출석</b>하면 보상을 받아요. 7일째가 제일 커요!' },
+    { sel: '#settings-btn', text: '<b>설정</b>에서 로그인·랭킹·소리·화질을 바꿀 수 있어요.<br>튜토리얼도 여기서 다시 볼 수 있어요.' },
+    { sel: null, text: '준비 끝! 🎉<br>희귀한 아우라를 찾아 떠나 볼까요?', last: true }
+];
+const TUT_REWARD = 5000;
+let tutIdx = -1, tutFirst = false, tutTimer = 0;
+function tutRect(st) {
+    const el = st.sel && document.querySelector(st.sel);
+    if (!el || el.offsetParent === null && getComputedStyle(el).position !== 'fixed') return null;
+    const r = el.getBoundingClientRect(), p = st.pad ?? 6;
+    return { x: r.left - p, y: r.top - p, w: r.width + p * 2, h: r.height + p * 2 };
+}
+function tutShow() {
+    const box = $('tut'), st = TUT_STEPS[tutIdx];
+    const hole = box.querySelector('.tut-hole'), hand = box.querySelector('.tut-hand'), bub = box.querySelector('.tut-bubble');
+    const r = tutRect(st);
+    const W = innerWidth, H = innerHeight;
+    if (r) Object.assign(hole.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px', borderRadius: '6px' });
+    else Object.assign(hole.style, { left: W / 2 + 'px', top: H / 2 + 'px', width: '0px', height: '0px' });
+    box.classList.toggle('no-target', !r);
+    box.classList.toggle('need-click', !!st.click);
+    hand.classList.toggle('hidden', !r || !st.click);
+    if (r) { hand.style.left = (r.x + r.w / 2 - 14) + 'px'; hand.style.top = (r.y + r.h * 0.55) + 'px'; }
+    bub.querySelector('.tut-step').textContent = st.last ? '' : `${tutIdx + 1} / ${TUT_STEPS.length - 1}`;
+    bub.querySelector('.tut-text').innerHTML = st.text + (st.last && tutFirst ? `<div class="tut-gift">🎁 +${fmt(TUT_REWARD)} JC</div>` : '');
+    bub.querySelector('.tut-next').textContent = st.last ? '시작하기!' : '다음';
+    bub.querySelector('.tut-next').classList.toggle('hidden', !!st.click);
+    bub.querySelector('.tut-skip').classList.toggle('hidden', !!st.last);
+    // 말풍선: 밝은 곳 위나 아래 중 넓은 쪽
+    bub.classList.remove('pop'); void bub.offsetWidth; bub.classList.add('pop');
+    const bh = bub.offsetHeight || 120;
+    let top;
+    if (!r) top = H / 2 - bh / 2;
+    else if (r.y + r.h + bh + 24 < H - 8 && (H - (r.y + r.h)) > r.y) top = r.y + r.h + (st.click ? 44 : 14);
+    else top = Math.max(8, r.y - bh - 14);
+    bub.style.top = Math.min(H - bh - 8, top) + 'px';
+}
+function startTutorial(first = false) {
+    document.querySelectorAll('.sheet-backdrop:not(.hidden)').forEach(s => closeSheet(s.id));
+    tutFirst = first && !gameState.tutorialDone;
+    tutIdx = 0;
+    const box = $('tut');
+    box.classList.remove('hidden', 'leaving');
+    document.body.classList.add('tut-on');
+    setTimeout(tutShow, 260);
+}
+function tutNext() {
+    const st = TUT_STEPS[tutIdx];
+    if (st?.close) closeSheet(st.close);
+    if (st?.last) return endTutorial(true);
+    tutIdx++;
+    setTimeout(tutShow, st?.close ? 240 : 0);
+}
+function endTutorial(done) {
+    clearTimeout(tutTimer);
+    const box = $('tut');
+    TUT_STEPS.forEach(s => s.close && closeSheet(s.close));
+    box.classList.add('leaving');
+    setTimeout(() => { box.classList.add('hidden'); box.classList.remove('leaving'); document.body.classList.remove('tut-on'); }, 300);
+    if (tutFirst && done) { gameState.jc += TUT_REWARD; toast(`🎁 튜토리얼 보상 +${fmt(TUT_REWARD)} JC`, 'good'); renderStats(); }
+    const wasFirst = tutFirst;
+    tutFirst = false; tutIdx = -1;
+    gameState.tutorialDone = true;
+    saveGame();
+    if (wasFirst && canAttend()) setTimeout(() => openSheet('sheet-attend'), 700);
+}
+$('tut').querySelector('.tut-next').addEventListener('click', tutNext);
+$('tut').querySelector('.tut-skip').addEventListener('click', () => endTutorial(false));
+// 어두운 곳은 막고, 밝은 곳을 누르면 그 버튼을 대신 눌러 줌
+$('tut').querySelector('.tut-catch').addEventListener('click', e => {
+    const st = TUT_STEPS[tutIdx];
+    if (!st?.click || tutTimer) return;
+    const r = tutRect(st);
+    if (!r || e.clientX < r.x || e.clientX > r.x + r.w || e.clientY < r.y || e.clientY > r.y + r.h) {
+        $('tut').querySelector('.tut-hole').classList.remove('nudge'); void $('tut').offsetWidth;
+        $('tut').querySelector('.tut-hole').classList.add('nudge');
+        return;
+    }
+    document.querySelector(st.sel).click();
+    $('tut').classList.add('waiting');
+    tutTimer = setTimeout(() => { tutTimer = 0; $('tut').classList.remove('waiting'); tutNext(); }, st.wait || 300);
+});
+addEventListener('resize', () => { if (tutIdx >= 0) tutShow(); });
+$('tut-replay-btn').addEventListener('click', () => startTutorial(false));
+
 function renderAttend() {
     const st = attendState(), can = canAttend();
     const idx = st.count % 7;              // 오늘 받을 칸
@@ -2673,6 +2913,7 @@ applyFxMode();
 // 건틀렛/부적을 3D 캐릭터 팔에 끼움
 function applyGear() {
     stage3d?.setGear({ gauntlet: gameState.gear, amulet: gameState.amulet, visible: gameState.showGear !== false });
+    stage3d?.setPet?.(gameState.pet || null);
     const btn = $('gear-toggle-btn');
     if (btn) { btn.textContent = gameState.showGear !== false ? 'ON' : 'OFF'; btn.classList.toggle('on', gameState.showGear !== false); }
 }
@@ -2699,7 +2940,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=37')
+import('./aura3d.js?v=38')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

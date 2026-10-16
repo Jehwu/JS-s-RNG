@@ -1589,3 +1589,81 @@ body.cine-on #biome-fx { opacity: 0; }
 .set-slot span { font-size: 10px; letter-spacing: 0.2em; color: var(--faint); }
 .set-slot b { font-weight: 400; font-size: 13px; }
 .set-slot b small { color: var(--faint); }
+
+/* 🌟 희귀 칭호 전체 알림 */
+.rare-banner {
+    position: fixed; left: 50%; top: 58px; z-index: 80; width: min(94vw, 460px);
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    transform: translate(-50%, -140%); opacity: 0; pointer-events: none;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--rc) 30%, #07060f), #07060f 70%);
+    border: 1px solid color-mix(in srgb, var(--rc) 70%, transparent);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--rc) 45%, transparent);
+    transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.25), opacity 0.4s;
+}
+.rare-banner.show { transform: translate(-50%, 0); opacity: 1; }
+.rare-banner.g-jxs { border-width: 2px; animation: rb-glow 1.2s ease-in-out infinite; }
+@keyframes rb-glow { 50% { box-shadow: 0 0 40px color-mix(in srgb, var(--rc) 80%, transparent); } }
+.rb-star { font-size: 24px; filter: drop-shadow(0 0 8px var(--rc)); animation: bb-bob 1s ease-in-out infinite; }
+.rb-text { font-size: 12.5px; line-height: 1.45; word-break: keep-all; }
+.rb-text small { display: block; font-size: 10.5px; color: var(--muted); }
+.rb-name { color: var(--rc); text-shadow: 0 0 10px var(--rc); }
+.rb-grade { font-size: 10px; letter-spacing: 0.1em; }
+
+/* ---------- 🐾 펫 / 알 ---------- */
+.pet-lv { font-family: var(--mono, monospace); font-size: 10px; padding: 1px 5px; margin-left: 4px; background: rgba(255, 210, 58, 0.15); color: #ffd23a; border: 1px solid rgba(255, 210, 58, 0.35); vertical-align: middle; }
+.ggear.locked canvas { filter: brightness(0) drop-shadow(0 0 1px rgba(255, 255, 255, 0.35)); }
+.egg-intro { font-size: 12.5px; color: var(--dim, #aaa); line-height: 1.5; }
+.egg-list { display: flex; flex-direction: column; gap: 8px; }
+.egg-card { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--ec) 45%, transparent); background: linear-gradient(90deg, color-mix(in srgb, var(--ec) 12%, transparent), transparent 70%); }
+.egg-info { flex: 1; min-width: 0; }
+.egg-name { font-family: var(--display); font-size: 15px; }
+.egg-odds { display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 10.5px; margin-top: 4px; }
+.egg-buy { flex-shrink: 0; min-width: 86px; }
+.egg { position: relative; width: 40px; height: 52px; flex-shrink: 0; background: var(--ec); clip-path: polygon(50% 0, 78% 8%, 95% 32%, 100% 60%, 92% 84%, 72% 98%, 28% 98%, 8% 84%, 0 60%, 5% 32%, 22% 8%); box-shadow: inset -6px -8px 0 rgba(0, 0, 0, 0.2); animation: egg-wob 2.4s ease-in-out infinite; }
+.egg i { position: absolute; width: 18%; aspect-ratio: 1; background: var(--es); }
+.egg i:nth-child(1) { left: 22%; top: 30%; } .egg i:nth-child(2) { left: 58%; top: 20%; width: 14%; }
+.egg i:nth-child(3) { left: 62%; top: 58%; } .egg i:nth-child(4) { left: 28%; top: 70%; width: 12%; }
+@keyframes egg-wob { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-8deg); } 86% { transform: rotate(7deg); } 93% { transform: rotate(-3deg); } }
+#gacha-result.egg-mode .gr-capsule { background: none; border: 0; box-shadow: none; display: grid; place-items: center; }
+.egg.big { width: 100%; height: 100%; animation: none; }
+#gacha-result.egg-mode.revealed .gr-capsule { animation: egg-crack 0.45s ease-in forwards; }
+@keyframes egg-crack { 0% { transform: scale(1); } 40% { transform: scale(1.15) rotate(6deg); } 100% { transform: scale(1.6); opacity: 0; } }
+#gacha-result.egg-mode .gr-capsule .egg i { right: auto; bottom: auto; height: auto; border: 0; background: var(--es); animation: none !important; }
+
+/* ---------- 📖 스포트라이트 튜토리얼 ---------- */
+.tut { position: fixed; inset: 0; z-index: 1500; animation: tut-in 0.3s ease-out; }
+.tut.leaving { animation: tut-out 0.3s ease-in forwards; }
+@keyframes tut-in { from { opacity: 0; } }
+@keyframes tut-out { to { opacity: 0; } }
+.tut-catch { position: absolute; inset: 0; }
+.tut-hole {
+    position: absolute; pointer-events: none;
+    box-shadow: 0 0 0 200vmax rgba(3, 3, 10, 0.8), 0 0 24px 4px rgba(255, 225, 120, 0.55) inset;
+    outline: 2px solid rgba(255, 225, 120, 0.85);
+    transition: left 0.45s cubic-bezier(.6,0,.2,1), top 0.45s cubic-bezier(.6,0,.2,1), width 0.45s cubic-bezier(.6,0,.2,1), height 0.45s cubic-bezier(.6,0,.2,1);
+}
+.tut.no-target .tut-hole { outline: 0; }
+.tut-ring { position: absolute; inset: -4px; border: 2px solid #ffe14d; animation: tut-pulse 1.4s ease-out infinite; }
+.tut.no-target .tut-ring, .tut.waiting .tut-ring { display: none; }
+@keyframes tut-pulse { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.18, 1.35); opacity: 0; } }
+.tut-hole.nudge { animation: tut-nudge 0.35s; }
+@keyframes tut-nudge { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.tut-hand { position: absolute; font-size: 30px; pointer-events: none; transition: left 0.45s, top 0.45s; animation: tut-tap 1s ease-in-out infinite; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
+.tut.waiting .tut-hand, .tut-hand.hidden { display: none; }
+@keyframes tut-tap { 0%, 100% { transform: translate(0, 6px); } 50% { transform: translate(0, -4px) scale(0.92); } }
+.tut-bubble {
+    position: absolute; left: 16px; right: 16px; max-width: 420px; margin: 0 auto;
+    background: #12111f; border: 1px solid rgba(255, 225, 120, 0.5); padding: 12px 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); transition: top 0.45s cubic-bezier(.6,0,.2,1);
+}
+.tut.waiting .tut-bubble { opacity: 0.4; }
+.tut-bubble.pop { animation: tut-pop 0.4s cubic-bezier(.3,1.6,.5,1); }
+@keyframes tut-pop { from { transform: scale(0.85); opacity: 0; } }
+.tut-step { font-size: 10px; letter-spacing: 0.2em; color: #ffe14d; margin-bottom: 4px; }
+.tut-text { font-size: 14px; line-height: 1.55; word-break: keep-all; }
+.tut-text b { color: #ffe14d; }
+.tut-gift { margin-top: 8px; font-family: var(--display); font-size: 18px; color: #ffe14d; animation: tut-pop 0.6s 0.2s both; }
+.tut-btns { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.tut-skip { background: none; border: 0; color: var(--faint, #888); font-size: 12px; padding: 6px 2px; }
+.tut-btns .hidden { visibility: hidden; display: inline-block !important; }
+.tut-btns .tut-skip.hidden { visibility: hidden; }

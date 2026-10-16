@@ -5,7 +5,8 @@
    ========================================================= */
 
 import * as THREE from 'three';
-import { buildGearModel } from './gear3d.js?v=37';
+import { buildGearModel } from './gear3d.js?v=38';
+import { buildPetModel } from './pets3d.js?v=38';
 
 export function createGearPreviews(renderer) {
     const SIZE = 160;
@@ -34,7 +35,7 @@ export function createGearPreviews(renderer) {
     function model(id) {
         if (!models.has(id)) {
             let m = null;
-            try { m = buildGearModel(id); } catch (e) { console.warn(e); }
+            try { m = buildGearModel(id) || buildPetModel(id); } catch (e) { console.warn(e); }
             models.set(id, m);
         }
         return models.get(id);
@@ -46,9 +47,9 @@ export function createGearPreviews(renderer) {
         holder.clear();
         holder.add(m.root);
         // 부적은 앞에 매단 부적이 보이게 앞쪽에서 좌우로만 흔듦
-        const ry = m.isAmulet ? Math.sin(t * 0.8 + (+c.dataset.ph || 0)) * 0.8 : t * 0.7 + (+c.dataset.ph || 0);
-        m.root.rotation.set(0.12, ry, m.isAmulet ? 0.25 : -0.25);
-        m.root.position.y = m.isAmulet ? -0.55 : 0.45;
+        const ry = m.isAmulet || m.isPet ? Math.sin(t * 0.8 + (+c.dataset.ph || 0)) * 0.8 : t * 0.7 + (+c.dataset.ph || 0);
+        m.root.rotation.set(0.12, ry, m.isPet ? 0 : m.isAmulet ? 0.25 : -0.25);
+        m.root.position.y = m.isPet ? -0.35 : m.isAmulet ? -0.55 : 0.45;
         m.update(t);
         const prev = renderer.getRenderTarget();
         renderer.getClearColor(clear);
