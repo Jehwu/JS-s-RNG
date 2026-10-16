@@ -5,8 +5,9 @@
    ========================================================= */
 
 import * as THREE from 'three';
-import { buildGearModel } from './gear3d.js?v=39';
-import { buildPetModel } from './pets3d.js?v=39';
+import { buildGearModel } from './gear3d.js?v=40';
+import { buildPetModel } from './pets3d.js?v=40';
+import { buildNestModel } from './nest3d.js?v=40';
 
 export function createGearPreviews(renderer) {
     const SIZE = 160;
@@ -35,7 +36,7 @@ export function createGearPreviews(renderer) {
     function model(id) {
         if (!models.has(id)) {
             let m = null;
-            try { m = buildGearModel(id) || buildPetModel(id); } catch (e) { console.warn(e); }
+            try { m = buildGearModel(id) || buildPetModel(id) || buildNestModel(id); } catch (e) { console.warn(e); }
             models.set(id, m);
         }
         return models.get(id);
@@ -47,9 +48,14 @@ export function createGearPreviews(renderer) {
         holder.clear();
         holder.add(m.root);
         // 부적은 앞에 매단 부적이 보이게 앞쪽에서 좌우로만 흔듦
+        if (m.isNest || m.isEgg) {   // 둥지는 살짝 내려다보며 천천히 돎
+            m.root.rotation.set(m.isNest ? 0.5 : 0.1, t * (m.isNest ? 0.3 : 0.6) + (+c.dataset.ph || 0), 0);
+            m.root.position.y = m.isNest ? -0.15 : 0;
+        } else {
         const ry = m.isAmulet || m.isPet ? Math.sin(t * 0.8 + (+c.dataset.ph || 0)) * 0.8 : t * 0.7 + (+c.dataset.ph || 0);
         m.root.rotation.set(0.12, ry, m.isPet ? 0 : m.isAmulet ? 0.25 : -0.25);
         m.root.position.y = m.isPet ? -0.35 : m.isAmulet ? -0.55 : 0.45;
+        }
         m.update(t);
         const prev = renderer.getRenderTarget();
         renderer.getClearColor(clear);

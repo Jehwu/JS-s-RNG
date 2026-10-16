@@ -1672,35 +1672,26 @@ body.cine-on #biome-fx { opacity: 0; }
 .pet-dot { position: absolute; top: 0; right: calc(50% - 18px); width: 7px; height: 7px; background: var(--red); box-shadow: 0 0 8px var(--red); animation: gm-blink 1s steps(2) infinite; }
 .nests { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .nest {
-    position: relative; aspect-ratio: 0.82; border: 1px solid rgba(214, 170, 96, 0.35); color: var(--text, #fff);
-    background: radial-gradient(ellipse at 50% 80%, rgba(214, 170, 96, 0.16), transparent 65%), #0c0a14;
-    display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 4px 8px; gap: 3px; cursor: pointer; font: inherit;
+    position: relative; border: 1px solid rgba(214, 170, 96, 0.3); color: var(--text, #fff);
+    background: linear-gradient(180deg, rgba(255, 220, 150, 0.05), transparent 40%), radial-gradient(ellipse at 50% 62%, rgba(214, 170, 96, 0.22), transparent 62%), #0c0a14;
+    display: flex; flex-direction: column; align-items: center; padding: 0 4px 8px; gap: 3px; cursor: pointer; font: inherit; overflow: hidden;
 }
+.nest::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255, 220, 150, 0.025) 0 1px, transparent 1px 8px); pointer-events: none; }
 .nest.pick { border-color: #ffe14d; box-shadow: 0 0 0 1px #ffe14d, 0 0 18px rgba(255, 225, 77, 0.35); }
 .nest.ready { border-color: #ffe14d; animation: nest-glow 1.2s ease-in-out infinite; }
-@keyframes nest-glow { 50% { box-shadow: 0 0 20px rgba(255, 225, 77, 0.5); } }
-/* 짚 둥지: 엇갈린 짚 줄무늬 그릇 */
-.nest-straw {
-    position: absolute; left: 12%; right: 12%; top: 44%; height: 24%;
-    background:
-        repeating-linear-gradient(28deg, transparent 0 5px, rgba(120, 78, 30, 0.9) 5px 7px),
-        repeating-linear-gradient(-32deg, transparent 0 6px, rgba(240, 200, 120, 0.85) 6px 8px),
-        linear-gradient(#b8863f, #7a5222);
-    border-radius: 0 0 50% 50% / 0 0 100% 100%;
-    box-shadow: inset 0 6px 6px rgba(0, 0, 0, 0.45), 0 4px 10px rgba(0, 0, 0, 0.5);
-}
-.nest-straw::before {
-    content: ''; position: absolute; left: -6%; right: -6%; top: -18%; height: 36%;
-    background: repeating-linear-gradient(80deg, #d9a95a 0 3px, #8a5a24 3px 5px, #f0c878 5px 7px);
-    border-radius: 50%; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-}
-.nest .egg { position: absolute; left: 50%; top: 18%; width: 36%; height: auto; aspect-ratio: 0.77; margin-left: -18%; z-index: 1; animation: none; }
-.nest .egg.wobble { animation: egg-wob 1.6s ease-in-out infinite; }
-.nest .egg.shake { animation: egg-shake 0.35s linear infinite; }
-@keyframes egg-shake { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
-.nest-straw ~ .nest-name, .nest-bar, .nest-left, .nest-ready, .nest small, .nest-plus { position: relative; z-index: 2; }
-.nest-plus { position: absolute; top: 18%; font-size: 26px; color: rgba(255, 225, 140, 0.6); }
-.nest.empty small { color: var(--faint, #888); font-size: 10.5px; }
+@keyframes nest-glow { 50% { box-shadow: 0 0 22px rgba(255, 225, 77, 0.5); } }
+.nest-view { position: relative; width: 112%; aspect-ratio: 1; margin: -6% -6% -10%; }
+.nest-view canvas { width: 100%; height: 100%; display: block; position: relative; z-index: 1; }
+.nest.empty .nest-view canvas { opacity: 0.75; }
+.nest-plus { position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%); z-index: 2; font-size: 24px; color: rgba(255, 225, 140, 0.75); text-shadow: 0 0 10px rgba(255, 200, 90, 0.6); animation: tut-tap 1.6s ease-in-out infinite; }
+.nest-glow { position: absolute; left: 50%; top: 42%; width: 70%; aspect-ratio: 1; transform: translate(-50%, -50%); background: radial-gradient(circle, rgba(255, 236, 140, 0.55), transparent 65%); animation: nest-glow2 1s ease-in-out infinite; }
+@keyframes nest-glow2 { 50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.15); } }
+.nest-name, .nest-bar, .nest-left, .nest-ready, .nest small { position: relative; z-index: 2; }
+.nest.empty small { color: var(--faint, #888); font-size: 10px; }
+.egg-slot-view { position: relative; width: 72px; height: 72px; }
+.egg-slot-view canvas { width: 100%; height: 100%; display: block; }
+.egg-n { position: absolute; right: -4px; bottom: 2px; font-size: 11px; padding: 1px 5px; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.2); }
+.dev-eggs { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
 .nest-name { font-size: 11px; font-family: var(--display); }
 .nest-bar { width: 86%; height: 4px; background: rgba(255, 255, 255, 0.1); }
 .nest-bar i { display: block; height: 100%; background: linear-gradient(90deg, #d9a95a, #ffe14d); }
@@ -1729,4 +1720,4 @@ body.cine-on #biome-fx { opacity: 0; }
 .chat-sep { color: #ffd23a; }
 .chat-text { color: #fff; }
 @keyframes chat-in { from { opacity: 0; transform: translateX(-12px); } }
-.nests + .glabel { margin-top: 8px; }
+.nests + .glabel { margin-top: 16px; position: relative; z-index: 1; }

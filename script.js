@@ -1,8 +1,8 @@
-import { AURA_DATA } from './auras.js?v=39';
-import { CRAFT_ITEMS } from './craftItems.js?v=39';
-import { createMusicPlayer, coverArt } from './music.js?v=39';
-import { PETS, PET_BY_ID, EGGS, EGG_BY_ID, STAR_MAX, starMult } from './petsData.js?v=39';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=39';
+import { AURA_DATA } from './auras.js?v=40';
+import { CRAFT_ITEMS } from './craftItems.js?v=40';
+import { createMusicPlayer, coverArt } from './music.js?v=40';
+import { PETS, PET_BY_ID, EGGS, EGG_BY_ID, STAR_MAX, starMult } from './petsData.js?v=40';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=40';
 
 /* =========================================================
    📦 게임 데이터
@@ -49,11 +49,11 @@ const SHOP_ITEMS = [
 const GACHA_COST = 30000, GACHA_COST10 = 270000, GACHA_PITY = 100;
 const GACHA_POOL = [
     // 한 번(3만 JC)에 평균 2만 8천 JC어치 정도 나오게 맞춤 (물약은 상점가 기준). 장비가 나오면 이득
-    { kind: 'jc', min: 5000, max: 25000, w: 300, tier: 'COMMON', label: 'JC 주머니' },
-    { kind: 'egg', id: 'egg_basic', w: 55, tier: 'RARE' },
-    { kind: 'egg', id: 'egg_rare', w: 16, tier: 'EPIC' },
-    { kind: 'egg', id: 'egg_legend', w: 4, tier: 'LEGEND' },
-    { kind: 'egg', id: 'egg_mythic', w: 0.8, tier: 'MYTHIC' },
+    { kind: 'jc', min: 5000, max: 25000, w: 260, tier: 'COMMON', label: 'JC 주머니' },
+    { kind: 'egg', id: 'egg_basic', w: 95, tier: 'RARE' },
+    { kind: 'egg', id: 'egg_rare', w: 32, tier: 'EPIC' },
+    { kind: 'egg', id: 'egg_legend', w: 9, tier: 'LEGEND' },
+    { kind: 'egg', id: 'egg_mythic', w: 2, tier: 'MYTHIC' },
     { kind: 'items', items: { luck_3: 2, speed_3: 2 }, w: 230, tier: 'UNCOMMON', label: '물약 꾸러미' },
     { kind: 'items', items: { limit_potion: 1 }, w: 100, tier: 'RARE' },
     { kind: 'items', items: { dice_potion: 1 }, w: 60, tier: 'RARE' },
@@ -515,7 +515,12 @@ function getSpeedBonus() {
     return (gameState.activeBuffs.speedBonus || 0) + (getGear()?.speedBonus || 0) + getSetBonus().speed + getPetBonus().speed;
 }
 function getBaseLuck() {
-    return (gameState.luck + (getGear()?.luckBonus || 0) + (gameState.activeBuffs.luckBonus || 0) + getSetBonus().luck + getPetBonus().luck) * (getBiome()?.luck || 1) * getAdminLuck();
+    return (gameState.luck + (getGear()?.luckBonus || 0) + (gameState.activeBuffs.luckBonus || 0) + getSetBonus().luck + getPetBonus().luck) * getEnvLuck();
+}
+// 바이옴 배수 + 관리자 배수는 곱하지 않고 더함 (×10 바이옴 + ×10 관리자 = ×20)
+function getEnvLuck() {
+    const m = [getBiome()?.luck || 1, getAdminLuck()].filter(v => v > 1);
+    return m.length ? m.reduce((a, b) => a + b, 0) : 1;
 }
 // 화면 표시용 (다음 롤 기준)
 function getDisplayLuck() {
@@ -995,7 +1000,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=39').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=40').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1940,7 +1945,8 @@ function gachaGrant(e) {
     } else if (e.kind === 'egg') {
         const eggs = petState().eggs;
         eggs[e.id] = (eggs[e.id] || 0) + 1;
-        res.icon = eggHtml(EGG_BY_ID[e.id]);
+        res.icon = `<canvas data-gear="egg:${e.id}" aria-hidden="true"></canvas>`;
+        res.gear = true;
         res.sub = '펫 창 둥지에 넣어 부화시켜요';
         updatePetDot();
     } else {
@@ -2038,11 +2044,11 @@ function renderPets() {
         const eggsOwned = EGGS.filter(e => st.eggs[e.id] > 0);
         el.innerHTML = `
             <div class="nests">${st.nests.map((n, i) => {
-                if (!n) return `<button class="nest empty ${petPickNest === i ? 'pick' : ''}" data-nest="${i}"><div class="nest-straw"></div><span class="nest-plus">＋</span><small>알 넣기</small></button>`;
+                if (!n) return `<button class="nest empty ${petPickNest === i ? 'pick' : ''}" data-nest="${i}"><div class="nest-view"><canvas data-gear="nest::idle" aria-hidden="true"></canvas><span class="nest-plus">＋</span></div><div class="nest-name">빈 둥지</div><small>${petPickNest === i ? '아래에서 알 고르기' : '눌러서 알 넣기'}</small></button>`;
                 const egg = EGG_BY_ID[n.egg], left = n.end - now, ready = left <= 0;
                 const pct = Math.min(100, (now - n.start) / (n.end - n.start) * 100);
                 return `<button class="nest ${ready ? 'ready' : ''}" data-nest="${i}">
-                    <div class="nest-straw"></div>${eggHtml(egg, ready ? 'shake' : left < 600000 ? 'wobble' : '')}
+                    <div class="nest-view"><canvas data-gear="nest:${egg.id}:${ready ? 'ready' : left < 600000 ? 'wobble' : 'idle'}" aria-hidden="true"></canvas>${ready ? '<span class="nest-glow"></span>' : ''}</div>
                     <div class="nest-name">${egg.name}</div>
                     ${ready ? '<div class="nest-ready">부화!</div>' : `<div class="nest-bar"><i style="width:${pct}%"></i></div><small class="nest-left" data-left="${n.end}">${fmtLeft(left)}</small>`}
                 </button>`;
@@ -2050,12 +2056,16 @@ function renderPets() {
             <div class="glabel">가진 알 ${petPickNest >= 0 ? '<span class="pet-hint">· 넣을 알을 골라요</span>' : ''}</div>
             ${eggsOwned.length ? `<div class="egg-inv">${eggsOwned.map(e => `
                 <button class="egg-slot" data-putegg="${e.id}" style="--ec:${e.color}">
-                    ${eggHtml(e)}<b>${e.name}</b><small>${e.hours}시간 · ×${st.eggs[e.id]}</small>
+                    <div class="egg-slot-view"><canvas data-gear="egg:${e.id}" aria-hidden="true"></canvas><span class="egg-n">×${st.eggs[e.id]}</span></div><b>${e.name}</b><small style="color:${TIER_COL[e.tier]}">${e.tier} · ${e.hours}시간</small>
                 </button>`).join('')}</div>` : `<div class="empty">알이 없어요.<br>상점 → 행운 뽑기에서 가끔 나와요.</div>`}
             <details class="godds"><summary>알 정보</summary>${EGGS.map(e => {
                 const t = Object.values(e.odds).reduce((a, b) => a + b, 0);
                 return `<div class="egg-od"><b style="color:${TIER_COL[e.tier]}">${e.name}</b> · ${e.hours}시간<br>${Object.entries(e.odds).map(([k, w]) => `<span style="color:${TIER_COL[k]}">${k} ${Math.round(w / t * 100)}%</span>`).join(' ')}</div>`;
-            }).join('')}</details>`;
+            }).join('')}</details>
+            ${backupGameState !== null ? `<div class="dev-eggs"><div class="glabel">🛠 개발자</div>
+                <button class="btn btn-block" data-devhatch="nests">⚡ 둥지 전부 바로 부화</button>
+                <button class="btn btn-block" data-devhatch="all">⚡ 가진 알 전부 한번에 까기</button></div>` : ''}`;
+        attachGearPreviews(el);
         petTimer = setInterval(() => {
             if ($('sheet-pet').classList.contains('hidden')) return clearInterval(petTimer);
             let redo = false;
@@ -2092,10 +2102,9 @@ function renderPets() {
         attachGearPreviews(el.querySelector('.ggears'));
     }
 }
-function hatchNest(i) {
-    const st = petState(), n = st.nests[i];
-    if (!n || n.end > Date.now()) return;
-    const egg = EGG_BY_ID[n.egg];
+// 알 하나를 까서 펫 한 마리 추가 → 결과 카드 정보
+function rollPetFromEgg(egg) {
+    const st = petState();
     let r = Math.random() * Object.values(egg.odds).reduce((a, b) => a + b, 0), tier = 'COMMON';
     for (const [t, w] of Object.entries(egg.odds)) { r -= w; if (r <= 0) { tier = t; break; } }
     const pool = PETS.filter(p => p.tier === tier);
@@ -2104,11 +2113,38 @@ function hatchNest(i) {
     const u = newPetUid();
     st.petList.push({ u, id: pet.id, s: 1 });
     if (!gameState.pet) gameState.pet = u;
-    st.nests[i] = null;
+    return { pet, tier, isNew };
+}
+function showHatch(egg, got) {
     saveGame(); renderStats(); applyGear(); updatePetDot();
+    // 같은 펫은 한 장으로 묶음
+    const cards = [];
+    for (const g of got) {
+        const c = cards.find(x => x.id === g.pet.id);
+        if (c) { c.n++; c.isNew ||= g.isNew; continue; }
+        cards.push({ id: g.pet.id, n: 1, tier: g.tier, pet: g.pet, isNew: g.isNew });
+    }
     $('gacha-result').classList.add('egg-mode');
     $('gacha-result').querySelector('.gr-capsule').innerHTML = eggHtml(egg, 'big');
-    showGachaResult([{ tier, name: pet.name, sub: `★1 · ${petEffectText(pet, 1)}`, icon: `<canvas data-gear="${pet.id}" aria-hidden="true"></canvas>`, gear: true, isNew }]);
+    showGachaResult(cards.map(c => ({ tier: c.tier, name: c.pet.name + (c.n > 1 ? ` ×${c.n}` : ''), sub: `★1 · ${petEffectText(c.pet, 1)}`, icon: `<canvas data-gear="${c.pet.id}" aria-hidden="true"></canvas>`, gear: true, isNew: c.isNew })));
+}
+function hatchNest(i) {
+    const st = petState(), n = st.nests[i];
+    if (!n || n.end > Date.now()) return;
+    const egg = EGG_BY_ID[n.egg];
+    st.nests[i] = null;
+    showHatch(egg, [rollPetFromEgg(egg)]);
+}
+// 개발자 모드: 기다리지 않고 한번에 부화
+function devHatch(kind) {
+    if (backupGameState === null) return;
+    const st = petState(), got = [];
+    let best = null;
+    const take = egg => { got.push(rollPetFromEgg(egg)); if (!best || EGGS.indexOf(egg) > EGGS.indexOf(best)) best = egg; };
+    st.nests.forEach((n, i) => { if (n) { take(EGG_BY_ID[n.egg]); st.nests[i] = null; } });
+    if (kind === 'all') for (const e of EGGS) { while (st.eggs[e.id] > 0) { st.eggs[e.id]--; take(e); } delete st.eggs[e.id]; }
+    if (!got.length) { toast('깔 알이 없어요', 'bad'); return; }
+    showHatch(best, got);
 }
 function mergePet(u) {
     const st = petState(), a = st.petList.find(p => p.u === u);
@@ -2160,6 +2196,8 @@ $('sheet-pet').addEventListener('click', e => {
         saveGame(); renderStats(); applyGear(); renderPets();
         return;
     }
+    const dh = e.target.closest('[data-devhatch]');
+    if (dh) { devHatch(dh.dataset.devhatch); return; }
     const mg = e.target.closest('[data-merge]');
     if (mg) mergePet(mg.dataset.merge);
 });
@@ -3047,7 +3085,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=39')
+import('./aura3d.js?v=40')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
