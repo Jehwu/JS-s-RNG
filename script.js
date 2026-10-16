@@ -1,7 +1,7 @@
-import { AURA_DATA } from './auras.js?v=35';
-import { CRAFT_ITEMS } from './craftItems.js?v=35';
-import { createMusicPlayer, coverArt } from './music.js?v=35';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=35';
+import { AURA_DATA } from './auras.js?v=36';
+import { CRAFT_ITEMS } from './craftItems.js?v=36';
+import { createMusicPlayer, coverArt } from './music.js?v=36';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=36';
 
 /* =========================================================
    📦 게임 데이터
@@ -226,7 +226,16 @@ function adminDeco() {
     const crown = x => `<g><rect x="${x}" y="88" width="10" height="3" fill="#ffd23a"/><rect x="${x}" y="84" width="2" height="4" fill="#ffd23a"/><rect x="${x + 4}" y="82.5" width="2" height="5.5" fill="#ffd23a"/><rect x="${x + 8}" y="84" width="2" height="4" fill="#ffd23a"/><rect class="cg" x="${x + 4.2}" y="88.6" width="1.6" height="1.6" fill="#ff3b5c"/></g>`;
     return `<svg class="fr-deco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="0" width="100" height="7" fill="rgba(255,210,58,0.85)"/><text x="3" y="5.4" font-size="5" font-family="monospace" font-weight="bold" fill="#1a1200">ADMIN CONSOLE</text><rect class="cur" x="88" y="1.6" width="2" height="4" fill="#1a1200"/>${[20, 45, 70].map(crown).join('')}</svg>`;
 }
+function creatorDeco() {
+    // 무지개 블록이 테두리를 따라 하나씩 쌓임
+    const cols = ['#ff5a8a', '#ffb02e', '#ffe14d', '#7dff6a', '#5ab0ff', '#b26bff'];
+    let b = '';
+    for (let i = 0; i < 12; i++) b += `<rect class="cb" style="--d:${i * 0.18}s" x="${4 + i * 8}" y="91" width="6" height="5" fill="${cols[i % 6]}"/>`;
+    for (let i = 0; i < 6; i++) b += `<rect class="cb" style="--d:${1 + i * 0.25}s" x="${30 + i * 7}" y="3" width="4" height="3" fill="${cols[(i + 2) % 6]}"/>`;
+    return `<svg class="fr-deco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${b}</svg>`;
+}
 function frameDeco(grade, unique) {
+    if (unique === 'creator') return creatorDeco();
     if (unique === 'admin') return adminDeco();
     if (unique === 'pumpkin') return pumpkinDeco();
     if (unique === 'void') return voidCracks();
@@ -949,7 +958,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=35').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=36').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1103,28 +1112,35 @@ function renderQuests() {
    ========================================================= */
 const FRIENDS = ['김티비', '박지성', '공병은', '김민채', '김가은', '김건우'];
 const AURA_SETS = [
-    { id: 'desert', icon: '🏜️', name: '사막 세트', color: '#ffc46b', auras: ['leg_desert_tv', 'abs_sunking_gunwoo', 'myth_midas_gaeun', 'ep_falconer_byungeun'], luck: 0.15 },
-    { id: 'ice', icon: '❄️', name: '얼음 세트', color: '#9fe6ff', auras: ['ep_frozen_byungeun', 'myth_aurora_gaeun', 'anc_iceemperor_tv'], speed: 0.05 },
-    { id: 'storm', icon: '⛈️', name: '폭풍 세트', color: '#8fb8ff', auras: ['leg_storm_gaeun', 'myth_thunderbeast_minchae', 'abs_breaker_byungeun', 'js_lightning_jisung'], luck: 0.3 },
-    { id: 'space', icon: '🌌', name: '우주 세트', color: '#d7b8ff', auras: ['gemini_basic', 'myth_astro_jisung', 'myth_blackhole_byungeun', 'anc_nebula_jisung'], luck: 0.25 },
-    { id: 'fire', icon: '🔥', name: '불꽃 세트', color: '#ff6b2b', auras: ['ep_fire_jisung', 'ep_lava_tv', 'myth_phoenix_gaeun', 'abs_archdemon_tv'], speed: 0.05 },
-    { id: 'warrior', icon: '⚔️', name: '전사 세트', color: '#ff5a8a', auras: ['ep_blackbelt_gunwoo', 'leg_swordsman_byungeun', 'leg_ninja_jisung', 'myth_dragonknight_minchae', 'anc_honor_minchae', 'abs_juggernaut_minchae', 'cosmic_steel_emperor'], luck: 0.4 },
-    { id: 'school', icon: '🏫', name: '학교 세트', color: '#5fe08a', auras: ['unc_lunch_gunwoo', 'unc_late_gaeun', 'rare_escape_tv', 'rare_president_byungeun', 'rare_captain_minchae', 'rare_relay_gunwoo'], luck: 0.05 },
-    { id: 'halloween', icon: '🎃', name: '할로윈 세트', color: '#ff8a1f', auras: AURA_DATA.filter(a => a.biome === 'halloween').map(a => a.id), luck: 0.5, limited: true },
-    { id: 'admin', icon: '👑', name: '어드민 세트', color: '#ffd23a', auras: AURA_DATA.filter(a => a.biome === 'admin').map(a => a.id), luck: 1, limited: true },
+    { id: 'desert', icon: '🏜️', name: '사막 세트', color: '#ffc46b', auras: ['leg_desert_tv', 'abs_sunking_gunwoo', 'myth_midas_gaeun', 'ep_falconer_byungeun'], luck: 0.4 },
+    { id: 'ice', icon: '❄️', name: '얼음 세트', color: '#9fe6ff', auras: ['ep_frozen_byungeun', 'myth_aurora_gaeun', 'anc_iceemperor_tv'], speed: 0.15 },
+    { id: 'storm', icon: '⛈️', name: '폭풍 세트', color: '#8fb8ff', auras: ['leg_storm_gaeun', 'myth_thunderbeast_minchae', 'abs_breaker_byungeun', 'js_lightning_jisung'], luck: 0.6, speed: 0.05 },
+    { id: 'space', icon: '🌌', name: '우주 세트', color: '#d7b8ff', auras: ['gemini_basic', 'myth_astro_jisung', 'myth_blackhole_byungeun', 'anc_nebula_jisung'], luck: 0.5 },
+    { id: 'fire', icon: '🔥', name: '불꽃 세트', color: '#ff6b2b', auras: ['ep_fire_jisung', 'ep_lava_tv', 'myth_phoenix_gaeun', 'abs_archdemon_tv'], luck: 0.2, speed: 0.1 },
+    { id: 'warrior', icon: '⚔️', name: '전사 세트', color: '#ff5a8a', auras: ['ep_blackbelt_gunwoo', 'leg_swordsman_byungeun', 'leg_ninja_jisung', 'myth_dragonknight_minchae', 'anc_honor_minchae', 'abs_juggernaut_minchae', 'cosmic_steel_emperor'], luck: 0.8, speed: 0.1 },
+    { id: 'school', icon: '🏫', name: '학교 세트', color: '#5fe08a', auras: ['unc_lunch_gunwoo', 'unc_late_gaeun', 'rare_escape_tv', 'rare_president_byungeun', 'rare_captain_minchae', 'rare_relay_gunwoo'], speed: 0.08 },
+    { id: 'halloween', icon: '🎃', name: '할로윈 세트', color: '#ff8a1f', auras: AURA_DATA.filter(a => a.biome === 'halloween').map(a => a.id), luck: 1, speed: 0.1, limited: true },
+    { id: 'admin', icon: '👑', name: '어드민 세트', color: '#ffd23a', auras: AURA_DATA.filter(a => a.biome === 'admin').map(a => a.id), luck: 1.5, speed: 0.15, limited: true },
     // 친구별 세트: 이름이 들어간 칭호 전부 (바이옴 한정 칭호는 빼고)
-    ...FRIENDS.map((f, i) => ({ id: 'f' + i, icon: '🧑', name: `${f} 세트`, color: ['#7fe0ff', '#00fa9a', '#6495ed', '#ff2a4a', '#c77dff', '#ffb02e'][i], auras: AURA_DATA.filter(a => !a.biome && a.name.includes(f)).map(a => a.id), luck: 0.2, friend: true }))
+    // 사람마다 효과가 다름 (행운형 / 속도형 / 반반)
+    ...FRIENDS.map((f, i) => ({ id: 'f' + i, icon: '🧑', name: `${f} 세트`, color: ['#7fe0ff', '#00fa9a', '#6495ed', '#ff2a4a', '#c77dff', '#ffb02e'][i], auras: AURA_DATA.filter(a => !a.biome && a.name.includes(f)).map(a => a.id), ...[{ luck: 0.3 }, { speed: 0.12 }, { luck: 0.2, speed: 0.06 }, { speed: 0.15 }, { luck: 0.35 }, { luck: 0.15, speed: 0.08 }][i], friend: true }))
 ];
 let setBonusCache = null, setBonusKey = null;
 function setFound() { return new Set([...gameState.discoveredAuras, ...Object.keys(gameState.inventory)]); }
+// 완성한 세트 중 테마 하나(activeSet) + 사람 하나(activeFriendSet)를 골라 버프를 받음
+const setSlot = s => s.friend ? 'activeFriendSet' : 'activeSet';
 function getSetBonus() {
-    // 세이브가 통째로 바뀌거나(로그인/로그아웃/개발자 모드) 새 칭호가 등록되면 다시 계산
-    const key = gameState.discoveredAuras.length + ':' + Object.keys(gameState.inventory).length;
+    // 세이브가 통째로 바뀌거나(로그인/로그아웃/개발자 모드) 새 칭호 등록·세트 변경 때 다시 계산
+    const key = gameState.discoveredAuras.length + ':' + Object.keys(gameState.inventory).length + ':' + (gameState.activeSet || '') + ':' + (gameState.activeFriendSet || '');
     if (setBonusCache && setBonusKey === key && setBonusCache.gs === gameState) return setBonusCache;
     setBonusKey = key;
     const found = setFound();
-    const b = { luck: 0, speed: 0, done: 0 };
-    for (const s of AURA_SETS) if (s.auras.length && s.auras.every(id => found.has(id))) { b.luck += s.luck || 0; b.speed += s.speed || 0; b.done++; }
+    const b = { luck: 0, speed: 0, done: 0, theme: null, friend: null };
+    for (const s of AURA_SETS) {
+        if (!s.auras.length || !s.auras.every(id => found.has(id))) continue;
+        b.done++;
+        if (s.id === gameState[setSlot(s)]) { b.luck += s.luck || 0; b.speed += s.speed || 0; b[s.friend ? 'friend' : 'theme'] = s; }
+    }
     b.gs = gameState;
     return (setBonusCache = b);
 }
@@ -1134,7 +1150,9 @@ function announceSetDone(id) {
     const found = setFound();
     for (const s of AURA_SETS) {
         if (!s.auras.includes(id) || !s.auras.every(x => found.has(x))) continue;
-        setTimeout(() => toast(`📚 ${s.icon} ${s.name} 완성!\n영구 ${setRewardText(s)}`, 'gold'), 1500);
+        // 처음 완성한 세트는 바로 적용 (이미 고른 세트가 있으면 그대로 두고 알림만)
+        if (!gameState[setSlot(s)]) { gameState[setSlot(s)] = s.id; setBonusCache = null; }
+        setTimeout(() => toast(`📚 ${s.icon} ${s.name} 완성!\n${gameState[setSlot(s)] === s.id ? `${setRewardText(s)} 적용 중` : '도감 → 세트에서 적용할 수 있어요'}`, 'gold'), 1500);
     }
 }
 let indexTab = 'all';
@@ -1142,7 +1160,8 @@ function renderSets() {
     const found = setFound(), bonus = getSetBonus();
     const card = s => {
         const have = s.auras.filter(id => found.has(id)).length, done = have === s.auras.length;
-        return `<div class="set-card ${done ? 'done' : ''}" style="--c:${s.color}">
+        const on = done && gameState[setSlot(s)] === s.id;
+        return `<div class="set-card ${done ? 'done' : ''} ${on ? 'on' : ''}" style="--c:${s.color}">
             <div class="set-head">
                 <span class="set-icon">${s.icon}</span>
                 <div class="set-title"><b>${s.name}</b>${s.limited ? '<small>한정</small>' : ''}</div>
@@ -1150,21 +1169,37 @@ function renderSets() {
             </div>
             <div class="set-bar"><div style="width:${have / s.auras.length * 100}%"></div></div>
             <div class="set-auras">${s.auras.map(id => { const a = AURA_BY_ID[id]; const f = found.has(id); return `<span class="set-aura ${f ? 'on' : ''} ${gradeCol(a.grade)}" style="${f ? `--ac:${a.color}` : ''}">${f ? a.name : '???'}</span>`; }).join('')}</div>
-            <div class="set-reward">${done ? '✓ ' : '🔒 '}완성 보상: <b>영구 ${setRewardText(s)}</b></div>
+            <div class="set-foot">
+                <div class="set-reward">${done ? '✓ ' : '🔒 '}세트 효과: <b>${setRewardText(s)}</b></div>
+                ${done ? (on ? '<span class="set-on">적용 중</span>' : `<button class="btn btn-sm" data-useset="${s.id}">적용</button>`) : ''}
+            </div>
         </div>`;
     };
     $('set-grid').innerHTML = `
         <div class="set-total">
             <div><span>완성한 세트</span><b>${bonus.done}<small> / ${AURA_SETS.length}</small></b></div>
-            <div><span>세트 행운</span><b class="luck">+${Math.round(bonus.luck * 100)}%</b></div>
-            <div><span>세트 속도</span><b class="speed">+${Math.round(bonus.speed * 100)}%</b></div>
+            <div class="wide"><span>지금 받는 세트 효과</span><b><small class="luck">행운 +${Math.round(bonus.luck * 100)}%</small> <small class="speed">속도 +${Math.round(bonus.speed * 100)}%</small></b></div>
         </div>
+        <div class="set-slots">
+            <div class="set-slot"><span>테마 칸</span><b>${bonus.theme ? `${bonus.theme.icon} ${bonus.theme.name}` : '<small>비어 있음</small>'}</b></div>
+            <div class="set-slot"><span>사람 칸</span><b>${bonus.friend ? `🧑 ${bonus.friend.name}` : '<small>비어 있음</small>'}</b></div>
+        </div>
+        <div class="set-note">완성한 세트 중 <b>테마 하나 + 사람 하나</b>를 골라 효과를 받아요.</div>
         <div class="set-label">테마 세트</div>
         ${AURA_SETS.filter(s => !s.friend).map(card).join('')}
         <div class="set-label">친구 세트 <small>그 사람 이름이 들어간 칭호 전부</small></div>
         ${AURA_SETS.filter(s => s.friend).map(card).join('')}
         <div class="set-note">칭호를 한 번이라도 뽑으면(도감 등록) 세트에 들어가요. 팔아도 안 빠져요.</div>`;
 }
+$('set-grid').addEventListener('click', e => {
+    const b = e.target.closest('[data-useset]');
+    if (!b) return;
+    const s = AURA_SETS.find(x => x.id === b.dataset.useset);
+    gameState[setSlot(s)] = s.id;
+    setBonusCache = null;
+    saveGame(); renderStats(); renderSets();
+    toast(`${s.icon} ${s.name} 적용: ${setRewardText(s)}`, 'good');
+});
 bindTabs('index-tabs', tab => {
     indexTab = tab;
     ui.indexGrid.classList.toggle('hidden', tab !== 'all');
@@ -2648,7 +2683,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=35')
+import('./aura3d.js?v=36')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

@@ -14,7 +14,7 @@
      hit2 : JXS만. 두 번째 클라이맥스. hit~hit2 동안은 각성 직전 단계
    ========================================================= */
 
-import { buildLocomotive } from './auraSignatures.js?v=35';
+import { buildLocomotive } from './auraSignatures.js?v=36';
 
 export function createCutscene(ctx) {
     const { THREE, scene, camera, dummy, floor, stars, kit, bloom, stageApi } = ctx;
@@ -146,6 +146,81 @@ export function createCutscene(ctx) {
        update(time, phase, k, dt)  phase: 'build' | 'phase2' | 'reveal'
        ========================================================= */
     const MOTIFS = {
+
+        // 🐉 용왕: 사방에서 용이 몸을 휘감으며 별을 조여 들고, 터지기 직전 머리가 별 앞에서 포효
+        dragonKing({ g, colors }) {
+            const jade = new THREE.MeshStandardMaterial({ color: 0x1fae8a, metalness: 0.5, roughness: 0.3, emissive: 0x0a4a3a, emissiveIntensity: 0.8 });
+            const gold = new THREE.MeshStandardMaterial({ color: 0xffc94d, emissive: 0x7a5a00, emissiveIntensity: 0.6 });
+            const N = 50, segs = [];
+            for (let i = 0; i < N; i++) { const m = new THREE.Mesh(BOX, i % 4 ? jade : gold); const s = 1.6 * (1 - i / N * 0.6); m.scale.set(s, s, 1.8); g.add(m); segs.push(m); }
+            const head = new THREE.Mesh(BOX, jade); head.scale.set(2.2, 1.8, 2.8); g.add(head);
+            const eyes = new THREE.Mesh(BOX, glowMat(0xffe14d, 1)); eyes.scale.set(2.4, 0.3, 0.2); head.add(eyes); eyes.position.set(0, 0.15, 0.5); eyes.scale.set(1.1, 0.17, 0.1);
+            const tmp = new THREE.Vector3(), nxt = new THREE.Vector3();
+            const at = (u, time, k, out) => { const a = time * 1.2 - u * 7; const r = THREE.MathUtils.lerp(14, 4.5, ease.inOut(k)) + u * 4; return out.set(Math.cos(a) * r, 3.5 + Math.sin(a * 0.7 + u * 3) * 3 * (1 - k * 0.5), Math.sin(a) * r * 0.7 - 2); };
+            return {
+                bloom: 0.7,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    segs.forEach((m, i) => { const u = (i + 1) / N; at(u, time, k, tmp); at(u + 0.01, time, k, nxt); m.position.copy(tmp); m.lookAt(nxt); });
+                    at(0, time, k, tmp); at(-0.02, time, k, nxt); head.position.copy(tmp); head.lookAt(nxt);
+                }
+            };
+        },
+
+        // ⏱ 시간 정지: 별 뒤에 거대한 시계가 떠오르고, 바늘이 점점 빨라지다 터지는 순간 딱 멈춤
+        timeStop({ g, colors }) {
+            const brass = new THREE.MeshStandardMaterial({ color: 0xc9a24a, metalness: 0.85, roughness: 0.3, emissive: 0x3a2a00, emissiveIntensity: 0.6 });
+            const clock = new THREE.Group(); clock.position.set(0, 3.5, -8); g.add(clock);
+            const rim = square(16, 0.5, brass); rim.rotation.x = Math.PI / 2; clock.add(rim);
+            for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; const m = new THREE.Mesh(BOX, i % 3 ? brass : glowMat(colors[0], 1)); m.scale.set(0.4, 1.4, 0.2); m.position.set(Math.sin(a) * 6.8, Math.cos(a) * 6.8, 0); m.rotation.z = -a; clock.add(m); }
+            const minH = new THREE.Group(), secH = new THREE.Group();
+            const mh = new THREE.Mesh(BOX, brass); mh.scale.set(0.35, 6, 0.2); mh.position.y = 3; minH.add(mh);
+            const sh = new THREE.Mesh(BOX, glowMat(colors[0], 1)); sh.scale.set(0.15, 6.8, 0.15); sh.position.y = 3.2; secH.add(sh);
+            clock.add(minH, secH);
+            let spin = 0;
+            return {
+                bloom: 0.6,
+                update(time, phase, k, dt = 1 / 60) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    clock.scale.setScalar(0.4 + ease.out(clamp01(k / 0.4)) * 0.6);
+                    if (k < 0.93) spin += dt * (1 + k * k * 30);
+                    secH.rotation.z = -spin; minH.rotation.z = -spin / 12;
+                }
+            };
+        },
+
+        // 🌌 창조주: 사방의 블록이 별로 날아와 하나의 작은 세계(네모 행성)를 빚음
+        creator({ g, colors }) {
+            const prism = [0xff5a8a, 0xffb02e, 0xffe14d, 0x7dff6a, 0x5ab0ff, 0xb26bff];
+            const blocks = [];
+            for (let i = 0; i < 90; i++) {
+                const m = new THREE.Mesh(BOX, glowMat(prism[i % 6], 0.9));
+                const u = rand(-1, 1), th = rand(0, 6.3), s = Math.sqrt(1 - u * u);
+                m.userData.home = new THREE.Vector3(Math.cos(th) * s * 2.2, 3.5 + u * 2.2, Math.sin(th) * s * 2.2);
+                const fa = rand(0, 6.3);
+                m.userData.from = new THREE.Vector3(Math.cos(fa) * rand(14, 22), rand(-8, 16), Math.sin(fa) * rand(8, 14) - 4);
+                m.scale.setScalar(0.5); g.add(m); blocks.push(m);
+            }
+            const rings = [0, 1].map(i => { const r = square(7 + i * 3, 0.1, glowMat(0xffffff, 0.6)); r.position.y = 3.5; g.add(r); return r; });
+            return {
+                bloom: 0.6,
+                update(time, phase, k) {
+                    const vis = phase === 'build';
+                    g.visible = vis;
+                    if (!vis) return;
+                    blocks.forEach((m, i) => {
+                        const kk = ease.inOut(clamp01((k - (i / blocks.length) * 0.5) / 0.4));
+                        m.position.lerpVectors(m.userData.from, m.userData.home, kk);
+                        m.rotation.set(time * 2 + i, time + i, 0);
+                    });
+                    rings.forEach((r, i) => { r.rotation.set(Math.PI / 2 + Math.sin(time + i) * 0.4, time * (i ? -0.6 : 0.4), 0); });
+                }
+            };
+        },
 
         // 👑 밴해머: 하늘에서 거대한 망치가 천천히 들어 올려졌다가 터지기 직전 별 위로 쾅
         banHammer({ g, colors }) {

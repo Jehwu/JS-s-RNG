@@ -378,3 +378,22 @@
 .fr-u-admin > *:not(.fr-deco) { position: relative; z-index: 1; }
 .fr-u-admin .fr-deco .cur { animation: pk-flicker 0.8s steps(2) infinite; }
 .fr-u-admin .fr-deco .cg { animation: pk-flicker 1.2s steps(2) infinite; }
+
+/* 🌌 창조주 김가은 (JXS) */
+.fr-u-creator {
+    border: 2px solid transparent;
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(255, 243, 208, 0.25), transparent 60%) padding-box,
+        radial-gradient(ellipse at 50% 120%, rgba(178, 107, 255, 0.3), transparent 60%) padding-box,
+        linear-gradient(#06040e, #06040e) padding-box,
+        conic-gradient(from var(--ang), #ff5a8a, #ffb02e, #ffe14d, #7dff6a, #5ab0ff, #b26bff, #ff5a8a) border-box;
+    animation: spin-ang 3s linear infinite, cr-breathe 2.8s ease-in-out infinite;
+    overflow: hidden;
+}
+@keyframes cr-breathe {
+    0%, 100% { box-shadow: 0 0 16px rgba(255, 243, 208, 0.35), inset 0 0 18px rgba(0, 0, 0, 0.9); }
+    50% { box-shadow: 0 0 34px rgba(255, 243, 208, 0.7), 0 0 60px rgba(178, 107, 255, 0.3), inset 0 0 18px rgba(0, 0, 0, 0.9); }
+}
+.fr-u-creator > *:not(.fr-deco) { position: relative; z-index: 1; }
+.fr-u-creator .fr-deco .cb { animation: cr-build 3.2s ease-in-out var(--d) infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes cr-build { 0% { opacity: 0; transform: translateY(-6px) scale(0.3); } 20%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }

@@ -1575,3 +1575,17 @@ body.cine-on #biome-fx { opacity: 0; }
 #set-grid .set-note { text-align: center; padding: 6px 0 4px; }
 #index-tabs .tab { flex: 1; text-align: center; }
 #index-tabs { gap: 0; }
+.set-total { grid-template-columns: 1fr 2fr; }
+.set-total > div.wide b { font-size: 14px; text-align: center; }
+.set-total b small.luck { color: var(--mint); font-size: 11px; }
+.set-total b small.speed { color: #7ab8ff; font-size: 11px; }
+.set-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.set-foot .btn { margin: 0; flex: none; }
+.set-on { flex: none; font-size: 11px; padding: 4px 10px; color: #06140e; background: var(--mint); }
+.set-card.on { box-shadow: 0 0 22px color-mix(in srgb, var(--c) 45%, transparent), inset 0 0 0 1px var(--mint); }
+.set-card.done:not(.on) { box-shadow: none; }
+.set-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.set-slot { display: flex; flex-direction: column; gap: 4px; padding: 9px 10px; border: 1px dashed var(--line-2); }
+.set-slot span { font-size: 10px; letter-spacing: 0.2em; color: var(--faint); }
+.set-slot b { font-weight: 400; font-size: 13px; }
+.set-slot b small { color: var(--faint); }

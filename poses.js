@@ -609,6 +609,54 @@ export const POSES = {
         d.head.rotation.x = -0.35; d.root.rotation.z = S(t * 0.7) * 0.1;
     },
     // 강령술사 김티비: 책을 펼친 손을 내밀고, 해골을 부를 땐 반대 손을 하늘로
+    // 스케이트보더 박지성: 옆으로 선 자세, 킥플립 때 웅크리며 뜀
+    leg_skater_jisung(t, d, _r, sig) {
+        const j = sig?.jump ?? 0, air = sig?.air ?? -1;
+        const crouch = air >= 0 ? 0.6 * j : (t % 3.5) < 0.25 ? 0.4 : 0;
+        set(d.legL, -crouch, 0, -0.28); set(d.legR, -crouch * 0.6, 0, 0.28);
+        set(d.armL, -0.3 - j * 0.6, 0, -1.1 - j * 0.3); set(d.armR, 0.2, 0, 0.9 + j * 0.5);
+        d.root.position.y += 0.38 + j * 1.5 - crouch * 0.15;   // 보드 위에 올라섬
+        d.root.rotation.y = 0.35; d.head.rotation.y = -0.3; d.root.rotation.z = S(t * 2) * 0.03;
+    },
+    // 요리왕 김건우: 팬을 앞으로 들고, 2.4초마다 손목을 탁 올려 뒤집기
+    leg_chef_gunwoo(t, d, _r, sig) {
+        const f = sig?.flip ?? 0;
+        set(d.armL, -1.45 - f * 0.45, 0, -0.05);
+        set(d.armR, -0.3, 0, 0.45);
+        d.head.rotation.x = 0.15 - f * 0.25; d.root.rotation.x = 0.04;
+        set(d.legL, 0, 0, -0.05); set(d.legR, 0, 0, 0.05);
+    },
+    // 구미호 김티비: 살짝 떠서 한 손에 여우불을 올리고 고개를 갸웃
+    myth_gumiho_tv(t, d, _r, sig) {
+        const w = sig?.wave ?? 0;
+        d.root.position.y += 0.5 + S(t * 1.2) * 0.12;
+        set(d.armL, -1.7 + S(t * 1.2) * 0.1, 0, -0.35); set(d.armR, -0.1, 0, 0.3 + w * 0.2);
+        d.head.rotation.z = -0.15 + S(t * 0.8) * 0.06; d.head.rotation.y = 0.15;
+        set(d.legL, -0.2, 0, -0.04); set(d.legR, 0.15, 0, 0.04);
+    },
+    // 용왕 박지성: 여의주를 든 손을 천천히 높이 올림
+    anc_dragonking_jisung(t, d, _r, sig) {
+        const k = sig?.raise ?? 0;
+        set(d.armR, -0.2 - k * 0.3, 0, mix(1.4, 2.7, k)); set(d.armL, -0.5, 0, -0.2);
+        d.head.rotation.x = mix(0, -0.25, k); d.root.position.y += 0.2 + k * 0.3;
+        set(d.legL, 0, 0, -0.08); set(d.legR, 0, 0, 0.08);
+    },
+    // 시간을 멈춘 자 공병은: 멈출 때 손바닥을 앞으로 쭉
+    abs_timestop_byungeun(t, d, _r, sig) {
+        const k = sig?.stop ?? 0;
+        set(d.armL, mix(-0.3, -1.6, k), 0, mix(-0.15, 0, k)); set(d.armR, -0.35, 0, 0.2);
+        d.head.rotation.x = mix(0.15, -0.05, k); d.head.rotation.y = mix(S(t * 0.6) * 0.2, 0, k);
+        d.root.position.y += mix(S(t * 1.1) * 0.06, 0, k);
+        set(d.legL, -0.1, 0, -0.06); set(d.legR, 0.1, 0, 0.06);
+    },
+    // 창조주 김가은: 높이 떠서 행성을 든 손을 앞으로, 다른 손은 펼침
+    jxs_creator_gaeun(t, d, _r, sig) {
+        const c = sig?.create ?? 0;
+        d.root.position.y += 1.1 + S(t * 0.9) * 0.15;
+        set(d.armR, -1.6 - c * 0.3, 0, 0.3); set(d.armL, -0.4 - c * 0.6, 0, -1.2 + S(t * 0.9) * 0.1);
+        set(d.legL, 0.12, 0, -0.05); set(d.legR, -0.1, 0, 0.05);
+        d.head.rotation.x = -0.1; d.head.rotation.y = S(t * 0.5) * 0.12;
+    },
     // 디버거 공병은: 허공의 키보드를 두드림 (두 팔 앞으로, 손이 번갈아 톡톡)
     myth_debugger_byungeun(t, d) {
         set(d.armL, -1.25 + S(t * 14) * 0.08, 0, -0.05); set(d.armR, -1.25 + S(t * 14 + 1.6) * 0.08, 0, 0.05);

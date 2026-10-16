@@ -1,5 +1,5 @@
 /* =========================================================
-   🌟 칭호 데이터 (96개)
+   🌟 칭호 데이터 (106개)
 
    in    : 1 in N 확률
    line  : 컷씬 마지막에 칭호 아래 뜨는 한 줄 (MYTHIC 이상)
@@ -54,6 +54,10 @@ export const AURA_DATA = [
       fx: { particles: 16, rise: 1.6, glow: 0.45 } },
 
     // 3. RARE
+    { id: "rare_cupramen_gaeun", name: "편의점 컵라면 김가은", grade: "RARE", in: 48, color: "#ffb347",
+      fx: { colors: ["#ffb347", "#ffffff"], particles: 22, rise: 1.4, rings: 1, glow: 0.7 } },
+    { id: "rare_jumprope_byungeun", name: "줄넘기왕 공병은", grade: "RARE", in: 63, color: "#4fd1ff",
+      fx: { colors: ["#4fd1ff", "#ffffff"], particles: 14, rise: 0.9, orbit: 4, rings: 2, glow: 0.7 } },
     { id: "rare_soldier", name: "예비군 공병은", grade: "RARE", in: 28, color: "#6495ed",
       fx: { particles: 16, rise: 0.8, rings: 1, glow: 0.6 } },
     { id: "rare_train", name: "폭주기관차 김민채", grade: "RARE", in: 45, color: "#1e90ff",
@@ -86,6 +90,10 @@ export const AURA_DATA = [
       fx: { particles: 22, rise: 1, orbit: 4, rings: 1, glow: 1 } },
     { id: "epic_destroy", name: "파괴신 김건우", grade: "EPIC", in: 350, color: "#b44dff",
       fx: { colors: ["#b44dff", "#ff3b6b"], particles: 30, rise: 1.6, orbit: 6, rings: 1, glow: 1.1 } },
+    { id: "ep_icetag_minchae", name: "얼음땡 김민채", grade: "EPIC", in: 288, color: "#8fe8ff",
+      fx: { colors: ["#8fe8ff", "#ffffff", "#4da3ff"], particles: 24, rise: 0.5, shards: 4, rings: 1, glow: 0.9 } },
+    { id: "ep_youtuber_tv", name: "유튜버 김티비", grade: "EPIC", in: 365, color: "#ff2a3d",
+      fx: { colors: ["#ff2a3d", "#ffffff"], particles: 26, rise: 1.6, orbit: 6, halo: true, glow: 1.0 } },
     { id: "ep_frozen_byungeun", name: "꽁꽁병은", grade: "EPIC", in: 343, color: "#9fe6ff",
       fx: { signature: "frozen", colors: ["#9fe6ff", "#ffffff", "#5ab8ff"], particles: 20, rise: 0.35, glow: 0.9 } },
     { id: "ep_fire_jisung", name: "불꽃 슛 박지성", grade: "EPIC", in: 222, color: "#ff6b2b",
@@ -139,6 +147,10 @@ export const AURA_DATA = [
     // 🎃 할로윈의 밤 바이옴에서만 나옴 (biome)
     { id: "leg_pumpkin_byungeun", name: "호박머리 공병은", grade: "LEGEND", in: 6131, color: "#ff8a1f", biome: "halloween",
       fx: { signature: "pumpkinHead", colors: ["#ffb347", "#ff7a1a", "#7a2aff"], glow: 0.8 } },
+    { id: "leg_skater_jisung", name: "스케이트보더 박지성", grade: "LEGEND", in: 2468, color: "#ff5a2b",
+      fx: { signature: "skater", colors: ["#ff5a2b", "#7dff6a", "#5ab0ff"], glow: 0.8 } },
+    { id: "leg_chef_gunwoo", name: "요리왕 김건우", grade: "LEGEND", in: 5050, color: "#ffb02e",
+      fx: { signature: "chef", colors: ["#ffb02e", "#ff3b3b", "#ffffff"], glow: 0.8 } },
     { id: "leg_golem_jisung", name: "강철 골렘 박지성", grade: "LEGEND", in: 6006, color: "#ff8a3d",
       fx: { signature: "golem", colors: ["#ff8a3d", "#ffd23f"], glow: 0.8 } },
 
@@ -172,6 +184,8 @@ export const AURA_DATA = [
       fx: { signature: "debugger", colors: ["#3dff8a", "#ffd23a", "#ff3b5c"], glow: 0.7 } },
     { id: "myth_witch_tv", name: "마녀 김티비", grade: "MYTHIC", in: 313131, color: "#b26bff", line: "오늘 밤 빗자루는 쉬지 않아", biome: "halloween",
       fx: { signature: "witch", colors: ["#b26bff", "#7dff6a", "#ff8a1f"], glow: 0.8 } },
+    { id: "myth_gumiho_tv", name: "구미호 김티비", grade: "MYTHIC", in: 199999, color: "#6fb8ff", line: "아홉 개의 꼬리가 달빛을 가른다",
+      fx: { signature: "gumiho", colors: ["#6fb8ff", "#ff9ac8", "#ffffff"], glow: 0.8 } },
     { id: "myth_thunderbeast_minchae", name: "벼락 신수 김민채", grade: "MYTHIC", in: 666666, color: "#7cc8ff", line: "울음소리 한 번에 하늘이 갈라진다",
       fx: { signature: "thunderBeast", colors: ["#7cc8ff", "#fff27a"], glow: 0.9 } },
 
@@ -194,6 +208,8 @@ export const AURA_DATA = [
       fx: { signature: "crusader", colors: ["#ffc94d", "#7fd6ff", "#d9dde6"], glow: 0.8 } },
     { id: "anc_vampire_gunwoo", name: "뱀파이어 백작 김건우", grade: "ANCIENT", in: 13131313, color: "#ff2a4f", line: "영원한 밤에 온 것을 환영한다", biome: "halloween",
       fx: { signature: "vampire", colors: ["#ff2a4f", "#8a0a1a", "#ffc060"], glow: 0.8 } },
+    { id: "anc_dragonking_jisung", name: "용왕 박지성", grade: "ANCIENT", in: 8888888, color: "#2fd6a8", line: "바다가 그의 이름 앞에 고개를 숙인다",
+      fx: { signature: "dragonKing", colors: ["#2fd6a8", "#ffc94d", "#7fffe0"], glow: 0.8 } },
     { id: "anc_empress_gaen", name: "절대여제 김가은", grade: "ANCIENT", in: 17171717, color: "#c77dff", line: "무릎 꿇어라",
       fx: { signature: "empress", colors: ["#c77dff", "#ffd34d", "#ff6ad5"], glow: 1.2 } },
 
@@ -210,6 +226,8 @@ export const AURA_DATA = [
       fx: { signature: "chaosGod", colors: ["#d34dff", "#3dfcff", "#ff4d8d"], glow: 0.8 } },
     { id: "abs_breaker_byungeun", name: "폭풍의 눈 공병은", grade: "ABSOLUTE", in: 55555555, color: "#8fd3ff", line: "모든 폭풍의 한가운데는 고요하다",
       fx: { signature: "stormEye", colors: ["#8fd3ff", "#fff27a"], glow: 0.7 } },
+    { id: "abs_timestop_byungeun", name: "시간을 멈춘 자 공병은", grade: "ABSOLUTE", in: 52525252, color: "#ffc94d", line: "지금부터 이 세계에서 움직이는 건 나뿐이다",
+      fx: { signature: "timeStop", colors: ["#7ae8ff", "#ffc94d", "#ffffff"], glow: 0.7 } },
     { id: "abs_juggernaut_minchae", name: "저거너트 김민채", grade: "ABSOLUTE", in: 88000000, color: "#ff2a2a", line: "멈출 수 없는 것은, 멈추지 않는다",
       fx: { signature: "juggernaut", colors: ["#ff2a2a", "#ff8a3d", "#ffb3a0"], glow: 0.7 } },
     { id: "abs_sunking_gunwoo", name: "태양왕 김건우", grade: "ABSOLUTE", in: 77777777, color: "#ffb02e", line: "태양은 오직 한 사람을 위해 뜬다",
@@ -228,6 +246,8 @@ export const AURA_DATA = [
       fx: { signature: "thunderThrone", colors: ["#00ffff", "#7c4dff", "#ffffff"], particles: 28, rise: 1.4, glow: 1.0 } }
     ,{ id: "jxs_sans_tv", name: "샌즈. 김티비", grade: "JXS", in: 440000000, color: "#4fc3ff", line: "* 오늘 너는 아주 끔찍한 시간을 보내게 될 거야.", frame: "sans",
       fx: { signature: "sans", colors: ["#4fc3ff", "#ffe14d", "#ffffff"], particles: 6, rise: 0.4, glow: 0.25 } },
+    { id: "jxs_creator_gaeun", name: "창조주 김가은", grade: "JXS", in: 777777777, color: "#fff3d0", line: "빛이 있으라", frame: "creator",
+      fx: { signature: "creator", colors: ["#fff3d0", "#b26bff", "#5ab0ff"], particles: 24, rise: 0.6, glow: 0.7 } },
     { id: "jxs_admin_jisung", name: "어드민 박지성", grade: "JXS", in: 404404404, color: "#ffd23a", line: "이 세계의 규칙은 내가 정한다", frame: "admin", biome: "admin",
       fx: { signature: "admin", colors: ["#ffd23a", "#ffffff", "#ff3b5c"], particles: 24, rise: 0.8, glow: 0.8 } },
     { id: "jxs_pumpkinking_minchae", name: "호박 대왕 김민채", grade: "JXS", in: 313131313, color: "#ff8a1f", line: "사탕을 주지 않으면, 운명을 가져가겠다", frame: "pumpkin", biome: "halloween",
