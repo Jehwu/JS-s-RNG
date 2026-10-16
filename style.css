@@ -292,7 +292,7 @@ input, select { font-family: inherit; -webkit-user-select: text; user-select: te
     left: 50%; bottom: 0;
     transform: translateX(-50%);
     width: 100%; max-width: 480px;
-    display: grid; grid-template-columns: repeat(5, 1fr);
+    display: grid; grid-template-columns: repeat(6, 1fr);
     background: linear-gradient(transparent, rgba(3, 3, 10, 0.85) 30%);
     padding: 14px 6px calc(10px + var(--safe-b));
     z-index: 50;
@@ -300,8 +300,8 @@ input, select { font-family: inherit; -webkit-user-select: text; user-select: te
 .nav-btn {
     background: none; border: none;
     display: flex; flex-direction: column; align-items: center; gap: 5px;
-    font-size: 11px; letter-spacing: 0.08em; color: var(--muted);
-    padding: 4px 0; cursor: pointer;
+    font-size: 11px; letter-spacing: 0.04em; color: var(--muted);
+    padding: 4px 0; cursor: pointer; position: relative;
 }
 .nav-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .nav-btn:active { color: var(--text); }
@@ -1667,3 +1667,66 @@ body.cine-on #biome-fx { opacity: 0; }
 .tut-skip { background: none; border: 0; color: var(--faint, #888); font-size: 12px; padding: 6px 2px; }
 .tut-btns .hidden { visibility: hidden; display: inline-block !important; }
 .tut-btns .tut-skip.hidden { visibility: hidden; }
+
+/* ---------- 🐾 펫 창 ---------- */
+.pet-dot { position: absolute; top: 0; right: calc(50% - 18px); width: 7px; height: 7px; background: var(--red); box-shadow: 0 0 8px var(--red); animation: gm-blink 1s steps(2) infinite; }
+.nests { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.nest {
+    position: relative; aspect-ratio: 0.82; border: 1px solid rgba(214, 170, 96, 0.35); color: var(--text, #fff);
+    background: radial-gradient(ellipse at 50% 80%, rgba(214, 170, 96, 0.16), transparent 65%), #0c0a14;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 4px 8px; gap: 3px; cursor: pointer; font: inherit;
+}
+.nest.pick { border-color: #ffe14d; box-shadow: 0 0 0 1px #ffe14d, 0 0 18px rgba(255, 225, 77, 0.35); }
+.nest.ready { border-color: #ffe14d; animation: nest-glow 1.2s ease-in-out infinite; }
+@keyframes nest-glow { 50% { box-shadow: 0 0 20px rgba(255, 225, 77, 0.5); } }
+/* 짚 둥지: 엇갈린 짚 줄무늬 그릇 */
+.nest-straw {
+    position: absolute; left: 12%; right: 12%; top: 44%; height: 24%;
+    background:
+        repeating-linear-gradient(28deg, transparent 0 5px, rgba(120, 78, 30, 0.9) 5px 7px),
+        repeating-linear-gradient(-32deg, transparent 0 6px, rgba(240, 200, 120, 0.85) 6px 8px),
+        linear-gradient(#b8863f, #7a5222);
+    border-radius: 0 0 50% 50% / 0 0 100% 100%;
+    box-shadow: inset 0 6px 6px rgba(0, 0, 0, 0.45), 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+.nest-straw::before {
+    content: ''; position: absolute; left: -6%; right: -6%; top: -18%; height: 36%;
+    background: repeating-linear-gradient(80deg, #d9a95a 0 3px, #8a5a24 3px 5px, #f0c878 5px 7px);
+    border-radius: 50%; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+.nest .egg { position: absolute; left: 50%; top: 18%; width: 36%; height: auto; aspect-ratio: 0.77; margin-left: -18%; z-index: 1; animation: none; }
+.nest .egg.wobble { animation: egg-wob 1.6s ease-in-out infinite; }
+.nest .egg.shake { animation: egg-shake 0.35s linear infinite; }
+@keyframes egg-shake { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
+.nest-straw ~ .nest-name, .nest-bar, .nest-left, .nest-ready, .nest small, .nest-plus { position: relative; z-index: 2; }
+.nest-plus { position: absolute; top: 18%; font-size: 26px; color: rgba(255, 225, 140, 0.6); }
+.nest.empty small { color: var(--faint, #888); font-size: 10.5px; }
+.nest-name { font-size: 11px; font-family: var(--display); }
+.nest-bar { width: 86%; height: 4px; background: rgba(255, 255, 255, 0.1); }
+.nest-bar i { display: block; height: 100%; background: linear-gradient(90deg, #d9a95a, #ffe14d); }
+.nest-left { font-size: 10px; color: var(--dim, #aaa); }
+.nest-ready { font-family: var(--display); font-size: 13px; color: #ffe14d; animation: gm-blink 0.8s steps(2) infinite; }
+.pet-hint { color: #ffe14d; letter-spacing: 0; }
+.egg-inv { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.egg-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border: 1px solid color-mix(in srgb, var(--ec) 45%, transparent); background: color-mix(in srgb, var(--ec) 8%, #0c0a14); color: var(--text, #fff); font: inherit; cursor: pointer; }
+.egg-slot b { font-size: 12px; font-family: var(--display); font-weight: normal; }
+.egg-slot small { font-size: 10px; color: var(--dim, #aaa); }
+.egg-od { font-size: 11.5px; line-height: 1.6; padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.egg-od span { margin-right: 6px; }
+.pet-star { font-size: 12px; color: #ffd23a; letter-spacing: 1px; }
+.pet-star i { font-style: normal; color: rgba(255, 255, 255, 0.15); }
+.pet-row { cursor: default; }
+.pet-row.on { background: rgba(255, 210, 58, 0.06); }
+.pet-btns { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.pet-merge { border-color: #c86bff; color: #e3b8ff; }
+.gr-icon .egg { width: 44px; height: 57px; }
+
+/* ---------- 💬 공지 채팅 (로블록스 느낌) ---------- */
+.chat-feed { position: fixed; left: 50%; transform: translateX(-50%); top: calc(64px + var(--safe-t, 0px)); width: calc(100% - 24px); max-width: 456px; z-index: 1200; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+.chat-line { align-self: flex-start; max-width: 100%; padding: 6px 10px; background: rgba(0, 0, 0, 0.62); border-left: 3px solid #ffd23a; font-size: 13.5px; line-height: 1.4; word-break: break-all; animation: chat-in 0.3s ease-out; transition: opacity 0.6s, transform 0.6s; text-shadow: 0 1px 2px #000; }
+.chat-line.out { opacity: 0; transform: translateY(-6px); }
+.chat-nick { color: #ffd23a; }
+.chat-sep { color: #ffd23a; }
+.chat-text { color: #fff; }
+@keyframes chat-in { from { opacity: 0; transform: translateX(-12px); } }
+.nests + .glabel { margin-top: 8px; }

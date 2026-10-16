@@ -1,8 +1,8 @@
-import { AURA_DATA } from './auras.js?v=38';
-import { CRAFT_ITEMS } from './craftItems.js?v=38';
-import { createMusicPlayer, coverArt } from './music.js?v=38';
-import { PETS, PET_BY_ID, EGGS, PET_MAX_LV, petMult } from './petsData.js?v=38';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=38';
+import { AURA_DATA } from './auras.js?v=39';
+import { CRAFT_ITEMS } from './craftItems.js?v=39';
+import { createMusicPlayer, coverArt } from './music.js?v=39';
+import { PETS, PET_BY_ID, EGGS, EGG_BY_ID, STAR_MAX, starMult } from './petsData.js?v=39';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=39';
 
 /* =========================================================
    📦 게임 데이터
@@ -49,7 +49,11 @@ const SHOP_ITEMS = [
 const GACHA_COST = 30000, GACHA_COST10 = 270000, GACHA_PITY = 100;
 const GACHA_POOL = [
     // 한 번(3만 JC)에 평균 2만 8천 JC어치 정도 나오게 맞춤 (물약은 상점가 기준). 장비가 나오면 이득
-    { kind: 'jc', min: 5000, max: 25000, w: 340, tier: 'COMMON', label: 'JC 주머니' },
+    { kind: 'jc', min: 5000, max: 25000, w: 300, tier: 'COMMON', label: 'JC 주머니' },
+    { kind: 'egg', id: 'egg_basic', w: 55, tier: 'RARE' },
+    { kind: 'egg', id: 'egg_rare', w: 16, tier: 'EPIC' },
+    { kind: 'egg', id: 'egg_legend', w: 4, tier: 'LEGEND' },
+    { kind: 'egg', id: 'egg_mythic', w: 0.8, tier: 'MYTHIC' },
     { kind: 'items', items: { luck_3: 2, speed_3: 2 }, w: 230, tier: 'UNCOMMON', label: '물약 꾸러미' },
     { kind: 'items', items: { limit_potion: 1 }, w: 100, tier: 'RARE' },
     { kind: 'items', items: { dice_potion: 1 }, w: 60, tier: 'RARE' },
@@ -347,7 +351,7 @@ function createInitialGameState() {
         activeBuffs: { luckBonus: 0, speedBonus: 0, luckExpireTime: 0, speedExpireTime: 0, luckLevel: 0, speedLevel: 0 },
         activeMultBuffs: [],
         gear: null, amulet: null, amuletStack: 0, craftedGears: [], usedCodes: [],
-        pets: {}, pet: null,
+        petList: [], pet: null, eggs: {}, nests: [null, null, null],
         completedQuests: [], activeQuest: null, questProgress: {}, quickRollUnlocked: false,
         equippedAura: null
     };
@@ -477,15 +481,34 @@ function getAmuletEvery() { return CRAFT_BY_ID[gameState.amulet]?.amuletEvery ||
 function getMultBonus() {
     return (gameState.activeMultBuffs || []).reduce((s, b) => s + b.bonus, 0);
 }
-// 데리고 다니는 펫 효과 (레벨마다 +25%)
+// 펫 저장 칸 정리 (예전 레벨 방식 저장도 1성 여러 마리로 바꿔 줌)
+function petState() {
+    const g = gameState;
+    if (!Array.isArray(g.petList) || (g.pets && typeof g.pets === 'object')) {
+        if (!Array.isArray(g.petList)) g.petList = [];
+        const old = g.pets || {}, oldOn = g.pet;
+        g.pet = null;
+        for (const [id, lv] of Object.entries(old)) for (let i = 0; i < lv; i++) {
+            const u = newPetUid(); g.petList.push({ u, id, s: 1 });
+            if (id === oldOn && !g.pet) g.pet = u;
+        }
+        delete g.pets;
+    }
+    g.eggs = g.eggs || {};
+    if (!Array.isArray(g.nests)) g.nests = [null, null, null];
+    return g;
+}
+const newPetUid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const petOn = () => petState().petList.find(p => p.u === gameState.pet) || null;
+// 데리고 다니는 펫 효과 (성이 높을수록 커짐)
 function getPetBonus() {
-    const p = PET_BY_ID[gameState.pet], lv = (gameState.pets || {})[gameState.pet] || 0;
-    if (!p || !lv) return { luck: 0, speed: 0 };
-    const m = petMult(lv);
+    const on = petOn(), p = on && PET_BY_ID[on.id];
+    if (!p) return { luck: 0, speed: 0 };
+    const m = starMult(on.s);
     return { luck: (p.luck || 0) * m, speed: (p.speed || 0) * m };
 }
-function petEffectText(p, lv) {
-    const m = petMult(lv);
+function petEffectText(p, star) {
+    const m = starMult(star);
     return [p.luck ? `행운 +${Math.round(p.luck * m * 100)}%` : '', p.speed ? `속도 +${Math.round(p.speed * m * 100)}%` : ''].filter(Boolean).join(' · ');
 }
 function getSpeedBonus() {
@@ -972,7 +995,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=38').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=39').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -1038,7 +1061,6 @@ function renderCraft() {
 
 function renderShop() {
     if (BANNERS[shopTab]) renderGacha();
-    if (shopTab === 'eggs') renderEggs();
     ui.shopGrid.classList.add('row-list');
     ui.shopGrid.innerHTML = SHOP_ITEMS.filter(item => !item.gacha).map(item => {
         const have = gameState.itemInventory[item.id] || 0;
@@ -1280,14 +1302,15 @@ function renderAll() {
    ========================================================= */
 
 const SHEET_RENDER = {
-    'sheet-bag': () => { renderInventory(); renderPotions(); if (bagTab === 'gauntlet' || bagTab === 'amulet') renderBagGear(); if (bagTab === 'pet') renderBagPets(); },
+    'sheet-bag': () => { renderInventory(); renderPotions(); if (bagTab === 'gauntlet' || bagTab === 'amulet') renderBagGear(); },
     'sheet-craft': renderCraft,
     'sheet-shop': renderShop,
     'sheet-quest': renderQuests,
     'sheet-index': () => { renderIndex(); renderSets(); },
     'sheet-settings': () => { renderSoundUI(); renderAutoSell(); if (setTab === 'account') renderAccount(); },
     'sheet-profile': () => renderProfileSheet(),
-    'sheet-attend': () => renderAttend()
+    'sheet-attend': () => renderAttend(),
+    'sheet-pet': () => renderPets()
 };
 
 function stagger(el) {
@@ -1302,7 +1325,8 @@ function stagger(el) {
 const SHEET_LIST = {
     'sheet-bag': () => [ui.inventoryGrid, ui.potionGrid, $('gear-grid')],
     'sheet-craft': () => [ui.craftGrid],
-    'sheet-shop': () => [BANNERS[shopTab] || shopTab === 'eggs' ? $('gacha-panel') : ui.shopGrid],
+    'sheet-shop': () => [BANNERS[shopTab] ? $('gacha-panel') : ui.shopGrid],
+    'sheet-pet': () => [$('pet-panel')],
     'sheet-quest': () => [ui.questList],
     'sheet-index': () => [indexTab === 'sets' ? $('set-grid') : ui.indexGrid.querySelector('.index-grid')],
     'sheet-settings': () => [$('sheet-settings').querySelector(`.set-pane[data-pane="${setTab}"]`)]
@@ -1350,11 +1374,11 @@ let bagTab = 'aura';
 function setBagTab(tab) {
     bagTab = tab;
     $('bag-tabs').querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-    const gearTab = tab === 'gauntlet' || tab === 'amulet' || tab === 'pet';
+    const gearTab = tab === 'gauntlet' || tab === 'amulet';
     ui.inventoryGrid.classList.toggle('hidden', tab !== 'aura');
     ui.potionGrid.classList.toggle('hidden', tab !== 'potion');
     $('gear-grid').classList.toggle('hidden', !gearTab);
-    if (gearTab) (tab === 'pet' ? renderBagPets() : renderBagGear()); else gearPreviews?.stop();
+    if (gearTab) renderBagGear(); else gearPreviews?.stop();
     stagger(tab === 'aura' ? ui.inventoryGrid : tab === 'potion' ? ui.potionGrid : $('gear-grid'));
 }
 bindTabs('bag-tabs', tab => setBagTab(tab));
@@ -1372,42 +1396,6 @@ function gearEffectHtml(gear) {
     return parts.join('');
 }
 function gearPower(g) { return (g.luckBonus || 0) * 10 + (g.speedBonus || 0) + (g.amuletMult || AMULET_MULT[g.id] || 0) * 10 / (g.amuletEvery || 10) + (g.biomeBoost || 0) + (g.jcBonus || 0); }
-// 가방: 펫 (위에 데리고 다니는 펫, 아래에 가진 펫)
-function petStars(lv) { return `<span class="pet-lv">Lv.${lv}${lv >= PET_MAX_LV ? ' MAX' : ''}</span>`; }
-function renderBagPets() {
-    const el = $('gear-grid');
-    el.classList.remove('list');
-    const owned = PETS.filter(p => (gameState.pets || {})[p.id]).sort((a, b) => (b.luck || 0) + (b.speed || 0) * 4 - (a.luck || 0) - (a.speed || 0) * 4);
-    if (!owned.length) {
-        el.innerHTML = `<div class="empty">아직 펫이 없어요.<br>상점 → 🥚 펫 알에서 부화시킬 수 있어요.</div><button class="btn btn-block btn-gold" data-gotoeggs>펫 알 보러 가기</button>`;
-        return;
-    }
-    const on = PET_BY_ID[gameState.pet];
-    const rest = owned.filter(p => p.id !== gameState.pet);
-    const lvOf = p => gameState.pets[p.id];
-    el.innerHTML = `
-        <div class="bg-slot ${on ? '' : 'empty-slot'}">
-            <div class="bg-label">데리고 다니는 펫</div>
-            ${on ? `<div class="bg-slot-card" style="--mint:${TIER_COL[on.tier]}">
-                <div class="bg-slot-view"><canvas data-gear="${on.id}" aria-hidden="true"></canvas></div>
-                <div class="bg-slot-info">
-                    <div class="bg-name">${on.name} ${petStars(lvOf(on))}</div>
-                    <div class="bg-eff"><b class="ef-luck">${petEffectText(on, lvOf(on))}</b></div>
-                    <div class="set-note">${on.desc}</div>
-                    <button class="btn btn-sm bg-off" data-petoff>집에 보내기</button>
-                </div>
-            </div>` : `<div class="bg-slot-none">비어 있어요 · 아래에서 눌러서 데려가기</div>`}
-        </div>
-        ${rest.length ? `<div class="bg-label">가진 펫 <span>${rest.length}</span></div>
-        <div class="bg-list">${rest.map(p => `
-            <button type="button" class="bg-row" data-petequip="${p.id}" style="border-color:color-mix(in srgb, ${TIER_COL[p.tier]} 40%, transparent)">
-                <div class="bg-row-view"><canvas data-gear="${p.id}" aria-hidden="true"></canvas></div>
-                <div class="bg-row-info"><div class="bg-name">${p.name} ${petStars(lvOf(p))}</div><div class="bg-eff"><b class="ef-luck">${petEffectText(p, lvOf(p))}</b></div></div>
-                <span class="bg-row-go">데려가기</span>
-            </button>`).join('')}</div>` : ''}
-        <div class="set-note">같은 펫이 또 나오면 레벨이 올라요. 레벨마다 효과 +25% (최대 Lv.${PET_MAX_LV})</div>`;
-    attachGearPreviews(el);
-}
 function renderBagGear() {
     const el = $('gear-grid');
     const cat = bagTab === 'amulet' ? 'amulet' : 'gauntlet';
@@ -1444,14 +1432,6 @@ function renderBagGear() {
     attachGearPreviews(el);
 }
 $('gear-grid').addEventListener('click', e => {
-    const pe = e.target.closest('[data-petequip]'), po = e.target.closest('[data-petoff]'), ge = e.target.closest('[data-gotoeggs]');
-    if (ge) { closeSheet('sheet-bag'); openSheet('sheet-shop'); setShopTab('eggs'); return; }
-    if (pe || po) {
-        gameState.pet = pe ? pe.dataset.petequip : null;
-        if (pe) toast(`🐾 ${PET_BY_ID[gameState.pet].name}와(과) 함께해요`, 'good');
-        saveGame(); renderStats(); renderBagPets(); applyGear(); stagger($('gear-grid'));
-        return;
-    }
     const eq = e.target.closest('[data-equip]'), un = e.target.closest('[data-unequip]');
     if (eq) { equip(CRAFT_BY_ID[eq.dataset.equip]); toast(`${CRAFT_BY_ID[eq.dataset.equip].name} 장착`, 'good'); }
     else if (un) {
@@ -1491,7 +1471,7 @@ $('game-start-btn').addEventListener('click', () => {
         stage3d?.resize();
         applyEquippedAura();
         applyBiome(false);   // 저장된 바이옴이 남아 있으면 이어서
-        updateAttendDot();
+        updateAttendDot(); updatePetDot(); setInterval(updatePetDot, 60000);
         startAdminEvents();
         if (!gameState.tutorialDone && !(gameState.rolls > 0)) setTimeout(() => startTutorial(true), 900);   // 처음 온 사람은 튜토리얼부터
         else if (canAttend()) setTimeout(() => openSheet('sheet-attend'), 900);   // 오늘 출석 안 했으면 바로 띄움
@@ -1859,14 +1839,14 @@ function setShopTab(tab) {
     shopTab = tab;
     $('shop-tabs').querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     ui.shopGrid.classList.toggle('hidden', tab !== 'potion');
-    $('gacha-panel').classList.toggle('hidden', !BANNERS[tab] && tab !== 'eggs');
-    if (tab === 'eggs') { renderEggs(); stagger($('gacha-panel')); }
-    else if (BANNERS[tab]) { renderGacha(); stagger($('gacha-panel')); }
+    $('gacha-panel').classList.toggle('hidden', !BANNERS[tab]);
+    if (BANNERS[tab]) { renderGacha(); stagger($('gacha-panel')); }
     else { gearPreviews?.stop(); renderShop(); stagger(ui.shopGrid); }
 }
 
 function gachaEntryName(e) {
     if (e.kind === 'gear') return CRAFT_BY_ID[e.id].name;
+    if (e.kind === 'egg') return '🥚 ' + EGG_BY_ID[e.id].name;
     if (e.label) return e.label;
     const [id, n] = Object.entries(e.items)[0];
     return `${SHOP_BY_ID[id].name}${n > 1 ? ` ×${n}` : ''}`;
@@ -1957,6 +1937,12 @@ function gachaGrant(e) {
         const first = SHOP_BY_ID[Object.keys(e.items)[0]];
         res.icon = vialHtml(first);
         res.sub = e.label ? Object.entries(e.items).map(([id, n]) => `${SHOP_BY_ID[id].name} ×${n}`).join(' · ') : '';
+    } else if (e.kind === 'egg') {
+        const eggs = petState().eggs;
+        eggs[e.id] = (eggs[e.id] || 0) + 1;
+        res.icon = eggHtml(EGG_BY_ID[e.id]);
+        res.sub = '펫 창 둥지에 넣어 부화시켜요';
+        updatePetDot();
     } else {
         res.icon = `<canvas data-gear="${e.id}" aria-hidden="true"></canvas>`;
         res.gear = true;
@@ -2024,64 +2010,162 @@ $('gacha-result').addEventListener('click', e => {
     if (!e.target.closest('.gr-ok')) return;
     $('gacha-result').classList.add('hidden');
     $('gacha-result').classList.remove('egg-mode');
-    shopTab === 'eggs' ? renderEggs() : renderGacha();
+    if (box_isHatch()) renderPets(); else renderGacha();
 });
 
-/* ---------- 🥚 펫 알 ---------- */
+/* =========================================================
+   🐾 펫 창: 둥지 3칸 · 알 부화 · 성 합성
+   ========================================================= */
 function eggHtml(egg, cls = '') {
     return `<div class="egg ${cls}" style="--ec:${egg.color};--es:${egg.spot}"><i></i><i></i><i></i><i></i></div>`;
 }
-function renderEggs() {
-    const el = $('gacha-panel');
-    el.classList.remove('hw');
-    const pct = (o, t) => Math.round(o / Object.values(t).reduce((s, v) => s + v, 0) * 100);
-    el.innerHTML = `
-        <div class="egg-intro">🥚 알을 사면 바로 부화해요. 같은 펫이 또 나오면 <b>레벨 업</b>!</div>
-        <div class="egg-list">${EGGS.map(egg => `
-            <div class="egg-card" style="--ec:${egg.color}">
-                ${eggHtml(egg)}
-                <div class="egg-info">
-                    <div class="egg-name">${egg.name}</div>
-                    <div class="egg-odds">${Object.entries(egg.odds).map(([t, w]) => `<span style="color:${TIER_COL[t]}">${t} ${pct(w, egg.odds)}%</span>`).join('')}</div>
-                </div>
-                <button class="btn btn-sm btn-gold egg-buy" data-egg="${egg.id}" ${gameState.jc < egg.price ? 'disabled' : ''}>${fmt(egg.price)}<small> JC</small></button>
-            </div>`).join('')}</div>
-        <div class="glabel">펫 도감 <span style="letter-spacing:0">${PETS.filter(p => gameState.pets?.[p.id]).length} / ${PETS.length}</span></div>
+const box_isHatch = () => $('gacha-result').classList.contains('egg-mode');
+const petStarHtml = s => `<span class="pet-star">${'★'.repeat(s)}<i>${'★'.repeat(STAR_MAX - s)}</i></span>`;
+const fmtLeft = ms => { const m = Math.ceil(ms / 60000), h = Math.floor(m / 60); return h ? `${h}시간 ${m % 60}분` : `${m}분`; };
+let petTab = 'nest', petPickNest = -1, petTimer = 0;
+function updatePetDot() {
+    const st = petState();
+    const ready = st.nests.some(n => n && n.end <= Date.now());
+    const canPut = st.nests.some(n => !n) && Object.values(st.eggs).some(v => v > 0);
+    document.querySelector('.pet-dot')?.classList.toggle('hidden', !(ready || canPut));
+}
+function renderPets() {
+    const st = petState(), el = $('pet-panel');
+    clearInterval(petTimer);
+    document.querySelectorAll('#sheet-pet .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === petTab));
+    if (petTab === 'nest') {
+        const now = Date.now();
+        const eggsOwned = EGGS.filter(e => st.eggs[e.id] > 0);
+        el.innerHTML = `
+            <div class="nests">${st.nests.map((n, i) => {
+                if (!n) return `<button class="nest empty ${petPickNest === i ? 'pick' : ''}" data-nest="${i}"><div class="nest-straw"></div><span class="nest-plus">＋</span><small>알 넣기</small></button>`;
+                const egg = EGG_BY_ID[n.egg], left = n.end - now, ready = left <= 0;
+                const pct = Math.min(100, (now - n.start) / (n.end - n.start) * 100);
+                return `<button class="nest ${ready ? 'ready' : ''}" data-nest="${i}">
+                    <div class="nest-straw"></div>${eggHtml(egg, ready ? 'shake' : left < 600000 ? 'wobble' : '')}
+                    <div class="nest-name">${egg.name}</div>
+                    ${ready ? '<div class="nest-ready">부화!</div>' : `<div class="nest-bar"><i style="width:${pct}%"></i></div><small class="nest-left" data-left="${n.end}">${fmtLeft(left)}</small>`}
+                </button>`;
+            }).join('')}</div>
+            <div class="glabel">가진 알 ${petPickNest >= 0 ? '<span class="pet-hint">· 넣을 알을 골라요</span>' : ''}</div>
+            ${eggsOwned.length ? `<div class="egg-inv">${eggsOwned.map(e => `
+                <button class="egg-slot" data-putegg="${e.id}" style="--ec:${e.color}">
+                    ${eggHtml(e)}<b>${e.name}</b><small>${e.hours}시간 · ×${st.eggs[e.id]}</small>
+                </button>`).join('')}</div>` : `<div class="empty">알이 없어요.<br>상점 → 행운 뽑기에서 가끔 나와요.</div>`}
+            <details class="godds"><summary>알 정보</summary>${EGGS.map(e => {
+                const t = Object.values(e.odds).reduce((a, b) => a + b, 0);
+                return `<div class="egg-od"><b style="color:${TIER_COL[e.tier]}">${e.name}</b> · ${e.hours}시간<br>${Object.entries(e.odds).map(([k, w]) => `<span style="color:${TIER_COL[k]}">${k} ${Math.round(w / t * 100)}%</span>`).join(' ')}</div>`;
+            }).join('')}</details>`;
+        petTimer = setInterval(() => {
+            if ($('sheet-pet').classList.contains('hidden')) return clearInterval(petTimer);
+            let redo = false;
+            el.querySelectorAll('[data-left]').forEach(s => { const l = +s.dataset.left - Date.now(); if (l <= 0) redo = true; else s.textContent = fmtLeft(l); });
+            if (redo) { renderPets(); updatePetDot(); }
+        }, 10000);
+    } else if (petTab === 'mine') {
+        const list = st.petList.slice().sort((a, b) => (a.u === gameState.pet ? -1 : b.u === gameState.pet ? 1 : 0) || PETS.indexOf(PET_BY_ID[b.id]) - PETS.indexOf(PET_BY_ID[a.id]) || b.s - a.s);
+        if (!list.length) { el.innerHTML = `<div class="empty">아직 펫이 없어요.<br>둥지에 알을 넣어 부화시켜 봐요.</div>`; return; }
+        const same = (a) => st.petList.filter(p => p.id === a.id && p.s === a.s).length;
+        el.innerHTML = `<div class="set-note">같은 펫 · 같은 성 2마리를 <b>합성</b>하면 한 성 올라가요 (최대 ${STAR_MAX}성)</div>
+            <div class="bg-list">${list.map(p => {
+                const d = PET_BY_ID[p.id], on = p.u === gameState.pet, canMerge = p.s < STAR_MAX && same(p) >= 2;
+                return `<div class="bg-row pet-row ${on ? 'on' : ''}" style="border-color:color-mix(in srgb, ${TIER_COL[d.tier]} ${on ? 90 : 40}%, transparent)">
+                    <div class="bg-row-view"><canvas data-gear="${p.id}" aria-hidden="true"></canvas></div>
+                    <div class="bg-row-info"><div class="bg-name">${d.name}</div>${petStarHtml(p.s)}<div class="bg-eff"><b class="ef-luck">${petEffectText(d, p.s)}</b></div></div>
+                    <div class="pet-btns">
+                        <button class="btn btn-sm ${on ? '' : 'btn-gold'}" data-petuse="${p.u}">${on ? '집에 보내기' : '데려가기'}</button>
+                        ${canMerge ? `<button class="btn btn-sm pet-merge" data-merge="${p.u}">합성 ★${p.s + 1}</button>` : ''}
+                    </div>
+                </div>`;
+            }).join('')}</div>`;
+        attachGearPreviews(el);
+    } else {
+        el.innerHTML = `<div class="glabel">펫 도감 <span style="letter-spacing:0">${PETS.filter(p => st.petList.some(x => x.id === p.id)).length} / ${PETS.length}</span></div>
         <div class="ggears">${PETS.map(p => {
-            const lv = gameState.pets?.[p.id] || 0;
-            return `<div class="ggear ${lv ? 'own' : 'locked'}" style="--c:${TIER_COL[p.tier]}">
-                <div class="ggear-view"><canvas data-gear="${p.id}" aria-hidden="true"></canvas>${lv ? `<span class="ggear-own">Lv.${lv}</span>` : ''}</div>
-                <div class="ggear-name">${lv ? p.name : '???'}</div>
+            const best = Math.max(0, ...st.petList.filter(x => x.id === p.id).map(x => x.s));
+            return `<div class="ggear ${best ? 'own' : 'locked'}" style="--c:${TIER_COL[p.tier]}">
+                <div class="ggear-view"><canvas data-gear="${p.id}" aria-hidden="true"></canvas>${best ? `<span class="ggear-own">★${best}</span>` : ''}</div>
+                <div class="ggear-name">${best ? p.name : '???'}</div>
                 <div class="ggear-tier">${p.tier} · ${petEffectText(p, 1)}</div>
             </div>`;
         }).join('')}</div>`;
-    attachGearPreviews(el.querySelector('.ggears'));
+        attachGearPreviews(el.querySelector('.ggears'));
+    }
 }
-function hatchEgg(id) {
-    const egg = EGGS.find(e => e.id === id);
-    if (!egg || gameState.jc < egg.price) { toast('JC가 부족해요', 'bad'); return; }
-    gameState.jc -= egg.price;
-    let r = Math.random() * Object.values(egg.odds).reduce((s, v) => s + v, 0), tier = 'COMMON';
+function hatchNest(i) {
+    const st = petState(), n = st.nests[i];
+    if (!n || n.end > Date.now()) return;
+    const egg = EGG_BY_ID[n.egg];
+    let r = Math.random() * Object.values(egg.odds).reduce((a, b) => a + b, 0), tier = 'COMMON';
     for (const [t, w] of Object.entries(egg.odds)) { r -= w; if (r <= 0) { tier = t; break; } }
     const pool = PETS.filter(p => p.tier === tier);
     const pet = pool[Math.floor(Math.random() * pool.length)];
-    gameState.pets = gameState.pets || {};
-    const lv = gameState.pets[pet.id] || 0;
-    let sub;
-    if (!lv) { gameState.pets[pet.id] = 1; sub = 'NEW! 가방 → 펫에서 데려가기'; if (!gameState.pet) gameState.pet = pet.id; }
-    else if (lv < PET_MAX_LV) { gameState.pets[pet.id] = lv + 1; sub = `레벨 업! Lv.${lv} → Lv.${lv + 1}`; }
-    else { const back = Math.round(egg.price * 0.3); gameState.jc += back; sub = `이미 MAX → +${fmt(back)} JC`; }
-    trackQuestProgress("shopPurchases", 1);
-    saveGame(); renderStats(); applyGear();
+    const isNew = !st.petList.some(p => p.id === pet.id);
+    const u = newPetUid();
+    st.petList.push({ u, id: pet.id, s: 1 });
+    if (!gameState.pet) gameState.pet = u;
+    st.nests[i] = null;
+    saveGame(); renderStats(); applyGear(); updatePetDot();
     $('gacha-result').classList.add('egg-mode');
     $('gacha-result').querySelector('.gr-capsule').innerHTML = eggHtml(egg, 'big');
-    showGachaResult([{ tier, name: pet.name, sub, icon: `<canvas data-gear="${pet.id}" aria-hidden="true"></canvas>`, gear: true, isNew: !lv }]);
+    showGachaResult([{ tier, name: pet.name, sub: `★1 · ${petEffectText(pet, 1)}`, icon: `<canvas data-gear="${pet.id}" aria-hidden="true"></canvas>`, gear: true, isNew }]);
 }
+function mergePet(u) {
+    const st = petState(), a = st.petList.find(p => p.u === u);
+    if (!a || a.s >= STAR_MAX) return;
+    // 데리고 있는 애는 남기고, 다른 한 마리를 재료로 씀
+    const b = st.petList.find(p => p.u !== a.u && p.id === a.id && p.s === a.s && p.u !== gameState.pet) || st.petList.find(p => p.u !== a.u && p.id === a.id && p.s === a.s);
+    if (!b) return;
+    const keep = b.u === gameState.pet ? b : a, gone = keep === a ? b : a;
+    st.petList.splice(st.petList.indexOf(gone), 1);
+    keep.s++;
+    saveGame(); renderStats(); applyGear(); renderPets(); stagger($('pet-panel'));
+    toast(`✨ ${PET_BY_ID[keep.id].name} ★${keep.s} 달성!`, 'gold');
+    playTone(660, 'triangle', 0.12 * soundSettings.master, 0.01, 0.3);
+    setTimeout(() => playTone(990, 'triangle', 0.12 * soundSettings.master, 0.01, 0.5), 120);
+}
+$('sheet-pet').addEventListener('click', e => {
+    const tab = e.target.closest('#sheet-pet .tab');
+    if (tab) { petTab = tab.dataset.tab; petPickNest = -1; renderPets(); stagger($('pet-panel')); return; }
+    const st = petState();
+    const nest = e.target.closest('[data-nest]');
+    if (nest) {
+        const i = +nest.dataset.nest, n = st.nests[i];
+        if (!n) {
+            const have = EGGS.filter(x => st.eggs[x.id] > 0);
+            if (!have.length) { toast('알이 없어요. 행운 뽑기에서 나와요', 'bad'); return; }
+            petPickNest = petPickNest === i ? -1 : i;
+            renderPets();
+        } else if (n.end <= Date.now()) hatchNest(i);
+        else toast(`🥚 ${fmtLeft(n.end - Date.now())} 남았어요`);
+        return;
+    }
+    const pe = e.target.closest('[data-putegg]');
+    if (pe) {
+        const i = petPickNest >= 0 && !st.nests[petPickNest] ? petPickNest : st.nests.findIndex(n => !n);
+        if (i < 0) { toast('둥지가 꽉 찼어요', 'bad'); return; }
+        const egg = EGG_BY_ID[pe.dataset.putegg];
+        st.eggs[egg.id]--;
+        if (st.eggs[egg.id] <= 0) delete st.eggs[egg.id];
+        st.nests[i] = { egg: egg.id, start: Date.now(), end: Date.now() + egg.hours * 3600000 };
+        petPickNest = -1;
+        saveGame(); renderPets(); updatePetDot();
+        toast(`🪺 ${egg.name}을(를) 둥지에 넣었어요 · ${egg.hours}시간 뒤 부화`, 'good');
+        return;
+    }
+    const use = e.target.closest('[data-petuse]');
+    if (use) {
+        gameState.pet = gameState.pet === use.dataset.petuse ? null : use.dataset.petuse;
+        if (gameState.pet) toast(`🐾 ${PET_BY_ID[petOn().id].name}와(과) 함께해요`, 'good');
+        saveGame(); renderStats(); applyGear(); renderPets();
+        return;
+    }
+    const mg = e.target.closest('[data-merge]');
+    if (mg) mergePet(mg.dataset.merge);
+});
 $('gacha-panel').addEventListener('click', e => {
     const b = e.target.closest('[data-pull]');
     if (b) pullGacha(+b.dataset.pull);
-    const eg = e.target.closest('[data-egg]');
-    if (eg) hatchEgg(eg.dataset.egg);
     const g = e.target.closest('[data-ggear]');
     if (g) openGearDetail(g.dataset.ggear);
     if (e.target.closest('[data-pityhelp]')) {
@@ -2169,11 +2253,14 @@ function applyAdminEvent(ev, late) {
         gameState.biome = { id: b.id, until: end };
         saveGame(); applyBiome(true);
     } else if (ev.kind === 'announce') {
-        if (late && now - start > 90000) return;
-        adminBanner('📢', d.text || '', '관리자 공지', '#7ae8ff', 6500);
+        // 이미 본 공지 / 오래된 공지는 다시 안 띄움 (게임 다시 켜도)
+        if (ev.id <= seenAnnId() || now - start > (late ? 90000 : 600000)) return;
+        markAnnSeen(ev.id);
+        chatLine(d.nick || '관리자', d.text || '');
     } else if (ev.kind === 'rare') {
         if (d.cid === CLIENT_ID) return;               // 내가 뽑은 건 내 컷씬으로 봄
-        if (late && now - start > 60000) return;
+        if (ev.id <= seenAnnId() || now - start > (late ? 60000 : 600000)) return;
+        markAnnSeen(ev.id);
         const a = AURA_BY_ID[d.aura];
         if (a) queueRareBanner(d.nick || '누군가', a);
     } else if (ev.kind === 'gift') {
@@ -2188,6 +2275,22 @@ function applyAdminEvent(ev, late) {
         const what = [d.jc ? `${fmt(d.jc)} JC` : '', ...Object.entries(d.items || {}).map(([id, n]) => `${SHOP_BY_ID[id]?.name || id} ×${n}`)].filter(Boolean).join(' · ');
         adminBanner('🎁', '어드민 선물!', what, '#ff9ad0');
     }
+}
+// 마지막으로 본 공지 번호 (새로고침해도 기억)
+function seenAnnId() { try { return +localStorage.getItem('js_rng_ann') || 0; } catch (e) { return 0; } }
+function markAnnSeen(id) { try { if (id > seenAnnId()) localStorage.setItem('js_rng_ann', id); } catch (e) {} }
+// 로블록스 채팅처럼 "이름: 내용" 한 줄씩 위에 쌓임
+function chatLine(nick, text) {
+    const feed = $('chat-feed');
+    const line = document.createElement('div');
+    line.className = 'chat-line';
+    line.innerHTML = `<b class="chat-nick">👑 ${escapeHtml(nick)}</b><span class="chat-sep">:</span> <span class="chat-text">${escapeHtml(text)}</span>`;
+    feed.appendChild(line);
+    while (feed.children.length > 4) feed.firstChild.remove();
+    setTimeout(() => line.classList.add('out'), 12000);
+    setTimeout(() => line.remove(), 12600);
+    playTone(880, 'triangle', 0.1 * soundSettings.master, 0.005, 0.12);
+    setTimeout(() => playTone(1175, 'triangle', 0.1 * soundSettings.master, 0.005, 0.18), 90);
 }
 function adminBanner(icon, title, sub, color, ms = 4200) {
     const ban = $('admin-banner');
@@ -2227,7 +2330,9 @@ function showNextRare() {
     setTimeout(() => { el.classList.remove('show'); setTimeout(() => { rareShowing = false; showNextRare(); }, 500); }, a.grade === 'JXS' ? 7000 : 5000);
 }
 
+let evPrimed = false;
 async function pollAdminEvents(first) {
+    if (!first && !evPrimed) first = true;   // 첫 확인이 끝나기 전엔 옛 이벤트를 새 것처럼 받지 않게
     try {
         // 처음엔 최근 6시간치(진행 중인 이벤트 따라잡기), 그다음부턴 새 줄만
         const q = first
@@ -2236,6 +2341,7 @@ async function pollAdminEvents(first) {
         const rows = await sbFetch(q);
         setOnline(true);
         for (const ev of rows || []) { evLastId = Math.max(evLastId, ev.id); applyAdminEvent(ev, first); }
+        evPrimed = true;
     } catch (e) { setOnline(false); }
 }
 function scheduleAdminPoll() {
@@ -2264,7 +2370,8 @@ $('sheet-admin').addEventListener('click', e => {
     else if (k === 'announce') {
         const text = $('ab-text').value.trim();
         if (!text) { toast('공지 내용을 써 주세요', 'bad'); return; }
-        sendAdminEvent('announce', { text: text.slice(0, 80) }, 0);
+        sendAdminEvent('announce', { nick: session?.nick || '관리자', text: text.slice(0, 80) }, 0);
+        $('ab-text').value = '';
     } else if (k === 'gift') {
         const v = $('ab-gift').value, n = Math.max(1, Math.min(99, +$('ab-gift-n').value || 1));
         sendAdminEvent('gift', v === 'jc' ? { jc: 100000 * n } : { items: { [v]: n } }, 1800);   // 30분 안에 들어온 사람까지 받음
@@ -2366,7 +2473,7 @@ async function logOut() {
     // 이 폰은 새 게임으로 (기록은 서버에 있어서 다시 로그인하면 돌아옴)
     gameState = createInitialGameState();
     cloudLastRolls = -1; cloudSavedAt = 0;
-    saveGame(); renderAll(); applyEquippedAura(); applyBiome(false); updateAttendDot();
+    saveGame(); renderAll(); applyEquippedAura(); applyBiome(false); updateAttendDot(); updatePetDot();
 }
 
 // 랭킹·프로필용 숫자들
@@ -2627,9 +2734,9 @@ const TUT_STEPS = [
     { sel: '#aura-display', text: '방금 뽑은 아우라가 여기 나와요.<br>희귀할수록 <b>1/숫자</b>가 커지고 연출도 화려해져요.' },
     { sel: '.stats', text: '<b>LUCK</b>이 높을수록 희귀한 게 잘 나오고<br><b>SPEED</b>가 높을수록 빨리 굴려요.' },
     { sel: '#auto-roll-btn', text: '<b>AUTO</b>를 켜면 알아서 계속 굴려요.<br>폰 켜 두고 방치해도 OK!' },
-    { sel: '.bottom-nav', text: '<b>가방</b> 아우라·장비·펫 · <b>제작</b> 건틀릿·부적<br><b>상점</b> 물약·뽑기·펫 알 · <b>퀘스트</b> · <b>도감</b> 세트 버프', pad: 4 },
+    { sel: '.bottom-nav', text: '<b>가방</b> 아우라·장비 · <b>제작</b> 건틀릿·부적 · <b>상점</b> 물약·뽑기<br><b>퀘스트</b> · <b>펫</b> 알 부화·합성 · <b>도감</b> 세트 버프', pad: 4 },
     { sel: '.nav-btn[data-sheet="sheet-shop"]', text: '상점을 눌러 볼까요?', click: true, wait: 450 },
-    { sel: '#sheet-shop .sheet', text: '물약으로 행운·속도를 올리고<br><b>뽑기</b>와 <b>🥚 펫 알</b>도 여기 있어요.', close: 'sheet-shop', pad: -2 },
+    { sel: '#sheet-shop .sheet', text: '물약으로 행운·속도를 올리고<br><b>뽑기</b>에선 장비랑 <b>🥚 펫 알</b>도 나와요.', close: 'sheet-shop', pad: -2 },
     { sel: '#attend-btn', text: '매일 <b>출석</b>하면 보상을 받아요. 7일째가 제일 커요!' },
     { sel: '#settings-btn', text: '<b>설정</b>에서 로그인·랭킹·소리·화질을 바꿀 수 있어요.<br>튜토리얼도 여기서 다시 볼 수 있어요.' },
     { sel: null, text: '준비 끝! 🎉<br>희귀한 아우라를 찾아 떠나 볼까요?', last: true }
@@ -2913,7 +3020,7 @@ applyFxMode();
 // 건틀렛/부적을 3D 캐릭터 팔에 끼움
 function applyGear() {
     stage3d?.setGear({ gauntlet: gameState.gear, amulet: gameState.amulet, visible: gameState.showGear !== false });
-    stage3d?.setPet?.(gameState.pet || null);
+    stage3d?.setPet?.(petOn()?.id || null);
     const btn = $('gear-toggle-btn');
     if (btn) { btn.textContent = gameState.showGear !== false ? 'ON' : 'OFF'; btn.classList.toggle('on', gameState.showGear !== false); }
 }
@@ -2940,7 +3047,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=38')
+import('./aura3d.js?v=39')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {

@@ -1,7 +1,7 @@
 /* =========================================================
    🐾 펫 데이터 (petsData.js)
-   - 알을 부화시켜 얻음. 같은 펫이 또 나오면 레벨 업 (최대 Lv.5)
-   - 효과는 레벨마다 +25%씩 커짐 (Lv.5 = 기본의 2배)
+   - 일반 뽑기에서 알이 나옴 → 펫 창 둥지(3칸)에 넣고 기다리면 부화
+   - 같은 펫 같은 성 2마리를 합성하면 성이 올라감 (최대 5성)
    - 한 번에 한 마리만 데리고 다님
    ========================================================= */
 
@@ -20,12 +20,17 @@ export const PETS = [
 ];
 export const PET_BY_ID = Object.fromEntries(PETS.map(p => [p.id, p]));
 
-// 알: 등급별로 어떤 펫 등급이 나오는지 (가중치)
+// 알: 일반 뽑기에서 나옴 → 펫 창 둥지에 넣으면 시간이 지나 부화
+// odds = 어떤 등급 펫이 나오는지 (가중치), hours = 부화까지 걸리는 시간
 export const EGGS = [
-    { id: 'egg_basic', name: '평범한 알', price: 30000, color: '#d8d2c0', spot: '#9aa0ad', odds: { COMMON: 70, RARE: 25, EPIC: 5 } },
-    { id: 'egg_rare', name: '반짝이는 알', price: 200000, color: '#9fd8ff', spot: '#4da3ff', odds: { RARE: 55, EPIC: 35, LEGEND: 9, MYTHIC: 1 } },
-    { id: 'egg_legend', name: '전설의 알', price: 1200000, color: '#ffd23a', spot: '#ff7a1a', odds: { EPIC: 50, LEGEND: 42, MYTHIC: 8 } }
+    { id: 'egg_basic', name: '평범한 알', tier: 'RARE', hours: 1, color: '#d8d2c0', spot: '#9aa0ad', odds: { COMMON: 70, RARE: 25, EPIC: 5 } },
+    { id: 'egg_rare', name: '반짝이는 알', tier: 'EPIC', hours: 3, color: '#9fd8ff', spot: '#4da3ff', odds: { RARE: 55, EPIC: 35, LEGEND: 9, MYTHIC: 1 } },
+    { id: 'egg_legend', name: '전설의 알', tier: 'LEGEND', hours: 6, color: '#ffd23a', spot: '#ff7a1a', odds: { EPIC: 50, LEGEND: 42, MYTHIC: 8 } },
+    { id: 'egg_mythic', name: '신화의 알', tier: 'MYTHIC', hours: 12, color: '#7af0ff', spot: '#c86bff', odds: { LEGEND: 60, MYTHIC: 40 } }
 ];
+export const EGG_BY_ID = Object.fromEntries(EGGS.map(e => [e.id, e]));
 
-export const PET_MAX_LV = 5;
-export const petMult = lv => 1 + 0.25 * (Math.max(1, lv) - 1);
+// 성: 같은 펫 + 같은 성 2마리를 합치면 한 성 올라감 (최대 5성)
+export const STAR_MAX = 5;
+export const STAR_MULT = [1, 1, 1.4, 1.9, 2.5, 3.2];
+export const starMult = s => STAR_MULT[Math.max(1, Math.min(STAR_MAX, s))];

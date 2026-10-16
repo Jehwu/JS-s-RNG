@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=38">
-    <link rel="stylesheet" href="rarity.css?v=38">
+    <link rel="stylesheet" href="style.css?v=39">
+    <link rel="stylesheet" href="rarity.css?v=39">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -23,6 +23,7 @@
     <div id="biome-banner" class="hidden" aria-live="polite"></div>
     <div id="admin-banner" class="hidden" aria-live="polite"></div>
     <div id="rare-banner" class="rare-banner" aria-live="polite"></div>
+    <div id="chat-feed" class="chat-feed" aria-live="polite"></div>
     <div id="ambient" aria-hidden="true"></div>
     <div id="nametag" class="hidden"></div>
 
@@ -132,6 +133,9 @@
             <button class="nav-btn" data-sheet="sheet-quest">
                 <svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span>퀘스트</span>
             </button>
+            <button class="nav-btn" data-sheet="sheet-pet">
+                <svg viewBox="0 0 24 24"><path d="M12 20c-3.5 0-6-2-6-4.5S9 10 12 10s6 3 6 5.5-2.5 4.5-6 4.5z"/><path d="M5 9.5a1.6 2 0 103.2 0 1.6 2 0 10-3.2 0M9 5.5a1.6 2 0 103.2 0 1.6 2 0 10-3.2 0M11.8 5.5a1.6 2 0 103.2 0 1.6 2 0 10-3.2 0M15.8 9.5a1.6 2 0 103.2 0 1.6 2 0 10-3.2 0"/></svg><span>펫</span><i class="pet-dot hidden"></i>
+            </button>
             <button class="nav-btn" data-sheet="sheet-index">
                 <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M9 9h6v6H9z"/><path d="M12 4v5M12 15v5"/></svg><span>도감</span>
             </button>
@@ -147,7 +151,6 @@
                 <button class="tab" data-tab="potion">물약</button>
                 <button class="tab" data-tab="gauntlet">건틀렛</button>
                 <button class="tab" data-tab="amulet">부적</button>
-                <button class="tab" data-tab="pet">펫</button>
             </div>
             <div class="sheet-body">
                 <div id="inventory-grid"></div>
@@ -176,7 +179,6 @@
             <div class="tabs" id="shop-tabs">
                 <button class="tab active" data-tab="potion">물약</button>
                 <button class="tab" data-tab="gacha">행운 뽑기</button>
-                <button class="tab" data-tab="eggs">🥚 펫 알</button>
                 <button class="tab tab-hw" data-tab="halloween">🎃 할로윈</button>
             </div>
             <div class="sheet-body"><div id="shop-grid"></div><div id="gacha-panel" class="hidden"></div></div>
@@ -188,6 +190,19 @@
         <div class="sheet">
             <div class="sheet-head"><h2>출석 체크</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
             <div class="sheet-body"><div id="attend-panel"></div></div>
+        </div>
+    </div>
+
+    <!-- 🐾 펫 -->
+    <div id="sheet-pet" class="sheet-backdrop hidden">
+        <div class="sheet">
+            <div class="sheet-head"><h2>펫</h2><button class="sheet-close" data-close aria-label="닫기">✕</button></div>
+            <div class="tabs">
+                <button class="tab active" data-tab="nest">🪺 둥지</button>
+                <button class="tab" data-tab="mine">내 펫</button>
+                <button class="tab" data-tab="book">펫 도감</button>
+            </div>
+            <div class="sheet-body"><div id="pet-panel"></div></div>
         </div>
     </div>
 
@@ -478,6 +493,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=38"></script>
+    <script type="module" src="script.js?v=39"></script>
 </body>
 </html>
