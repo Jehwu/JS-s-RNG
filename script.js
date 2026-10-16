@@ -1,8 +1,8 @@
-import { AURA_DATA } from './auras.js?v=41';
-import { CRAFT_ITEMS } from './craftItems.js?v=41';
-import { createMusicPlayer, coverArt } from './music.js?v=41';
-import { PETS, PET_BY_ID, EGGS, EGG_BY_ID, STAR_MAX, starMult } from './petsData.js?v=41';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=41';
+import { AURA_DATA } from './auras.js?v=42';
+import { CRAFT_ITEMS } from './craftItems.js?v=42';
+import { createMusicPlayer, coverArt } from './music.js?v=42';
+import { PETS, PET_BY_ID, EGGS, EGG_BY_ID, STAR_MAX, starMult } from './petsData.js?v=42';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=42';
 
 /* =========================================================
    📦 게임 데이터
@@ -108,7 +108,7 @@ const QUEST_DATA = [
         desc: "빠른 롤을 쓸 자격을 증명하세요.",
         rewardDesc: "빠른 롤 해금 + 천상의 물약 5개",
         reward: { unlockQuickRoll: true, items: { heaven_potion: 5 } },
-        targets: { rolls: 2500, ancient: 8, absolute: 3, jc: 1500000, shopPurchases: 10 }
+        targets: { rolls: 2500, legend: 8, mythic: 3, jc: 1500000, shopPurchases: 10 }
     },
     {
         id: "quest_repeat_overcome", name: "극복의 시련", repeatable: true,
@@ -1000,7 +1000,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=41').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=42').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -3143,7 +3143,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=41')
+import('./aura3d.js?v=42')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
