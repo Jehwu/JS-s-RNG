@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Orbit&display=swap" rel="stylesheet">
     <!-- 업데이트할 때: 아래 ?v= 숫자 3곳과 version.json 숫자를 똑같이 올리기 -->
-    <link rel="stylesheet" href="style.css?v=36">
-    <link rel="stylesheet" href="rarity.css?v=36">
+    <link rel="stylesheet" href="style.css?v=37">
+    <link rel="stylesheet" href="rarity.css?v=37">
     <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 </head>
 <body>
@@ -284,6 +284,13 @@
                         <div class="set-note">자동은 폰이 버벅이면 낮췄다가 여유가 생기면 다시 올려요.</div>
                     </div>
                     <div class="set-group">
+                        <div class="set-group-title">효과 양</div>
+                        <div class="seg seg3" id="fx-seg">
+                            <button data-fx="high">많이</button><button data-fx="mid">보통</button><button data-fx="low">적게</button>
+                        </div>
+                        <div class="set-note">렉이 걸리면 '적게'로 바꿔 보세요. 입자 수가 줄고 칭호 조명이 꺼져요. 화질이 자동으로 내려갈 때도 알아서 줄어요.</div>
+                    </div>
+                    <div class="set-group">
                         <div class="set-row"><div><b>장비 보이기</b><small>건틀렛(오른팔) · 부적(왼팔)을 캐릭터에 표시</small></div><button id="gear-toggle-btn" class="switch on">ON</button></div>
                     </div>
                     <div class="set-group">
@@ -453,6 +460,6 @@
 
     <div id="toast-wrap"></div>
 
-    <script type="module" src="script.js?v=36"></script>
+    <script type="module" src="script.js?v=37"></script>
 </body>
 </html>

@@ -5675,3 +5675,76 @@ function buildCoach(kit, pick, n) {
     add(dark, 1.9, 0.35, 4.0, 0, 0.85, 0);
     return { g, wheels };
 }
+
+/* =========================================================
+   👑 JXS 공통 '거대한 무대' — 모든 JXS 칭호 위에 덧씌움
+   - 캐릭터 뒤에 3.4배 크기의 빛나는 분신이 똑같이 움직임
+   - 하늘엔 겹겹이 도는 거대한 문장(시길), 둘레엔 하늘까지 닿는 빛기둥
+   - 위로는 큰 큐브 왕관이 돌고, 바닥엔 3초마다 거대한 충격파
+   전부 카메라 맞춤(noFit)에서 빼서 캐릭터 크기는 그대로
+   opts: { colossus: false (분신 빼기), z: 분신 거리, sigilY, sigilZ }
+   ========================================================= */
+export function jxsGrand({ group, tick, pick, dummy, kit }, opts = {}) {
+    const { THREE, BOX, glowMat, square, mini, rand } = kit;
+    const far = new THREE.Group(); far.userData.noFit = true; group.add(far);
+    const c0 = pick(0), c1 = pick(1), c2 = pick(2);
+    const box = (m, w, h, d, x, y, z) => { const b = new THREE.Mesh(BOX, m); b.scale.set(w, h, d); b.position.set(x, y, z); return b; };
+
+    // 1) 거대한 분신 (관절이 있는 꼬마 모형을 크게 키워서 캐릭터 포즈를 그대로 따라함)
+    let giant = null;
+    if (opts.colossus !== false) {
+        // 속은 아주 옅게, 테두리 선만 또렷하게 → 화면이 하얗게 뒤덮이지 않음
+        giant = mini(0xffffff, { scale: 2.3 });
+        const gm = glowMat(c0, 0.05);
+        const edgeGeo = new THREE.EdgesGeometry(BOX);
+        const edgeMat = new THREE.LineBasicMaterial({ color: c1, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+        const meshes = [];
+        giant.root.traverse(o => { if (o.isMesh) meshes.push(o); });
+        meshes.forEach(o => { o.material = gm; const e = new THREE.LineSegments(edgeGeo, edgeMat); e.scale.copy(o.scale); e.position.copy(o.position); o.parent.add(e); });
+        giant.root.position.set(0, 1.5, opts.z ?? -14);
+        far.add(giant.root);
+    }
+    // 2) 하늘의 문장
+    const sigil = new THREE.Group(); sigil.position.set(0, opts.sigilY ?? 10, opts.sigilZ ?? -18); far.add(sigil);
+    const sRings = [7, 10, 13.5].map((s, i) => { const r = square(s, 0.12 + i * 0.04, glowMat(i === 1 ? c1 : c0, 0.4)); sigil.add(r); return r; });
+    const beams = new THREE.Group(); sigil.add(beams);
+    for (let i = 0; i < 8; i++) { const b = box(glowMat(i % 2 ? c2 : c0, 0.3), 0.1, 13, 0.05, 0, 0, 0); b.rotation.z = (i / 8) * Math.PI; beams.add(b); }
+    const ticks = new THREE.Group(); sigil.add(ticks);
+    for (let i = 0; i < 24; i++) { const a = (i / 24) * Math.PI * 2; const tk = box(glowMat(c1, 0.7), 0.3, i % 3 ? 0.6 : 1.3, 0.05, Math.cos(a) * 6, Math.sin(a) * 6, 0); tk.rotation.z = a + Math.PI / 2; ticks.add(tk); }
+    const core = box(glowMat(0xffffff, 0.5), 1.4, 1.4, 0.1, 0, 0, 0.1); core.rotation.z = Math.PI / 4; sigil.add(core);
+    // 3) 하늘까지 닿는 빛기둥
+    const pillars = [];
+    for (let i = 0; i < 6; i++) {
+        const a = Math.PI * 0.15 + (i / 5) * Math.PI * 0.7;
+        const p = box(glowMat(i % 2 ? c1 : c0, 0.12), 0.45, 40, 0.45, -Math.cos(a) * 12, 18, -Math.sin(a) * 10 - 4);
+        far.add(p); pillars.push(p);
+    }
+    // 4) 큐브 왕관
+    const crownG = new THREE.Group(); crownG.position.y = 9; crownG.rotation.x = 0.35; far.add(crownG);
+    const cubes = [];
+    for (let i = 0; i < 10; i++) { const c = box(glowMat(i % 2 ? c0 : c2, 0.85), 0.7, 0.7, 0.7, 0, 0, 0); crownG.add(c); cubes.push(c); }
+    // 5) 바닥 충격파 + 큰 바닥 문양
+    const floorRings = [6, 9.5].map((s, i) => { const r = square(s, 0.14, glowMat(i ? c1 : c0, 0.35)); r.position.y = 0.06; far.add(r); return r; });
+    const shock = square(1, 0.25, glowMat(c0, 0.9)); shock.position.y = 0.08; far.add(shock);
+    const parts = giant ? ['legL', 'legR', 'armL', 'armR', 'head', 'torso'] : [];
+    tick((t, dt) => {
+        const lift = dummy.root.position.y;
+        if (giant) {
+            parts.forEach(k => giant[k].rotation.copy(dummy[k].rotation));
+            giant.root.position.y = 1.5 + lift * 1.5 + Math.sin(t * 0.7) * 0.3;
+            giant.root.rotation.y = Math.sin(t * 0.3) * 0.08;
+        }
+        sigil.rotation.z = t * 0.05;
+        sRings.forEach((r, i) => { r.rotation.set(Math.PI / 2, t * (i % 2 ? -0.25 : 0.18) + i, 0); });
+        beams.rotation.z = -t * 0.12;
+        ticks.rotation.z = t * 0.2;
+        core.scale.set(1.4 + Math.sin(t * 2) * 0.2, 1.4 + Math.sin(t * 2) * 0.2, 0.1);
+        pillars.forEach((p, i) => { p.material.opacity = 0.05 + Math.max(0, Math.sin(t * 1.3 + i * 1.1)) * 0.14; });
+        cubes.forEach((c, i) => { const a = t * 0.5 + (i / cubes.length) * Math.PI * 2; c.position.set(Math.cos(a) * 7, Math.sin(a * 3 + t) * 0.4, Math.sin(a) * 7); c.rotation.set(t + i, t * 1.3, 0); });
+        crownG.position.y = 9 + lift;
+        floorRings.forEach((r, i) => { r.rotation.y = t * (i ? -0.1 : 0.14); });
+        const k = (t % 3) / 3;
+        shock.scale.setScalar(1 + k * 26);
+        shock.children.forEach(ch => { ch.material.opacity = 0.8 * (1 - k); });
+    });
+}

@@ -14,7 +14,7 @@
      hit2 : JXS만. 두 번째 클라이맥스. hit~hit2 동안은 각성 직전 단계
    ========================================================= */
 
-import { buildLocomotive } from './auraSignatures.js?v=36';
+import { buildLocomotive } from './auraSignatures.js?v=37';
 
 export function createCutscene(ctx) {
     const { THREE, scene, camera, dummy, floor, stars, kit, bloom, stageApi } = ctx;
@@ -152,11 +152,11 @@ export function createCutscene(ctx) {
             const jade = new THREE.MeshStandardMaterial({ color: 0x1fae8a, metalness: 0.5, roughness: 0.3, emissive: 0x0a4a3a, emissiveIntensity: 0.8 });
             const gold = new THREE.MeshStandardMaterial({ color: 0xffc94d, emissive: 0x7a5a00, emissiveIntensity: 0.6 });
             const N = 50, segs = [];
-            for (let i = 0; i < N; i++) { const m = new THREE.Mesh(BOX, i % 4 ? jade : gold); const s = 1.6 * (1 - i / N * 0.6); m.scale.set(s, s, 1.8); g.add(m); segs.push(m); }
-            const head = new THREE.Mesh(BOX, jade); head.scale.set(2.2, 1.8, 2.8); g.add(head);
+            for (let i = 0; i < N; i++) { const m = new THREE.Mesh(BOX, i % 4 ? jade : gold); const s = 1.1 * (1 - i / N * 0.6); m.scale.set(s, s, 1.3); g.add(m); segs.push(m); }
+            const head = new THREE.Mesh(BOX, jade); head.scale.set(1.6, 1.3, 2.0); g.add(head);
             const eyes = new THREE.Mesh(BOX, glowMat(0xffe14d, 1)); eyes.scale.set(2.4, 0.3, 0.2); head.add(eyes); eyes.position.set(0, 0.15, 0.5); eyes.scale.set(1.1, 0.17, 0.1);
             const tmp = new THREE.Vector3(), nxt = new THREE.Vector3();
-            const at = (u, time, k, out) => { const a = time * 1.2 - u * 7; const r = THREE.MathUtils.lerp(14, 4.5, ease.inOut(k)) + u * 4; return out.set(Math.cos(a) * r, 3.5 + Math.sin(a * 0.7 + u * 3) * 3 * (1 - k * 0.5), Math.sin(a) * r * 0.7 - 2); };
+            const at = (u, time, k, out) => { const a = time * 1.2 - u * 7; const r = THREE.MathUtils.lerp(14, 4.5, ease.inOut(k)) + u * 4; return out.set(Math.cos(a) * r, 3.5 + Math.sin(a * 0.7 + u * 3) * 3 * (1 - k * 0.5), Math.sin(a) * r * 0.5 - 3); };
             return {
                 bloom: 0.7,
                 update(time, phase, k) {
@@ -1251,6 +1251,7 @@ export function createCutscene(ctx) {
         stars.scale.setScalar(1);
         bloom.strength = st?.bloomBase ?? bloom.strength;
         camera.up.set(0, 1, 0);
+        ctx.setCenter?.(0);
     }
 
     api.play = (aura, cfg, getTime, hooks) => new Promise(resolve => {
@@ -1340,6 +1341,7 @@ export function createCutscene(ctx) {
             const d = THREE.MathUtils.lerp(26, 11, ease.inOut(p)) - implode * 2.5;
             const a = Math.sin(p * 1.2) * 0.35;
             camera.position.set(Math.sin(a) * d, 3.5 + d * 0.12, Math.cos(a) * d);
+            ctx.setCenter?.(1);   // 별이 화면 정가운데에 오게
             camera.lookAt(st.center);
             camera.rotateZ(Math.sin(time * 0.5) * 0.06 + p * 0.1);
             if (p > 0.72) hooks.shake(0.02 + (p - 0.72) * 0.35);
@@ -1360,6 +1362,7 @@ export function createCutscene(ctx) {
             const a = THREE.MathUtils.lerp(-0.9, 0.5, ease.inOut(q));
             const d = THREE.MathUtils.lerp(view.dist * 0.6, view.dist * 0.85, q);
             camera.position.set(Math.sin(a) * d, THREE.MathUtils.lerp(0.8, tgt.y + 1.5, ease.inOut(q)), Math.cos(a) * d);
+            ctx.setCenter?.(1);
             camera.lookAt(0, tgt.y + 0.4, 0);
             camera.rotateZ(Math.sin(time * 0.8) * 0.05);
             hooks.shake(0.03 + q * 0.12);
@@ -1376,6 +1379,7 @@ export function createCutscene(ctx) {
             const a = THREE.MathUtils.lerp(-1.1, 0, k) + (tier === 'MYTHIC' ? 0 : Math.sin(time * 0.4) * 0.05 * (1 - k));
             const y = THREE.MathUtils.lerp(tgt.y - 1.6, tgt.y + view.dist * 0.14, k);
             camera.position.set(Math.sin(a) * d, y, Math.cos(a) * d);
+            ctx.setCenter?.(1 - k);   // 평소 화면 구도로 자연스럽게 돌아감
             camera.lookAt(tgt);
             bloom.strength = THREE.MathUtils.lerp(1.3, st.bloomBase, k);
         }

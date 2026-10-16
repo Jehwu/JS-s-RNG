@@ -1,7 +1,7 @@
-import { AURA_DATA } from './auras.js?v=36';
-import { CRAFT_ITEMS } from './craftItems.js?v=36';
-import { createMusicPlayer, coverArt } from './music.js?v=36';
-import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=36';
+import { AURA_DATA } from './auras.js?v=37';
+import { CRAFT_ITEMS } from './craftItems.js?v=37';
+import { createMusicPlayer, coverArt } from './music.js?v=37';
+import { BIOMES, BIOME_BY_ID, BIOME_CHECK_MS, rollBiome, randomBiome, createBiomeFx } from './biomes.js?v=37';
 
 /* =========================================================
    📦 게임 데이터
@@ -958,7 +958,7 @@ function attachGearPreviews(root = ui.craftGrid) {
     if (gearPreviews) { gearPreviews.attach(root); return; }
     if (gearPreviewLoading || !stage3d) return;
     gearPreviewLoading = true;
-    import('./gearPreview.js?v=36').then(({ createGearPreviews }) => {
+    import('./gearPreview.js?v=37').then(({ createGearPreviews }) => {
         gearPreviews = createGearPreviews(stage3d.getRenderer());
         if (gearPreviewRoot?.isConnected && gearPreviewRoot.offsetParent) gearPreviews.attach(gearPreviewRoot);
     }).catch(err => console.warn('장비 미리보기를 켤 수 없어요', err));
@@ -2653,6 +2653,22 @@ $('quality-seg').addEventListener('click', e => {
     applyQuality();
 });
 applyQuality();
+// 효과 양 (입자 수)
+const FX_KEY = 'js_rng_fx';
+let fxMode = 'high';
+try { fxMode = localStorage.getItem(FX_KEY) || 'high'; } catch (e) {}
+function applyFxMode() {
+    stage3d?.setFxMode?.(fxMode);
+    document.querySelectorAll('#fx-seg button').forEach(b => b.classList.toggle('on', b.dataset.fx === fxMode));
+}
+$('fx-seg').addEventListener('click', e => {
+    const f = e.target.dataset.fx;
+    if (!f) return;
+    fxMode = f;
+    try { localStorage.setItem(FX_KEY, f); } catch (err) {}
+    applyFxMode();
+});
+applyFxMode();
 
 // 건틀렛/부적을 3D 캐릭터 팔에 끼움
 function applyGear() {
@@ -2683,7 +2699,7 @@ function applyEquippedAura() {
     }
 }
 
-import('./aura3d.js?v=36')
+import('./aura3d.js?v=37')
     .then(({ createAuraStage }) => {
         stage3d = createAuraStage($('stage3d'), {
             getStageRect: () => {
@@ -2693,6 +2709,7 @@ import('./aura3d.js?v=36')
             onLabel: (x, y) => { nametag.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`; }
         });
         applyQuality();
+        applyFxMode();
         applyEquippedAura();
     })
     .catch(err => {

@@ -9,9 +9,9 @@ import { EffectComposer } from './lib/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './lib/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './lib/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './lib/jsm/postprocessing/OutputPass.js';
-import { SIGNATURES } from './auraSignatures.js?v=36';
-import { POSES } from './poses.js?v=36';
-import { createGearRig } from './gear3d.js?v=36';
+import { SIGNATURES, jxsGrand } from './auraSignatures.js?v=37';
+import { POSES } from './poses.js?v=37';
+import { createGearRig } from './gear3d.js?v=37';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -224,6 +224,13 @@ function makeHeldSword(len, bladeColor, accent, w = 0.4, metal = false) {
 const KIT = { TMP, THREE, BOX, mini: makeMini, glowMat, solidMat, square: makeSquareRing, rand, ghost: makeGhost, sword: makeSword, heldSword: makeHeldSword, bolt: makeBolt };
 
 /* ---------- 아우라 만들기 ---------- */
+// JXS 공통 무대 설정 (자기 거대 연출이 이미 있는 칭호는 분신을 빼거나 뒤로)
+const JXS_GRAND = {
+    hades: { colossus: false },            // 이미 거대한 하데스 환영이 있음
+    pumpkinKing: { colossus: false, sigilY: 16, sigilZ: -24 },   // 하늘을 채운 호박이 주인공
+    creator: { z: -13, sigilZ: -20 },
+    admin: { z: -12, sigilY: 12 }
+};
 const SIGNATURE_PARTICLES = { LEGEND: 22, MYTHIC: 32, ANCIENT: 44, ABSOLUTE: 56, JXS: 80 };
 
 function buildAura(aura, dummy, stage) {
@@ -447,6 +454,8 @@ function buildAura(aura, dummy, stage) {
     if (fx.signature && SIGNATURES[fx.signature]) {
         SIGNATURES[fx.signature]({ group, tick: fn => updaters.push(fn), colors, pick, c0, dummy, kit: KIT, stage, sig });
     }
+    // JXS 는 공통 '거대한 무대'를 한 겹 더 (칭호마다 분신 거리 등만 조금씩 다름)
+    if (aura.grade === 'JXS') jxsGrand({ group, tick: fn => updaters.push(fn), pick, dummy, kit: KIT }, JXS_GRAND[fx.signature] || {});
 
     return { group, updaters, color: c0, glow, sig, pose: POSES[aura.id] || null };
 }
@@ -657,9 +666,32 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         scene.add(current.group);
         gapGlow.material.color.copy(current.color).multiplyScalar(0.35 + Math.min(1, current.glow) * 0.4);
         rim.color.copy(current.color);
-        bloom.strength = 0.5 + Math.min(current.glow, 2) * 0.12 + (aura.grade === 'JXS' ? 0.25 : 0);
+        bloom.strength = 0.5 + Math.min(current.glow, 2) * 0.12 + (aura.grade === 'JXS' ? 0.08 : 0);
         auraScale = 0;
         flash = 1;
+        applyFxBudget(true);
+    }
+
+    /* ---------- 렉 줄이기: 효과 양 조절 ----------
+       화질 단계(자동으로 내려가는 것 포함)와 설정의 '효과 양'에 맞춰
+       - 입자(InstancedMesh)는 그리는 개수를 줄이고
+       - 칭호 전용 조명은 화질이 많이 낮으면 끔 (조명 하나가 화면 전체 계산을 늘림) */
+    const FX_Q = [1, 0.85, 0.7, 0.55, 0.42];
+    const FX_USER = { high: 1, mid: 0.65, low: 0.4 };
+    let fxMode = 'high', fxApplied = -1, fxTimer = 0;
+    function fxFactor() { return FX_Q[qLevel] * (FX_USER[fxMode] || 1); }
+    function applyFxBudget(force) {
+        if (!current) return;
+        const f = fxFactor();
+        if (!force && Math.abs(f - fxApplied) < 0.01) return;
+        fxApplied = f;
+        current.group.traverse(o => {
+            if (o.isInstancedMesh) {
+                if (o.userData.maxCount === undefined) o.userData.maxCount = o.count;
+                o.count = Math.max(1, Math.round(o.userData.maxCount * f));
+            }
+            if (o.isPointLight && o.userData.own) o.visible = f >= 0.5;
+        });
     }
 
     // 블룸
@@ -713,6 +745,9 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         renderer.setPixelRatio(QUALITY[qLevel].pr);
         renderer.setSize(W, H, false);
         composer.setPixelRatio(QUALITY[qLevel].pr);
+        // 화질이 낮은 단계에선 계단 현상 줄이기(MSAA)를 꺼서 많이 가볍게
+        const wantSamples = qLevel >= 3 ? 0 : msaa;
+        [composer.renderTarget1, composer.renderTarget2].forEach(rt => { if (rt && rt.samples !== wantSamples) { rt.samples = wantSamples; rt.dispose(); } });
         composer.setSize(W, H);
         bloom.resolution.set(W / QUALITY[qLevel].bloomDiv, H / QUALITY[qLevel].bloomDiv);
         const r = getStageRect && getStageRect();
@@ -724,7 +759,13 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
             usable = { cx: 0.5, cy: 0.5, w: 1, h: 0.42 };
         }
         camera.aspect = W / H;
-        camera.setViewOffset(W, H, W / 2 - usable.cx * W, H / 2 - usable.cy * H, W, H);
+        applyViewOffset();
+    }
+    // 평소엔 화면 중심을 무대 칸 가운데로 옮겨 둠. 컷씬 중에는 화면 정가운데로 (centerK: 0 평소 → 1 정가운데)
+    let centerK = 0;
+    function applyViewOffset() {
+        const k = 1 - centerK;
+        camera.setViewOffset(W, H, (W / 2 - usable.cx * W) * k, (H / 2 - usable.cy * H) * k, W, H);
         camera.updateProjectionMatrix();
     }
     window.addEventListener('resize', resize);
@@ -746,6 +787,7 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         THREE, scene, camera, dummy, floor, stars, kit: KIT, bloom, target,
         setAura: (a, o) => setAura(a, o), clearAura, stageApi,
         getNormalView: () => ({ dist, target: target.clone() }),
+        setCenter: k => { if (Math.abs(k - centerK) > 0.001) { centerK = k; applyViewOffset(); } },
         flash: v => { flash = Math.max(flash, v); }
     };
 
@@ -784,6 +826,8 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
         const dt = Math.min(rawDt + pendingDt, 0.05);
         pendingDt = 0;
         if (!lowPower && !document.hidden) adaptQuality(rawDt);
+        fxTimer -= rawDt;
+        if (fxTimer <= 0) { fxTimer = 0.5; applyFxBudget(false); }
         speed += ((rolling ? 3.2 : 1) - speed) * Math.min(1, dt * 4);
         t += dt;
 
@@ -874,12 +918,14 @@ export function createAuraStage(canvas, { getStageRect, onLabel }) {
             resize();
         },
         setLowPower(v) { lowPower = v; },
+        // 효과 양: 'high' | 'mid' | 'low'
+        setFxMode(mode) { fxMode = mode; applyFxBudget(true); },
         flash() { flash = 1; },
         shake(amount = 0.35) { shakeAmt = amount; flash = 1; },
         // 3D 컷씬 재생. cfg = { hit, hit2, total, tier }, getTime() = 지금 컷씬 몇 초인지
         async playCutscene(aura, cfg, getTime) {
             if (!cine) {
-                const { createCutscene } = await import('./cutscene3d.js?v=36');
+                const { createCutscene } = await import('./cutscene3d.js?v=37');
                 cine = createCutscene(cineCtx);
             }
             return cine.play(aura, cfg, getTime, { shake: a => { shakeAmt = Math.max(shakeAmt, a); } });
